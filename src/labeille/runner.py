@@ -51,6 +51,8 @@ class RunnerConfig:
     verbose: bool = False
     quiet: bool = False
     keep_work_dirs: bool = False
+    repos_dir: Path | None = None
+    venvs_dir: Path | None = None
     cli_args: list[str] = field(default_factory=list)
 
 
@@ -281,6 +283,38 @@ def clone_repo(repo_url: str, dest: Path) -> str | None:
     return None
 
 
+def pull_repo(dest: Path) -> str | None:
+    """Pull latest changes in an existing repo clone and return the HEAD revision.
+
+    Args:
+        dest: The directory containing the existing clone.
+
+    Returns:
+        The HEAD commit hash, or ``None`` on failure.
+
+    Raises:
+        subprocess.CalledProcessError: If the pull fails.
+    """
+    subprocess.run(
+        ["git", "pull", "--ff-only"],
+        capture_output=True,
+        text=True,
+        cwd=str(dest),
+        timeout=120,
+        check=True,
+    )
+    proc = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        capture_output=True,
+        text=True,
+        cwd=str(dest),
+        timeout=10,
+    )
+    if proc.returncode == 0:
+        return proc.stdout.strip()
+    return None
+
+
 def create_venv(python_path: Path, venv_dir: Path) -> None:
     """Create a virtual environment using the target Python.
 
@@ -413,6 +447,26 @@ def get_package_version(package_name: str, installed: dict[str, str]) -> str | N
 # ---------------------------------------------------------------------------
 
 
+def _resolve_dirs(pkg: PackageEntry, config: RunnerConfig) -> tuple[Path | None, Path, Path, bool]:
+    """Determine repo/venv directories and whether a temp work_dir is used.
+
+    Returns:
+        (work_dir_or_None, repo_dir, venv_dir, is_temp)
+        *work_dir_or_None* is a temp directory path only when ``is_temp`` is True.
+    """
+    if config.repos_dir is not None or config.venvs_dir is not None:
+        # Persistent mode: use named subdirectories.
+        repos_base = config.repos_dir or Path(tempfile.mkdtemp(prefix="labeille_repos_"))
+        venvs_base = config.venvs_dir or Path(tempfile.mkdtemp(prefix="labeille_venvs_"))
+        repos_base.mkdir(parents=True, exist_ok=True)
+        venvs_base.mkdir(parents=True, exist_ok=True)
+        return None, repos_base / pkg.package, venvs_base / pkg.package, False
+
+    # Legacy temp-dir mode.
+    work_dir = Path(tempfile.mkdtemp(prefix=f"labeille_{pkg.package}_"))
+    return work_dir, work_dir / "repo", work_dir / "venv", True
+
+
 def run_package(
     pkg: PackageEntry,
     config: RunnerConfig,
@@ -441,9 +495,7 @@ def run_package(
 
     per_pkg_timeout = pkg.timeout if pkg.timeout is not None else config.timeout
 
-    work_dir = Path(tempfile.mkdtemp(prefix=f"labeille_{pkg.package}_"))
-    repo_dir = work_dir / "repo"
-    venv_dir = work_dir / "venv"
+    work_dir, repo_dir, venv_dir, is_temp = _resolve_dirs(pkg, config)
 
     start = time.monotonic()
     try:
@@ -456,7 +508,7 @@ def run_package(
         log.error("Unexpected error testing %s: %s", pkg.package, exc)
     finally:
         result.duration_seconds = round(time.monotonic() - start, 2)
-        if not config.keep_work_dirs:
+        if is_temp and not config.keep_work_dirs and work_dir is not None:
             shutil.rmtree(work_dir, ignore_errors=True)
 
     return result
@@ -469,66 +521,88 @@ def _run_package_inner(
     env: dict[str, str],
     result: PackageResult,
     per_pkg_timeout: int,
-    work_dir: Path,
+    work_dir: Path | None,
     repo_dir: Path,
     venv_dir: Path,
 ) -> PackageResult:
     """Inner implementation of per-package testing (no cleanup responsibility)."""
-    # --- Clone ---
+    # --- Clone or pull ---
     if not pkg.repo:
         result.status = "clone_error"
         result.error_message = "No repository URL"
         log.warning("Skipping %s: no repo URL", pkg.package)
         return result
 
-    log.info("Cloning %s from %s", pkg.package, pkg.repo)
-    try:
-        result.git_revision = clone_repo(pkg.repo, repo_dir)
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as exc:
-        result.status = "clone_error"
-        result.error_message = f"Clone failed: {exc}"
-        log.error("Clone failed for %s: %s", pkg.package, exc)
-        return result
+    repo_existed = repo_dir.exists() and (repo_dir / ".git").exists()
+    if repo_existed:
+        log.info("Reusing repo for %s at %s (pulling)", pkg.package, repo_dir)
+        try:
+            result.git_revision = pull_repo(repo_dir)
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as exc:
+            log.warning("Pull failed for %s, re-cloning: %s", pkg.package, exc)
+            shutil.rmtree(repo_dir, ignore_errors=True)
+            repo_existed = False
 
-    # --- Create venv ---
-    log.info("Creating venv for %s", pkg.package)
-    try:
-        create_venv(config.target_python, venv_dir)
-    except (subprocess.CalledProcessError, OSError) as exc:
-        result.status = "error"
-        result.error_message = f"Venv creation failed: {exc}"
-        log.error("Venv creation failed for %s: %s", pkg.package, exc)
-        return result
+    if not repo_existed:
+        log.info("Cloning %s from %s to %s", pkg.package, pkg.repo, repo_dir)
+        try:
+            result.git_revision = clone_repo(pkg.repo, repo_dir)
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as exc:
+            result.status = "clone_error"
+            result.error_message = f"Clone failed: {exc}"
+            log.error("Clone failed for %s: %s", pkg.package, exc)
+            return result
 
+    # --- Create or reuse venv ---
     venv_python = venv_dir / "bin" / "python"
+    venv_existed = venv_dir.exists() and venv_python.exists()
 
-    # --- Install ---
-    install_cmd = pkg.install_command or "pip install -e ."
-    log.info("Installing %s: %s", pkg.package, install_cmd)
-    install_start = time.monotonic()
-    try:
-        install_proc = install_package(venv_python, install_cmd, repo_dir, env, per_pkg_timeout)
-    except subprocess.TimeoutExpired:
-        result.status = "install_error"
-        result.error_message = "Install timed out"
+    if venv_existed:
+        log.info("Reusing venv for %s at %s", pkg.package, venv_dir)
+    else:
+        log.info("Creating venv for %s at %s", pkg.package, venv_dir)
+        try:
+            create_venv(config.target_python, venv_dir)
+        except (subprocess.CalledProcessError, OSError) as exc:
+            result.status = "error"
+            result.error_message = f"Venv creation failed: {exc}"
+            log.error("Venv creation failed for %s: %s", pkg.package, exc)
+            return result
+
+    # --- Install (skip if reusing venv) ---
+    if venv_existed:
+        log.info("Skipping install for %s (reusing venv)", pkg.package)
+    else:
+        install_cmd = pkg.install_command or "pip install -e ."
+        log.info("Installing %s: %s", pkg.package, install_cmd)
+        install_start = time.monotonic()
+        try:
+            install_proc = install_package(
+                venv_python, install_cmd, repo_dir, env, per_pkg_timeout
+            )
+        except subprocess.TimeoutExpired:
+            result.status = "install_error"
+            result.error_message = "Install timed out"
+            result.install_duration_seconds = round(time.monotonic() - install_start, 2)
+            log.error("Install timed out for %s", pkg.package)
+            return result
+        except OSError as exc:
+            result.status = "install_error"
+            result.error_message = f"Install failed: {exc}"
+            result.install_duration_seconds = round(time.monotonic() - install_start, 2)
+            log.error("Install failed for %s: %s", pkg.package, exc)
+            return result
+
         result.install_duration_seconds = round(time.monotonic() - install_start, 2)
-        log.error("Install timed out for %s", pkg.package)
-        return result
-    except OSError as exc:
-        result.status = "install_error"
-        result.error_message = f"Install failed: {exc}"
-        result.install_duration_seconds = round(time.monotonic() - install_start, 2)
-        log.error("Install failed for %s: %s", pkg.package, exc)
-        return result
 
-    result.install_duration_seconds = round(time.monotonic() - install_start, 2)
-
-    if install_proc.returncode != 0:
-        result.status = "install_error"
-        result.exit_code = install_proc.returncode
-        result.error_message = install_proc.stderr[-500:] if install_proc.stderr else "non-zero"
-        log.error("Install failed for %s (exit %d)", pkg.package, install_proc.returncode)
-        return result
+        if install_proc.returncode != 0:
+            result.status = "install_error"
+            result.exit_code = install_proc.returncode
+            result.error_message = (
+                install_proc.stderr[-500:] if install_proc.stderr else "non-zero"
+            )
+            log.error("Install failed for %s (exit %d)", pkg.package, install_proc.returncode)
+            return result
 
     # --- Collect installed packages ---
     result.installed_dependencies = get_installed_packages(venv_python, env)
