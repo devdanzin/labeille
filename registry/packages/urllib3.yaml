@@ -1,0 +1,21 @@
+package: urllib3
+repo: https://github.com/urllib3/urllib3
+pypi_url: https://pypi.org/project/urllib3/
+extension_type: pure
+python_versions:
+- '3.15'
+- '3.14'
+install_method: pip
+install_command: pip install -e ".[socks,h2]" && pip install pytest trustme cryptography
+  pytest-socket pytest-timeout
+test_command: python -m pytest -x -q --disable-socket --allow-unix-socket -k "not
+  integration and not emscripten and not requires_network" test/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Uses nox+uv for dev workflow, but pip install works for test deps. Integration
+  tests excluded (need dummyserver/network). Dependency groups (PEP 735) not pip-installable,
+  so test deps listed explicitly.
+enriched: true

@@ -1,12 +1,17 @@
-last_updated: "2026-02-22T14:30:00"
+last_updated: '2026-02-22T19:38:23'
 packages:
-  - name: boto3
-    download_count: 1611866263
-    extension_type: unknown
-    enriched: false
-    skip: false
-  - name: urllib3
-    download_count: 1175106368
-    extension_type: unknown
-    enriched: false
-    skip: false
+- name: boto3
+  download_count: 1611866263
+  extension_type: pure
+  enriched: true
+  skip: false
+- name: urllib3
+  download_count: 1175106368
+  extension_type: pure
+  enriched: true
+  skip: false
+- name: botocore
+  download_count: 1123184624
+  extension_type: pure
+  enriched: true
+  skip: false
