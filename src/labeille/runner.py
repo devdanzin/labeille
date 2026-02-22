@@ -247,6 +247,14 @@ def build_env(config: RunnerConfig) -> dict[str, str]:
     env["PYTHONDONTWRITEBYTECODE"] = "1"
     env["ASAN_OPTIONS"] = "detect_leaks=0"
     env.update(config.env_overrides)
+    log.debug(
+        "Env: PYTHON_JIT=%s PYTHONFAULTHANDLER=%s ASAN_OPTIONS=%s",
+        env["PYTHON_JIT"],
+        env["PYTHONFAULTHANDLER"],
+        env["ASAN_OPTIONS"],
+    )
+    if config.env_overrides:
+        log.debug("Env overrides: %s", config.env_overrides)
     return env
 
 
@@ -263,13 +271,16 @@ def clone_repo(repo_url: str, dest: Path) -> str | None:
     Raises:
         subprocess.CalledProcessError: If the clone fails.
     """
-    subprocess.run(
+    log.debug("Running: git clone --depth=1 %s %s", repo_url, dest)
+    clone_proc = subprocess.run(
         ["git", "clone", "--depth=1", repo_url, str(dest)],
         capture_output=True,
         text=True,
         timeout=120,
         check=True,
     )
+    if clone_proc.stderr:
+        log.debug("git clone stderr: %s", clone_proc.stderr.strip())
     # Get the revision.
     proc = subprocess.run(
         ["git", "rev-parse", "HEAD"],
@@ -295,7 +306,8 @@ def pull_repo(dest: Path) -> str | None:
     Raises:
         subprocess.CalledProcessError: If the pull fails.
     """
-    subprocess.run(
+    log.debug("Running: git pull --ff-only (in %s)", dest)
+    pull_proc = subprocess.run(
         ["git", "pull", "--ff-only"],
         capture_output=True,
         text=True,
@@ -303,6 +315,8 @@ def pull_repo(dest: Path) -> str | None:
         timeout=120,
         check=True,
     )
+    if pull_proc.stdout.strip():
+        log.debug("git pull: %s", pull_proc.stdout.strip())
     proc = subprocess.run(
         ["git", "rev-parse", "HEAD"],
         capture_output=True,
@@ -321,6 +335,7 @@ def create_venv(python_path: Path, venv_dir: Path) -> None:
     Raises:
         subprocess.CalledProcessError: If venv creation fails.
     """
+    log.debug("Running: %s -m venv %s", python_path, venv_dir)
     subprocess.run(
         [str(python_path), "-m", "venv", str(venv_dir)],
         capture_output=True,
@@ -331,7 +346,8 @@ def create_venv(python_path: Path, venv_dir: Path) -> None:
     )
     # Ensure pip is available.
     venv_python = venv_dir / "bin" / "python"
-    subprocess.run(
+    log.debug("Running: %s -m ensurepip --upgrade", venv_python)
+    ensurepip_proc = subprocess.run(
         [str(venv_python), "-m", "ensurepip", "--upgrade"],
         capture_output=True,
         text=True,
@@ -339,6 +355,8 @@ def create_venv(python_path: Path, venv_dir: Path) -> None:
         check=False,  # ensurepip may fail on some builds; pip might already exist
         env={**os.environ, "ASAN_OPTIONS": "detect_leaks=0"},
     )
+    if ensurepip_proc.returncode != 0:
+        log.debug("ensurepip exited %d (non-fatal)", ensurepip_proc.returncode)
 
 
 def install_package(
@@ -367,6 +385,7 @@ def install_package(
     if cmd.startswith("pip "):
         cmd = f"{venv_pip} {cmd[4:]}"
 
+    log.debug("Install command (resolved): %s", cmd)
     return subprocess.run(
         cmd,
         shell=True,
@@ -401,6 +420,7 @@ def run_test_command(
     # Ensure pytest/etc. from the venv is used.
     run_env = {**env, "PATH": f"{venv_bin}:{env.get('PATH', '')}"}
 
+    log.debug("Test command (resolved): %s", cmd)
     return subprocess.run(
         cmd,
         shell=True,
@@ -534,6 +554,7 @@ def _run_package_inner(
         return result
 
     repo_existed = repo_dir.exists() and (repo_dir / ".git").exists()
+    clone_start = time.monotonic()
     if repo_existed:
         log.info("Reusing repo for %s at %s (pulling)", pkg.package, repo_dir)
         try:
@@ -553,6 +574,9 @@ def _run_package_inner(
             log.error("Clone failed for %s: %s", pkg.package, exc)
             return result
 
+    clone_dur = round(time.monotonic() - clone_start, 2)
+    log.debug("Git revision for %s: %s (%.2fs)", pkg.package, result.git_revision, clone_dur)
+
     # --- Create or reuse venv ---
     venv_python = venv_dir / "bin" / "python"
     venv_existed = venv_dir.exists() and venv_python.exists()
@@ -561,6 +585,7 @@ def _run_package_inner(
         log.info("Reusing venv for %s at %s", pkg.package, venv_dir)
     else:
         log.info("Creating venv for %s at %s", pkg.package, venv_dir)
+        venv_start = time.monotonic()
         try:
             create_venv(config.target_python, venv_dir)
         except (subprocess.CalledProcessError, OSError) as exc:
@@ -568,6 +593,7 @@ def _run_package_inner(
             result.error_message = f"Venv creation failed: {exc}"
             log.error("Venv creation failed for %s: %s", pkg.package, exc)
             return result
+        log.debug("Venv created for %s in %.2fs", pkg.package, time.monotonic() - venv_start)
 
     # --- Install (skip if reusing venv) ---
     if venv_existed:
@@ -594,6 +620,16 @@ def _run_package_inner(
             return result
 
         result.install_duration_seconds = round(time.monotonic() - install_start, 2)
+        log.debug(
+            "Install for %s exited %d in %.2fs",
+            pkg.package,
+            install_proc.returncode,
+            result.install_duration_seconds,
+        )
+        if install_proc.stdout:
+            log.debug("Install stdout:\n%s", install_proc.stdout[-3000:])
+        if install_proc.stderr:
+            log.debug("Install stderr:\n%s", install_proc.stderr[-3000:])
 
         if install_proc.returncode != 0:
             result.status = "install_error"
@@ -607,11 +643,23 @@ def _run_package_inner(
     # --- Collect installed packages ---
     result.installed_dependencies = get_installed_packages(venv_python, env)
     result.package_version = get_package_version(pkg.package, result.installed_dependencies)
+    if result.installed_dependencies:
+        dep_count = len(result.installed_dependencies)
+        log.debug(
+            "Installed %d packages for %s (version: %s)",
+            dep_count,
+            pkg.package,
+            result.package_version or "unknown",
+        )
+        dep_lines = [f"  {n}=={v}" for n, v in sorted(result.installed_dependencies.items())]
+        log.debug("Dependency list:\n%s", "\n".join(dep_lines))
 
     # --- Run tests ---
     test_cmd = pkg.test_command or "python -m pytest"
     result.test_command = test_cmd
     log.info("Running tests for %s: %s", pkg.package, test_cmd)
+    log.debug("Test timeout: %ds", per_pkg_timeout)
+    test_start = time.monotonic()
     try:
         test_proc = run_test_command(venv_python, test_cmd, repo_dir, env, per_pkg_timeout)
     except subprocess.TimeoutExpired as exc:
@@ -621,8 +669,15 @@ def _run_package_inner(
         log.warning("Tests timed out for %s after %ds", pkg.package, per_pkg_timeout)
         return result
 
+    test_dur = round(time.monotonic() - test_start, 2)
     result.exit_code = test_proc.returncode
     result.stderr_tail = test_proc.stderr[-2000:] if test_proc.stderr else ""
+
+    log.debug("Tests for %s exited %d in %.2fs", pkg.package, test_proc.returncode, test_dur)
+    if test_proc.stdout:
+        log.debug("Test stdout:\n%s", test_proc.stdout[-5000:])
+    if test_proc.stderr:
+        log.debug("Test stderr:\n%s", test_proc.stderr[-5000:])
 
     # --- Analyse result ---
     crash = detect_crash(test_proc.returncode, test_proc.stderr)
@@ -639,10 +694,10 @@ def _run_package_inner(
         )
     elif test_proc.returncode == 0:
         result.status = "pass"
-        log.info("PASS: %s", pkg.package)
+        log.info("PASS: %s (%.2fs)", pkg.package, test_dur)
     else:
         result.status = "fail"
-        log.info("FAIL: %s (exit %d)", pkg.package, test_proc.returncode)
+        log.info("FAIL: %s (exit %d, %.2fs)", pkg.package, test_proc.returncode, test_dur)
 
     return result
 
@@ -708,14 +763,26 @@ def run_all(config: RunnerConfig) -> tuple[list[PackageResult], RunSummary]:
     packages = filter_packages(index, config.registry_dir, config)
     summary.total = len(packages)
 
+    log.debug(
+        "Selected %d packages from registry (%d in index)", len(packages), len(index.packages)
+    )
+    if packages:
+        log.debug("Packages: %s", ", ".join(p.package for p in packages))
+
     # Set up run directory.
     run_dir = create_run_dir(config.results_dir, config.run_id)
+    log.debug("Run directory: %s", run_dir)
+    if config.repos_dir:
+        log.debug("Repos directory: %s", config.repos_dir)
+    if config.venvs_dir:
+        log.debug("Venvs directory: %s", config.venvs_dir)
 
     # Validate target Python.
     python_version = validate_target_python(config.target_python)
     jit_enabled = check_jit_enabled(config.target_python)
     log.info("Target Python: %s", python_version)
     log.info("JIT enabled: %s", jit_enabled)
+    log.debug("Target binary: %s", config.target_python)
 
     started_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     write_run_meta(run_dir, config, python_version, jit_enabled, started_at=started_at)
@@ -748,10 +815,13 @@ def run_all(config: RunnerConfig) -> tuple[list[PackageResult], RunSummary]:
             log.info("Stopping: reached %d crash(es)", crashes_found)
             break
 
-        log.info("--- Testing %s ---", pkg.package)
+        log.info("--- Testing %s (%d/%d) ---", pkg.package, summary.tested + 1, summary.total)
         result = run_package(pkg, config, run_dir, env)
         results.append(result)
         append_result(run_dir, result)
+        log.debug(
+            "Result for %s: %s (%.2fs total)", pkg.package, result.status, result.duration_seconds
+        )
 
         # Update summary.
         summary.tested += 1

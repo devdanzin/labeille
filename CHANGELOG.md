@@ -16,3 +16,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   clone/venv directories that survive across runs.
 - Reuse existing repo clones (pull instead of re-clone) and venvs (skip create+install).
 - Log repo and venv paths in default output for each package.
+- Verbose mode (`-v`) now shows test subprocess stdout/stderr, resolved commands,
+  install output, installed dependency list, git operations, and per-phase timing.
