@@ -1,0 +1,60 @@
+[build-system]
+requires = ["setuptools>=68.0", "setuptools-scm>=8.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "labeille"
+version = "0.1.0"
+description = "Hunt for CPython JIT bugs by running real-world test suites"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.13"
+authors = [
+    { name = "Daniel Diniz", email = "74280297+devdanzin@users.noreply.github.com" },
+]
+keywords = ["cpython", "jit", "testing", "fuzzing", "compiler-bugs"]
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
+    "Topic :: Software Development :: Testing",
+]
+dependencies = [
+    "click",
+    "pyyaml",
+    "requests",
+]
+
+[project.optional-dependencies]
+dev = [
+    "mypy",
+    "ruff",
+    "types-PyYAML",
+    "types-requests",
+]
+
+[project.scripts]
+labeille = "labeille.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/devdanzin/labeille"
+Repository = "https://github.com/devdanzin/labeille"
+Issues = "https://github.com/devdanzin/labeille/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 99
+target-version = "py313"
+
+[tool.ruff.lint.isort]
+known-first-party = ["labeille"]
+
+[tool.mypy]
+strict = true
+packages = ["labeille"]
+mypy_path = ["src"]
