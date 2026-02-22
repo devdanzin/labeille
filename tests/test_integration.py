@@ -255,6 +255,37 @@ class TestRunIntegration(unittest.TestCase):
         self.assertEqual(result.exit_code, 0, msg=result.output)
         self.assertIn("Packages tested: 0", result.output)
 
+    def test_run_work_dir_option(self) -> None:
+        """--work-dir sets both --repos-dir and --venvs-dir."""
+        save_index(Index(), self.registry_dir)
+
+        import sys
+
+        target = sys.executable
+        work_dir = self.base / "workdir"
+
+        runner = CliRunner()
+        result = runner.invoke(
+            main,
+            [
+                "run",
+                "--dry-run",
+                "--target-python",
+                target,
+                "--registry-dir",
+                str(self.registry_dir),
+                "--results-dir",
+                str(self.results_dir),
+                "--run-id",
+                "test-workdir",
+                "--work-dir",
+                str(work_dir),
+                "--log-file",
+                str(self.base / "run.log"),
+            ],
+        )
+        self.assertEqual(result.exit_code, 0, msg=result.output)
+
 
 if __name__ == "__main__":
     unittest.main()

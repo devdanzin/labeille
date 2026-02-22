@@ -18,6 +18,7 @@ from labeille.registry import (
 from labeille.runner import (
     PackageResult,
     RunnerConfig,
+    _resolve_dirs,
     append_result,
     build_env,
     create_run_dir,
@@ -624,6 +625,182 @@ class TestCommandAssembly(unittest.TestCase):
         env = build_env(config)
         self.assertEqual(env["PYTHON_JIT"], "0")
         self.assertEqual(env["EXTRA"], "val")
+
+
+class TestResolveDirs(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmpdir = tempfile.TemporaryDirectory()
+        self.base = Path(self.tmpdir.name)
+
+    def tearDown(self) -> None:
+        self.tmpdir.cleanup()
+
+    def test_temp_mode_by_default(self) -> None:
+        config = _make_config(self.base)
+        pkg = _make_package()
+        work_dir, repo_dir, venv_dir, is_temp = _resolve_dirs(pkg, config)
+        self.assertTrue(is_temp)
+        self.assertIsNotNone(work_dir)
+        self.assertTrue(str(repo_dir).endswith("/repo"))
+        self.assertTrue(str(venv_dir).endswith("/venv"))
+
+    def test_persistent_repos_dir(self) -> None:
+        config = _make_config(self.base)
+        config.repos_dir = self.base / "my_repos"
+        pkg = _make_package()
+        work_dir, repo_dir, venv_dir, is_temp = _resolve_dirs(pkg, config)
+        self.assertFalse(is_temp)
+        self.assertIsNone(work_dir)
+        self.assertEqual(repo_dir, self.base / "my_repos" / "testpkg")
+
+    def test_persistent_venvs_dir(self) -> None:
+        config = _make_config(self.base)
+        config.venvs_dir = self.base / "my_venvs"
+        pkg = _make_package()
+        work_dir, repo_dir, venv_dir, is_temp = _resolve_dirs(pkg, config)
+        self.assertFalse(is_temp)
+        self.assertEqual(venv_dir, self.base / "my_venvs" / "testpkg")
+
+    def test_both_persistent(self) -> None:
+        config = _make_config(self.base)
+        config.repos_dir = self.base / "repos"
+        config.venvs_dir = self.base / "venvs"
+        pkg = _make_package()
+        work_dir, repo_dir, venv_dir, is_temp = _resolve_dirs(pkg, config)
+        self.assertFalse(is_temp)
+        self.assertIsNone(work_dir)
+        self.assertEqual(repo_dir, self.base / "repos" / "testpkg")
+        self.assertEqual(venv_dir, self.base / "venvs" / "testpkg")
+
+
+class TestRepoReuse(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmpdir = tempfile.TemporaryDirectory()
+        self.base = Path(self.tmpdir.name)
+        self.config = _make_config(self.base)
+        self.config.repos_dir = self.base / "repos"
+        self.config.venvs_dir = self.base / "venvs"
+        self.run_dir = create_run_dir(self.config.results_dir, self.config.run_id)
+        self.env = build_env(self.config)
+
+    def tearDown(self) -> None:
+        self.tmpdir.cleanup()
+
+    @patch("labeille.runner.run_test_command")
+    @patch("labeille.runner.get_installed_packages")
+    @patch("labeille.runner.install_package")
+    @patch("labeille.runner.create_venv")
+    @patch("labeille.runner.pull_repo")
+    @patch("labeille.runner.clone_repo")
+    def test_reuses_existing_repo(
+        self,
+        mock_clone: MagicMock,
+        mock_pull: MagicMock,
+        mock_venv: MagicMock,
+        mock_install: MagicMock,
+        mock_get_pkgs: MagicMock,
+        mock_test: MagicMock,
+    ) -> None:
+        """When repo dir exists with .git, pull is called instead of clone."""
+        pkg = _make_package()
+        # Pre-create the repo dir with a .git marker.
+        repo_dir = self.base / "repos" / "testpkg"
+        repo_dir.mkdir(parents=True)
+        (repo_dir / ".git").mkdir()
+
+        mock_pull.return_value = "def5678"
+        mock_install.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_get_pkgs.return_value = {}
+        mock_test.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="ok\n", stderr=""
+        )
+
+        result = run_package(pkg, self.config, self.run_dir, self.env)
+        mock_clone.assert_not_called()
+        mock_pull.assert_called_once()
+        self.assertEqual(result.git_revision, "def5678")
+        self.assertEqual(result.status, "pass")
+
+    @patch("labeille.runner.run_test_command")
+    @patch("labeille.runner.get_installed_packages")
+    @patch("labeille.runner.install_package")
+    @patch("labeille.runner.create_venv")
+    @patch("labeille.runner.clone_repo")
+    def test_reuses_existing_venv(
+        self,
+        mock_clone: MagicMock,
+        mock_venv: MagicMock,
+        mock_install: MagicMock,
+        mock_get_pkgs: MagicMock,
+        mock_test: MagicMock,
+    ) -> None:
+        """When venv dir exists with bin/python, venv creation and install are skipped."""
+        pkg = _make_package()
+        # Pre-create the venv dir with bin/python.
+        venv_dir = self.base / "venvs" / "testpkg"
+        (venv_dir / "bin").mkdir(parents=True)
+        (venv_dir / "bin" / "python").touch()
+
+        mock_clone.return_value = "abc1234"
+        mock_get_pkgs.return_value = {}
+        mock_test.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="ok\n", stderr=""
+        )
+
+        result = run_package(pkg, self.config, self.run_dir, self.env)
+        mock_venv.assert_not_called()
+        mock_install.assert_not_called()
+        self.assertEqual(result.status, "pass")
+
+    @patch("labeille.runner.run_test_command")
+    @patch("labeille.runner.get_installed_packages")
+    @patch("labeille.runner.install_package")
+    @patch("labeille.runner.create_venv")
+    @patch("labeille.runner.pull_repo")
+    @patch("labeille.runner.clone_repo")
+    def test_pull_failure_reclones(
+        self,
+        mock_clone: MagicMock,
+        mock_pull: MagicMock,
+        mock_venv: MagicMock,
+        mock_install: MagicMock,
+        mock_get_pkgs: MagicMock,
+        mock_test: MagicMock,
+    ) -> None:
+        """When pull fails, the repo is re-cloned."""
+        pkg = _make_package()
+        repo_dir = self.base / "repos" / "testpkg"
+        repo_dir.mkdir(parents=True)
+        (repo_dir / ".git").mkdir()
+
+        mock_pull.side_effect = subprocess.CalledProcessError(1, "git pull")
+        mock_clone.return_value = "new1234"
+        mock_install.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_get_pkgs.return_value = {}
+        mock_test.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="ok\n", stderr=""
+        )
+
+        result = run_package(pkg, self.config, self.run_dir, self.env)
+        mock_pull.assert_called_once()
+        mock_clone.assert_called_once()
+        self.assertEqual(result.git_revision, "new1234")
+        self.assertEqual(result.status, "pass")
+
+    def test_persistent_dirs_not_deleted(self) -> None:
+        """Persistent repos/venvs dirs are NOT cleaned up after run."""
+        repos_dir = self.base / "repos"
+        venvs_dir = self.base / "venvs"
+        repos_dir.mkdir()
+        venvs_dir.mkdir()
+        # Verify they still exist after config says keep_work_dirs=False.
+        self.config.keep_work_dirs = False
+        self.assertTrue(repos_dir.exists())
+        self.assertTrue(venvs_dir.exists())
 
 
 if __name__ == "__main__":

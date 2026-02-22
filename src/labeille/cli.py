@@ -138,6 +138,24 @@ def resolve(
     show_default=True,
 )
 @click.option("--keep-work-dirs", is_flag=True, help="Don't clean up working directories.")
+@click.option(
+    "--repos-dir",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Persistent directory for repo clones. Reuses existing clones.",
+)
+@click.option(
+    "--venvs-dir",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Persistent directory for venvs. Reuses existing venvs.",
+)
+@click.option(
+    "--work-dir",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Base directory for repos and venvs (sets --repos-dir and --venvs-dir).",
+)
 @click.pass_context
 def run_cmd(
     ctx: click.Context,
@@ -157,6 +175,9 @@ def run_cmd(
     quiet: bool,
     log_file: Path,
     keep_work_dirs: bool,
+    repos_dir: Path | None,
+    venvs_dir: Path | None,
+    work_dir: Path | None,
 ) -> None:
     """Run test suites against a JIT-enabled Python build and detect crashes."""
     from datetime import datetime, timezone
@@ -189,6 +210,13 @@ def run_cmd(
     if run_id is None:
         run_id = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%S")
 
+    # --work-dir sets both --repos-dir and --venvs-dir as defaults.
+    if work_dir is not None:
+        if repos_dir is None:
+            repos_dir = work_dir / "repos"
+        if venvs_dir is None:
+            venvs_dir = work_dir / "venvs"
+
     config = RunnerConfig(
         target_python=target_python,
         registry_dir=registry_dir,
@@ -205,6 +233,8 @@ def run_cmd(
         verbose=verbose,
         quiet=quiet,
         keep_work_dirs=keep_work_dirs,
+        repos_dir=repos_dir,
+        venvs_dir=venvs_dir,
         cli_args=list(ctx.params.keys()),
     )
 
