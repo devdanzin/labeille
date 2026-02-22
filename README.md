@@ -21,8 +21,11 @@ extensions.
 
 ## Status
 
-**Early development — not yet functional.** The project structure, CLI skeleton, and
-registry schema are in place, but the core logic is not yet implemented.
+**Early development (alpha).** Both the `resolve` and `run` subcommands are
+implemented. The tool can resolve PyPI packages to source repositories, classify
+them by extension type, and run their test suites against a JIT-enabled Python
+build. Crash detection, signature extraction, and JSONL result recording are
+functional. The registry format and CLI interface may change.
 
 ## Quick Start
 
@@ -30,12 +33,107 @@ registry schema are in place, but the core logic is not yet implemented.
 # Install in development mode
 pip install -e '.[dev]'
 
-# Resolve top PyPI packages to source repositories (not yet implemented)
-labeille resolve --top 100
+# Step 1: Resolve packages — build the test registry from a PyPI top-packages dump
+labeille resolve --from-json top-pypi-packages.json --top 50 --registry-dir registry
 
-# Run test suites against a JIT-enabled Python build (not yet implemented)
-labeille run --python /path/to/jit-python --packages registry/packages/
+# Or resolve specific packages by name
+labeille resolve requests click flask --registry-dir registry
+
+# Step 2: Run test suites against a JIT-enabled Python build
+labeille run --target-python /path/to/jit-python --registry-dir registry
+
+# Dry-run to see what would be tested without actually running anything
+labeille run --target-python /path/to/jit-python --dry-run
+
+# Run only pure-Python packages (skip C extensions)
+labeille run --target-python /path/to/jit-python --skip-extensions
+
+# Stop after finding the first crash
+labeille run --target-python /path/to/jit-python --stop-after-crash 1
 ```
+
+## How It Works
+
+labeille operates in two phases:
+
+### Phase 1: Resolve (`labeille resolve`)
+
+Builds a registry of packages to test:
+
+1. Reads package names from CLI arguments, a text file, or a PyPI top-packages
+   JSON dump.
+2. Queries the PyPI JSON API for each package to find its source repository URL.
+3. Classifies each package as pure Python, C extension, or unknown by inspecting
+   wheel tags.
+4. Creates a YAML configuration file per package in the registry.
+5. Updates the registry index sorted by download count.
+
+Resolve is **non-destructive**: it never overwrites package files that have been
+manually enriched (`enriched: true`).
+
+### Phase 2: Run (`labeille run`)
+
+Runs test suites and detects crashes:
+
+1. Reads the registry and filters packages based on CLI options.
+2. For each package: clones the repo, creates a venv with the target Python,
+   installs the package, and runs its test command.
+3. Sets `PYTHON_JIT=1` and `PYTHONFAULTHANDLER=1` to enable the JIT and get
+   crash tracebacks.
+4. Classifies each result as pass, fail, crash, timeout, or error.
+5. For crashes: extracts a signature (signal + stderr context) and saves the
+   full stderr output.
+6. Writes results as JSONL for analysis, with full metadata for reproducibility.
+
+Runs are **resumable**: use `--skip-completed` with the same `--run-id` to
+continue after an interruption.
+
+## Registry Format
+
+### Package file (`registry/packages/{name}.yaml`)
+
+```yaml
+package: requests
+repo: "https://github.com/psf/requests"
+pypi_url: "https://pypi.org/project/requests/"
+extension_type: pure       # pure | extensions | unknown
+python_versions: []
+install_method: pip
+install_command: "pip install -e '.[dev]'"
+test_command: "python -m pytest tests/"
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: ""
+enriched: false            # set to true after manual review
+```
+
+### Index file (`registry/index.yaml`)
+
+```yaml
+last_updated: "2026-02-22T14:30:00"
+packages:
+  - name: boto3
+    download_count: 1611866263
+    extension_type: unknown
+    enriched: false
+    skip: false
+```
+
+## Results
+
+Each run creates a directory under `results/{run_id}/` containing:
+
+- **`run_meta.json`** — Run metadata: Python version, JIT status, hostname, timing.
+- **`results.jsonl`** — One JSON line per package with status, exit code, signal,
+  crash signature, timing, and installed dependency versions.
+- **`crashes/`** — Full stderr captures for crashed packages.
+- **`run.log`** — Detailed debug log.
+
+Result statuses: `pass`, `fail`, `crash`, `timeout`, `install_error`,
+`clone_error`, `error`.
 
 ## Project Structure
 
@@ -47,9 +145,9 @@ labeille/
 │   ├── runner.py        # Run test suites and capture results
 │   ├── registry.py      # Registry reading/writing/schema
 │   ├── classifier.py    # Pure Python / C extension detection
-│   ├── crash.py         # Crash signature extraction
+│   ├── crash.py         # Crash detection and signature extraction
 │   └── logging.py       # Structured logging setup
-├── tests/               # Unit tests
+├── tests/               # Unit and integration tests
 ├── registry/            # Package test configurations
 │   ├── index.yaml       # Index of tracked packages
 │   └── packages/        # Per-package YAML configs

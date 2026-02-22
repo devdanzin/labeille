@@ -3,9 +3,21 @@
 Provides the main CLI entry point with ``resolve`` and ``run`` subcommands.
 """
 
+from __future__ import annotations
+
+from pathlib import Path
+
 import click
 
 from labeille import __version__
+from labeille.logging import setup_logging
+from labeille.resolve import (
+    merge_inputs,
+    read_packages_from_args,
+    read_packages_from_file,
+    read_packages_from_json,
+    resolve_all,
+)
 
 
 @click.group()
@@ -15,12 +27,207 @@ def main() -> None:
 
 
 @main.command()
-def resolve() -> None:
+@click.argument("packages", nargs=-1)
+@click.option("--from-file", "from_file", type=click.Path(exists=True, path_type=Path))
+@click.option("--from-json", "from_json", type=click.Path(exists=True, path_type=Path))
+@click.option("--top", "top_n", type=int, default=None)
+@click.option(
+    "--registry-dir",
+    type=click.Path(path_type=Path),
+    default=Path("registry"),
+    show_default=True,
+)
+@click.option("--dry-run", is_flag=True, help="Show what would be done without making changes.")
+@click.option("--timeout", type=float, default=10.0, show_default=True)
+@click.option("-v", "--verbose", is_flag=True, help="Show detailed output.")
+@click.option("-q", "--quiet", is_flag=True, help="Only show errors.")
+@click.option(
+    "--log-file",
+    type=click.Path(path_type=Path),
+    default=Path("labeille-resolve.log"),
+    show_default=True,
+)
+def resolve(
+    packages: tuple[str, ...],
+    from_file: Path | None,
+    from_json: Path | None,
+    top_n: int | None,
+    registry_dir: Path,
+    dry_run: bool,
+    timeout: float,
+    verbose: bool,
+    quiet: bool,
+    log_file: Path,
+) -> None:
     """Resolve PyPI packages to source repositories and build a test registry."""
-    click.echo("resolve: not yet implemented")
+    setup_logging(verbose=verbose, quiet=quiet, log_file=log_file)
+
+    if top_n is not None and from_json is None:
+        raise click.UsageError("--top requires --from-json")
+
+    # Collect inputs from all sources.
+    sources = []
+    if packages:
+        sources.append(read_packages_from_args(packages))
+    if from_file is not None:
+        sources.append(read_packages_from_file(from_file))
+    if from_json is not None:
+        sources.append(read_packages_from_json(from_json, top_n=top_n))
+
+    if not sources:
+        raise click.UsageError(
+            "At least one of PACKAGES, --from-file, or --from-json must be provided."
+        )
+
+    merged = merge_inputs(*sources)
+    if not merged:
+        click.echo("No packages to resolve.")
+        return
+
+    click.echo(f"Resolving {len(merged)} package(s)...")
+    if dry_run:
+        click.echo("(dry-run mode — no files will be written)")
+
+    results, summary = resolve_all(merged, registry_dir, timeout=timeout, dry_run=dry_run)
+
+    # Print summary.
+    click.echo("")
+    click.echo(f"Resolved:          {summary.resolved}")
+    click.echo(f"  New files:       {summary.created}")
+    click.echo(f"  Updated:         {summary.updated}")
+    click.echo(f"Skipped (enriched):{summary.skipped_enriched}")
+    click.echo(f"Failed:            {summary.failed}")
+    if dry_run:
+        click.echo(f"Skipped (dry-run): {summary.skipped}")
 
 
-@main.command()
-def run() -> None:
+@main.command("run")
+@click.option(
+    "--target-python",
+    type=click.Path(exists=True, path_type=Path),
+    required=True,
+    help="Path to the Python interpreter to test with.",
+)
+@click.option(
+    "--registry-dir",
+    type=click.Path(path_type=Path),
+    default=Path("registry"),
+    show_default=True,
+)
+@click.option(
+    "--results-dir",
+    type=click.Path(path_type=Path),
+    default=Path("results"),
+    show_default=True,
+)
+@click.option("--top", "top_n", type=int, default=None)
+@click.option("--packages", "packages_csv", type=str, default=None)
+@click.option("--skip-extensions", is_flag=True)
+@click.option("--skip-completed", is_flag=True, help="Resume: skip already-tested packages.")
+@click.option("--stop-after-crash", type=int, default=None)
+@click.option("--timeout", type=int, default=600, show_default=True)
+@click.option("--env", "env_pairs", type=str, multiple=True, help="KEY=VALUE env var.")
+@click.option("--run-id", type=str, default=None)
+@click.option("--dry-run", is_flag=True)
+@click.option("-v", "--verbose", is_flag=True)
+@click.option("-q", "--quiet", is_flag=True, help="Only show crashes.")
+@click.option(
+    "--log-file",
+    type=click.Path(path_type=Path),
+    default=Path("labeille-run.log"),
+    show_default=True,
+)
+@click.option("--keep-work-dirs", is_flag=True, help="Don't clean up working directories.")
+@click.pass_context
+def run_cmd(
+    ctx: click.Context,
+    target_python: Path,
+    registry_dir: Path,
+    results_dir: Path,
+    top_n: int | None,
+    packages_csv: str | None,
+    skip_extensions: bool,
+    skip_completed: bool,
+    stop_after_crash: int | None,
+    timeout: int,
+    env_pairs: tuple[str, ...],
+    run_id: str | None,
+    dry_run: bool,
+    verbose: bool,
+    quiet: bool,
+    log_file: Path,
+    keep_work_dirs: bool,
+) -> None:
     """Run test suites against a JIT-enabled Python build and detect crashes."""
-    click.echo("run: not yet implemented")
+    from datetime import datetime, timezone
+
+    from labeille.runner import RunnerConfig, run_all, validate_target_python
+
+    setup_logging(verbose=verbose, quiet=quiet, log_file=log_file)
+
+    # Validate target python up front.
+    try:
+        python_version = validate_target_python(target_python)
+    except RuntimeError as exc:
+        raise click.ClickException(str(exc)) from exc
+    click.echo(f"Target Python: {python_version}")
+
+    # Parse env pairs.
+    env_overrides: dict[str, str] = {}
+    for pair in env_pairs:
+        if "=" not in pair:
+            raise click.UsageError(f"Invalid --env format (expected KEY=VALUE): {pair}")
+        key, _, value = pair.partition("=")
+        env_overrides[key] = value
+
+    # Parse packages filter.
+    packages_filter: list[str] | None = None
+    if packages_csv:
+        packages_filter = [p.strip() for p in packages_csv.split(",") if p.strip()]
+
+    # Generate run ID.
+    if run_id is None:
+        run_id = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%S")
+
+    config = RunnerConfig(
+        target_python=target_python,
+        registry_dir=registry_dir,
+        results_dir=results_dir,
+        run_id=run_id,
+        timeout=timeout,
+        top_n=top_n,
+        packages_filter=packages_filter,
+        skip_extensions=skip_extensions,
+        skip_completed=skip_completed,
+        stop_after_crash=stop_after_crash,
+        env_overrides=env_overrides,
+        dry_run=dry_run,
+        verbose=verbose,
+        quiet=quiet,
+        keep_work_dirs=keep_work_dirs,
+        cli_args=list(ctx.params.keys()),
+    )
+
+    click.echo(f"Run ID: {run_id}")
+    if dry_run:
+        click.echo("(dry-run mode — no tests will be executed)")
+
+    results, summary = run_all(config)
+
+    # Print summary.
+    click.echo("")
+    click.echo(f"Packages tested: {summary.tested}")
+    click.echo(f"  Passed:        {summary.passed}")
+    click.echo(f"  Failed:        {summary.failed}")
+    click.echo(f"  Crashed:       {summary.crashed}")
+    click.echo(f"  Timed out:     {summary.timed_out}")
+    click.echo(f"  Install errors:{summary.install_errors}")
+    click.echo(f"  Clone errors:  {summary.clone_errors}")
+    click.echo(f"  Other errors:  {summary.errors}")
+    click.echo(f"Skipped:         {summary.skipped}")
+    if summary.crashed > 0:
+        click.echo("")
+        click.echo("Crashes found:")
+        for r in results:
+            if r.status == "crash":
+                click.echo(f"  {r.package}: {r.crash_signature}")
