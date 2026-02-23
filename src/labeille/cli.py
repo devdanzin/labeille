@@ -26,10 +26,14 @@ def main() -> None:
     """labeille — Hunt for CPython JIT bugs by running real-world test suites."""
 
 
-# Register the registry management subgroup.
+# Register subgroups.
 from labeille.registry_cli import registry as registry_group  # noqa: E402
 
 main.add_command(registry_group)
+
+from labeille.analyze_cli import analyze as analyze_group  # noqa: E402
+
+main.add_command(analyze_group)
 
 
 @main.command()

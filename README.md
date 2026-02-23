@@ -110,6 +110,33 @@ For the complete guide — including field reference, step-by-step walkthrough,
 common problems, and ready-to-use Claude Code prompts — see
 **[doc/enrichment.md](doc/enrichment.md)**.
 
+## Analyzing Results
+
+Analyze registry composition and run results:
+
+```bash
+# Registry overview (counts by type, framework, skip reasons)
+labeille analyze registry
+
+# Registry as a table, filtered
+labeille analyze registry --format table --where extension_type:pure
+
+# Single run summary (aggregate stats, crash detail, reproduce commands)
+labeille analyze run
+
+# Specific run, quiet mode (crashes only)
+labeille analyze run 2026-02-23T08-01-05 -q
+
+# Compare two runs (status changes, timing deltas)
+labeille analyze compare 2026-02-20T10-00-00 2026-02-22T10-00-00
+
+# Run history with trends and flaky package detection
+labeille analyze history --last 5
+
+# Deep dive on a specific package
+labeille analyze package requests
+```
+
 ## Registry Management
 
 Batch operations for managing the package registry:
@@ -190,12 +217,16 @@ Result statuses: `pass`, `fail`, `crash`, `timeout`, `install_error`,
 ```
 labeille/
 ├── src/labeille/        # Main package
-│   ├── cli.py           # Click CLI with resolve, run, and registry subcommands
+│   ├── cli.py           # Click CLI with resolve, run, registry, and analyze subcommands
 │   ├── resolve.py       # Resolve PyPI packages to source repositories
 │   ├── runner.py        # Run test suites and capture results
 │   ├── registry.py      # Registry reading/writing/schema
 │   ├── registry_cli.py  # Batch registry management CLI
 │   ├── registry_ops.py  # Batch operations (add/remove/rename/set/validate)
+│   ├── analyze.py       # Data loading and analysis functions
+│   ├── analyze_cli.py   # Analysis CLI (registry, run, compare, history, package)
+│   ├── formatting.py    # Shared text formatting (tables, histograms, sparklines)
+│   ├── summary.py       # Run summary formatting
 │   ├── yaml_lines.py    # Line-level YAML manipulation
 │   ├── classifier.py    # Pure Python / C extension detection
 │   ├── crash.py         # Crash detection and signature extraction
