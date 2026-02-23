@@ -26,6 +26,12 @@ def main() -> None:
     """labeille — Hunt for CPython JIT bugs by running real-world test suites."""
 
 
+# Register the registry management subgroup.
+from labeille.registry_cli import registry as registry_group  # noqa: E402
+
+main.add_command(registry_group)
+
+
 @main.command()
 @click.argument("packages", nargs=-1)
 @click.option("--from-file", "from_file", type=click.Path(exists=True, path_type=Path))

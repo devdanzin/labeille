@@ -7,6 +7,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+- `labeille registry` CLI subgroup for batch registry management (add-field, remove-field, rename-field, set-field, validate, add-index-field, remove-index-field).
+- Line-level YAML manipulation (`yaml_lines.py`) preserving exact formatting.
+- Batch operations module (`registry_ops.py`) with filtering, atomic writes, and dry-run previews.
+- Registry validation against the PackageEntry schema with `labeille registry validate`.
 - `skip_versions` registry field for per-Python-version skip reasons (e.g. `3.15: "PyO3 not supported"`).
 - `--force-run` flag to override `skip` and `skip_versions` for debugging.
 - `--workers N` option for parallel package testing in `labeille run`.
