@@ -32,18 +32,21 @@ ASAN_OPTIONS=detect_leaks=0 PYTHON_JIT=0 .venv/bin/python -m unittest discover t
 - Click CLI framework — Click 8.3+ (no `mix_stderr` in CliRunner)
 
 ## Architecture
-- `cli.py` — Click CLI entry point with `resolve` and `run` subcommands
+- `cli.py` — Click CLI entry point with `resolve`, `run`, and `registry` subcommands
 - `resolve.py` — PyPI metadata fetching, repo URL extraction, registry building
 - `runner.py` — Clone repos, create venvs, run test suites, detect crashes
 - `crash.py` — Crash detection from exit codes and stderr patterns
 - `classifier.py` — Pure Python vs C extension classification from wheel tags
 - `registry.py` — YAML registry I/O (index + per-package configs)
+- `registry_cli.py` — Batch registry management CLI (add/remove/rename/set fields, validate)
+- `registry_ops.py` — Batch operations with filtering, atomic writes, dry-run previews
+- `yaml_lines.py` — Line-level YAML manipulation preserving formatting
 - `logging.py` — Structured logging setup
 
 ## Testing notes
 - Integration tests mock `fetch_pypi_metadata` to avoid network calls
 - Runner tests mock `subprocess.run` and `clone_repo` extensively
-- 138 tests total across 6 test files
+- 323 tests total across 9 test files
 
 ## Enriching packages
 
@@ -84,6 +87,13 @@ Update index after editing package files: `load_index()` → `update_index_from_
 - For parallel runs with ASAN, --workers 2-3 is the practical limit
 - For large batch runs (50+ packages), consider a non-ASAN JIT build: most JIT crashes (segfaults, aborts, assertion failures) reproduce identically without ASAN, and you can run --workers 4-8 comfortably
 - Specific crashes can be reproduced under ASAN afterward for detailed memory error analysis
+
+## Registry batch operations
+
+- Always dry-run first (omit --apply), review the preview, then re-run with --apply.
+- Use --lenient when resuming an interrupted operation or when you expect some files to already have the field.
+- Use --after to control field placement in the YAML for readability.
+- Run `labeille registry validate` after batch edits to catch issues.
 
 ## Workflow
 - Use `/task-workflow <description>` for the full issue → branch → code → test → commit → PR → merge cycle

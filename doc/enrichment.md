@@ -618,3 +618,18 @@ grep "enriched: false" registry/index.yaml
   update_index_from_packages(index, registry)
   save_index(index, registry)
   ```
+
+## Schema Evolution
+
+When adding new fields to the registry schema:
+
+1. Add the field to YAML files:
+   `labeille registry add-field FIELD --type TYPE --default VALUE --after EXISTING_FIELD --apply`
+
+2. Add the field to `PackageEntry` in `registry.py`.
+
+3. If the field should be in the index:
+   `labeille registry add-index-field FIELD --apply`
+
+4. Run validation:
+   `labeille registry validate`

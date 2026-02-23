@@ -110,6 +110,30 @@ For the complete guide — including field reference, step-by-step walkthrough,
 common problems, and ready-to-use Claude Code prompts — see
 **[doc/enrichment.md](doc/enrichment.md)**.
 
+## Registry Management
+
+Batch operations for managing the package registry:
+
+```bash
+# Preview adding a new field (dry run)
+labeille registry add-field skip_versions --type dict --after skip_reason
+
+# Apply the change
+labeille registry add-field skip_versions --type dict --after skip_reason --apply
+
+# Resume after an interrupted operation
+labeille registry add-field skip_versions --type dict --after skip_reason --apply --lenient
+
+# Set a field on filtered packages
+labeille registry set-field timeout 600 --where extension_type=extensions --apply
+
+# Validate registry against schema
+labeille registry validate
+
+# Remove a deprecated field
+labeille registry remove-field old_field --apply --lenient
+```
+
 ## Registry Format
 
 ### Package file (`registry/packages/{name}.yaml`)
@@ -166,10 +190,13 @@ Result statuses: `pass`, `fail`, `crash`, `timeout`, `install_error`,
 ```
 labeille/
 ├── src/labeille/        # Main package
-│   ├── cli.py           # Click CLI with resolve and run subcommands
+│   ├── cli.py           # Click CLI with resolve, run, and registry subcommands
 │   ├── resolve.py       # Resolve PyPI packages to source repositories
 │   ├── runner.py        # Run test suites and capture results
 │   ├── registry.py      # Registry reading/writing/schema
+│   ├── registry_cli.py  # Batch registry management CLI
+│   ├── registry_ops.py  # Batch operations (add/remove/rename/set/validate)
+│   ├── yaml_lines.py    # Line-level YAML manipulation
 │   ├── classifier.py    # Pure Python / C extension detection
 │   ├── crash.py         # Crash detection and signature extraction
 │   └── logging.py       # Structured logging setup
