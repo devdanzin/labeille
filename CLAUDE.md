@@ -38,7 +38,8 @@ ASAN_OPTIONS=detect_leaks=0 PYTHON_JIT=0 .venv/bin/python -m unittest discover t
 - `crash.py` — Crash detection from exit codes and stderr patterns
 - `classifier.py` — Pure Python vs C extension classification from wheel tags
 - `registry.py` — YAML registry I/O (index + per-package configs)
-- `registry_cli.py` — Batch registry management CLI (add/remove/rename/set fields, validate)
+- `registry_cli.py` — Batch registry management CLI (add/remove/rename/set fields, validate, migrate)
+- `migrations.py` — Registry migration framework (named transformations with logging and dry-run)
 - `registry_ops.py` — Batch operations with filtering, atomic writes, dry-run previews
 - `analyze.py` — Data loading and analysis (run data, registry stats, comparison, flaky detection)
 - `analyze_cli.py` — Analysis CLI (registry, run, compare, history, package subcommands)
@@ -52,7 +53,7 @@ ASAN_OPTIONS=detect_leaks=0 PYTHON_JIT=0 .venv/bin/python -m unittest discover t
 ## Testing notes
 - Integration tests mock `fetch_pypi_metadata` to avoid network calls
 - Runner tests mock `subprocess.run` and `clone_repo` extensively
-- 497 tests total across 14 test files
+- 546 tests total across 15 test files
 
 ## Enriching packages
 
@@ -100,6 +101,14 @@ Update index after editing package files: `load_index()` → `update_index_from_
 - Use --lenient when resuming an interrupted operation or when you expect some files to already have the field.
 - Use --after to control field placement in the YAML for readability.
 - Run `labeille registry validate` after batch edits to catch issues.
+
+## Registry migrations
+
+- `labeille registry migrate --list` shows available migrations and their applied status.
+- `labeille registry migrate <name>` previews changes (dry-run by default).
+- `labeille registry migrate <name> --apply` applies changes and logs to `migrations.log`.
+- Each migration runs once — re-application is blocked with the original date shown.
+- Add new migrations by decorating a function with `@register_migration(name, description)` in `migrations.py`.
 
 ## Workflow
 - Use `/task-workflow <description>` for the full issue → branch → code → test → commit → PR → merge cycle
