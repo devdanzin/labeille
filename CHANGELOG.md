@@ -16,6 +16,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - CLI skeleton with `resolve` and `run` subcommands.
 - Registry schema and data structures.
 
+### Documentation
+- Comprehensive enrichment guide with manual workflow, troubleshooting, and Claude Code prompts (doc/enrichment.md).
+- Updated README with enrichment overview and link to guide.
+
 ### Enhanced
 - Rich end-of-run summary with per-package table, timing stats, and crash details.
 - Quiet mode shows only crash information; default mode hides passing packages.
