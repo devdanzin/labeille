@@ -9,6 +9,8 @@ workflow: read inputs, query PyPI, update the registry.
 from __future__ import annotations
 
 import json
+import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -342,20 +344,42 @@ def resolve_package(
     return result
 
 
+def _tally_result(summary: ResolveSummary, result: ResolveResult) -> None:
+    """Update summary counters from a single resolve result."""
+    if result.action == "created":
+        summary.created += 1
+        summary.resolved += 1
+    elif result.action == "updated":
+        summary.updated += 1
+        summary.resolved += 1
+    elif result.action == "skipped_enriched":
+        summary.skipped_enriched += 1
+    elif result.action == "failed":
+        summary.failed += 1
+    else:
+        summary.skipped += 1
+
+
 def resolve_all(
     packages: list[PackageInput],
     registry_path: Path,
     *,
     timeout: float = 10.0,
     dry_run: bool = False,
+    workers: int = 1,
 ) -> tuple[list[ResolveResult], ResolveSummary]:
     """Resolve a list of packages and update the registry index.
+
+    When ``workers`` >= 2, resolution is parallelised with a thread pool.
+    A 0.25-second delay is inserted between job submissions to avoid
+    hammering PyPI.
 
     Args:
         packages: The packages to resolve.
         registry_path: Path to the registry directory.
         timeout: HTTP timeout in seconds.
         dry_run: If True, do not write any files.
+        workers: Number of parallel resolution workers.
 
     Returns:
         A tuple of (results list, summary).
@@ -366,22 +390,36 @@ def resolve_all(
     # Build a lookup of download counts for index updates.
     download_counts: dict[str, int | None] = {p.name: p.download_count for p in packages}
 
-    for pkg in packages:
-        result = resolve_package(pkg, registry_path, timeout=timeout, dry_run=dry_run)
-        results.append(result)
+    workers = max(1, workers)
+    if workers == 1:
+        for pkg in packages:
+            result = resolve_package(pkg, registry_path, timeout=timeout, dry_run=dry_run)
+            results.append(result)
+            _tally_result(summary, result)
+    else:
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            futures: dict[Any, PackageInput] = {}
+            for i, pkg in enumerate(packages):
+                futures[
+                    pool.submit(
+                        resolve_package, pkg, registry_path, timeout=timeout, dry_run=dry_run
+                    )
+                ] = pkg
+                # Rate-limit submissions to avoid hammering PyPI.
+                if i < len(packages) - 1:
+                    time.sleep(0.25)
 
-        if result.action == "created":
-            summary.created += 1
-            summary.resolved += 1
-        elif result.action == "updated":
-            summary.updated += 1
-            summary.resolved += 1
-        elif result.action == "skipped_enriched":
-            summary.skipped_enriched += 1
-        elif result.action == "failed":
-            summary.failed += 1
-        else:
-            summary.skipped += 1
+            for future in as_completed(futures):
+                try:
+                    result = future.result()
+                except Exception as exc:
+                    pkg = futures[future]
+                    log.error("Resolve worker exception for %s: %s", pkg.name, exc)
+                    result = ResolveResult(
+                        name=pkg.name, action="failed", error=f"Worker exception: {exc}"
+                    )
+                results.append(result)
+                _tally_result(summary, result)
 
     # Update the index (unless dry-run).
     if not dry_run:

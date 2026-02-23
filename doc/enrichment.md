@@ -578,6 +578,16 @@ grep "enriched: false" registry/index.yaml
       --timeout 600 -v
   ```
 
+- **Use parallel execution for batch runs.** `--workers N` tests multiple
+  packages in parallel, overlapping clone/install/test across packages:
+  ```bash
+  labeille run --target-python /path/to/python --workers 4
+  ```
+  Each parallel package test spawns its own subprocesses with a full venv.
+  With N workers, expect roughly N times the memory usage of a single run.
+  For ASAN builds, `--workers 2-3` is the practical limit. For non-ASAN
+  builds, `--workers 4-8` works well on most machines.
+
 - **Check for orphaned processes after killing labeille.** If you interrupt a
   labeille run, pytest subprocesses may survive and consume significant memory.
   Check with `ps aux | grep pytest` and clean up as needed.

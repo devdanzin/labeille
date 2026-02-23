@@ -47,6 +47,13 @@ def main() -> None:
     default=Path("labeille-resolve.log"),
     show_default=True,
 )
+@click.option(
+    "--workers",
+    type=int,
+    default=1,
+    show_default=True,
+    help="Number of parallel PyPI API requests.",
+)
 def resolve(
     packages: tuple[str, ...],
     from_file: Path | None,
@@ -58,6 +65,7 @@ def resolve(
     verbose: bool,
     quiet: bool,
     log_file: Path,
+    workers: int,
 ) -> None:
     """Resolve PyPI packages to source repositories and build a test registry."""
     setup_logging(verbose=verbose, quiet=quiet, log_file=log_file)
@@ -88,7 +96,12 @@ def resolve(
     if dry_run:
         click.echo("(dry-run mode — no files will be written)")
 
-    results, summary = resolve_all(merged, registry_dir, timeout=timeout, dry_run=dry_run)
+    if workers < 1:
+        raise click.UsageError("--workers must be at least 1")
+
+    results, summary = resolve_all(
+        merged, registry_dir, timeout=timeout, dry_run=dry_run, workers=workers
+    )
 
     # Print summary.
     click.echo("")
@@ -161,6 +174,13 @@ def resolve(
     default=None,
     help="Base directory for repos and venvs (sets --repos-dir and --venvs-dir).",
 )
+@click.option(
+    "--workers",
+    type=int,
+    default=1,
+    show_default=True,
+    help="Number of packages to test in parallel.",
+)
 @click.pass_context
 def run_cmd(
     ctx: click.Context,
@@ -184,6 +204,7 @@ def run_cmd(
     repos_dir: Path | None,
     venvs_dir: Path | None,
     work_dir: Path | None,
+    workers: int,
 ) -> None:
     """Run test suites against a JIT-enabled Python build and detect crashes."""
     from datetime import datetime, timezone
@@ -192,6 +213,9 @@ def run_cmd(
     from labeille.summary import format_summary
 
     setup_logging(verbose=verbose, quiet=quiet, log_file=log_file)
+
+    if workers < 1:
+        raise click.UsageError("--workers must be at least 1")
 
     # Validate target python up front.
     try:
@@ -241,6 +265,7 @@ def run_cmd(
         quiet=quiet,
         keep_work_dirs=keep_work_dirs,
         refresh_venvs=refresh_venvs,
+        workers=workers,
         repos_dir=repos_dir,
         venvs_dir=venvs_dir,
         cli_args=list(ctx.params.keys()),

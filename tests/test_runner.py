@@ -1192,5 +1192,216 @@ class TestSummaryFileWritten(unittest.TestCase):
         self.assertIn("Packages tested:", content)
 
 
+class TestParallelExecution(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmpdir = tempfile.TemporaryDirectory()
+        self.base = Path(self.tmpdir.name)
+        self.config = _make_config(self.base)
+
+    def tearDown(self) -> None:
+        self.tmpdir.cleanup()
+
+    def _setup_registry(
+        self,
+        packages: list[PackageEntry],
+        index_entries: list[IndexEntry] | None = None,
+    ) -> None:
+        for pkg in packages:
+            save_package(pkg, self.config.registry_dir)
+        if index_entries is None:
+            index_entries = [
+                IndexEntry(name=pkg.package, download_count=1000 - i)
+                for i, pkg in enumerate(packages)
+            ]
+        save_index(Index(packages=index_entries), self.config.registry_dir)
+
+    @patch("labeille.runner.validate_target_python")
+    @patch("labeille.runner.check_jit_enabled")
+    @patch("labeille.runner.run_package")
+    def test_parallel_collects_all_results(
+        self,
+        mock_run_pkg: MagicMock,
+        mock_jit: MagicMock,
+        mock_validate: MagicMock,
+    ) -> None:
+        """Parallel mode collects results from all packages."""
+        self.config.workers = 2
+        mock_validate.return_value = "3.15.0"
+        mock_jit.return_value = True
+        self._setup_registry(
+            [
+                _make_package(name="p1"),
+                _make_package(name="p2"),
+                _make_package(name="p3"),
+            ]
+        )
+        mock_run_pkg.side_effect = [
+            PackageResult(package="p1", status="pass"),
+            PackageResult(package="p2", status="fail", exit_code=1),
+            PackageResult(package="p3", status="pass"),
+        ]
+        output = run_all(self.config)
+        self.assertEqual(output.summary.tested, 3)
+        self.assertEqual(output.summary.passed, 2)
+        self.assertEqual(output.summary.failed, 1)
+
+    @patch("labeille.runner.validate_target_python")
+    @patch("labeille.runner.check_jit_enabled")
+    @patch("labeille.runner.run_package")
+    def test_parallel_stop_after_crash(
+        self,
+        mock_run_pkg: MagicMock,
+        mock_jit: MagicMock,
+        mock_validate: MagicMock,
+    ) -> None:
+        """In parallel mode, stop-after-crash cancels remaining packages."""
+        self.config.workers = 2
+        self.config.stop_after_crash = 1
+        mock_validate.return_value = "3.15.0"
+        mock_jit.return_value = True
+        self._setup_registry(
+            [
+                _make_package(name="p1"),
+                _make_package(name="p2"),
+                _make_package(name="p3"),
+            ]
+        )
+
+        def _side_effect(pkg: PackageEntry, *args: object, **kwargs: object) -> PackageResult:
+            if pkg.package == "p1":
+                return PackageResult(package="p1", status="crash", signal=11)
+            # p2 and p3 should either run normally or be cancelled.
+            return PackageResult(package=pkg.package, status="pass")
+
+        mock_run_pkg.side_effect = _side_effect
+        output = run_all(self.config)
+        self.assertGreaterEqual(output.summary.crashed, 1)
+        # All packages have some result (either tested or cancelled).
+        self.assertEqual(len(output.results), 3)
+
+    @patch("labeille.runner.validate_target_python")
+    @patch("labeille.runner.check_jit_enabled")
+    @patch("labeille.runner.run_package")
+    def test_workers_1_uses_sequential(
+        self,
+        mock_run_pkg: MagicMock,
+        mock_jit: MagicMock,
+        mock_validate: MagicMock,
+    ) -> None:
+        """workers=1 produces identical results to default sequential mode."""
+        self.config.workers = 1
+        mock_validate.return_value = "3.15.0"
+        mock_jit.return_value = True
+        self._setup_registry(
+            [
+                _make_package(name="p1"),
+                _make_package(name="p2"),
+            ]
+        )
+        mock_run_pkg.side_effect = [
+            PackageResult(package="p1", status="pass"),
+            PackageResult(package="p2", status="fail", exit_code=1),
+        ]
+        output = run_all(self.config)
+        self.assertEqual(output.summary.tested, 2)
+        self.assertEqual(output.summary.passed, 1)
+        self.assertEqual(output.summary.failed, 1)
+        # Verify sequential: results should be in order.
+        self.assertEqual(output.results[0].package, "p1")
+        self.assertEqual(output.results[1].package, "p2")
+
+    @patch("labeille.runner.validate_target_python")
+    @patch("labeille.runner.check_jit_enabled")
+    @patch("labeille.runner.run_package")
+    def test_parallel_jsonl_written(
+        self,
+        mock_run_pkg: MagicMock,
+        mock_jit: MagicMock,
+        mock_validate: MagicMock,
+    ) -> None:
+        """Parallel mode writes all results to JSONL."""
+        self.config.workers = 2
+        mock_validate.return_value = "3.15.0"
+        mock_jit.return_value = True
+        self._setup_registry(
+            [
+                _make_package(name="p1"),
+                _make_package(name="p2"),
+                _make_package(name="p3"),
+            ]
+        )
+        mock_run_pkg.side_effect = [
+            PackageResult(package="p1", status="pass"),
+            PackageResult(package="p2", status="fail", exit_code=1),
+            PackageResult(package="p3", status="pass"),
+        ]
+        output = run_all(self.config)
+        results_file = output.run_dir / "results.jsonl"
+        self.assertTrue(results_file.exists())
+        lines = results_file.read_text().strip().splitlines()
+        self.assertEqual(len(lines), 3)
+        packages_in_jsonl = set()
+        for line in lines:
+            data = json.loads(line)
+            packages_in_jsonl.add(data["package"])
+        self.assertEqual(packages_in_jsonl, {"p1", "p2", "p3"})
+
+
+class TestCancelEvent(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmpdir = tempfile.TemporaryDirectory()
+        self.base = Path(self.tmpdir.name)
+        self.config = _make_config(self.base)
+        self.run_dir = create_run_dir(self.config.results_dir, self.config.run_id)
+        self.env = build_env(self.config)
+
+    def tearDown(self) -> None:
+        self.tmpdir.cleanup()
+
+    @patch("labeille.runner.clone_repo")
+    def test_cancel_event_stops_before_clone(self, mock_clone: MagicMock) -> None:
+        """A pre-set cancel event causes run_package to return early."""
+        import threading
+
+        cancel = threading.Event()
+        cancel.set()
+        pkg = _make_package()
+        result = run_package(pkg, self.config, self.run_dir, self.env, cancel_event=cancel)
+        self.assertEqual(result.status, "error")
+        self.assertIn("crash limit reached", result.error_message or "")
+        mock_clone.assert_not_called()
+
+    @patch("labeille.runner.run_test_command")
+    @patch("labeille.runner.get_installed_packages")
+    @patch("labeille.runner.check_import")
+    @patch("labeille.runner.install_package")
+    @patch("labeille.runner.create_venv")
+    @patch("labeille.runner.clone_repo")
+    def test_cancel_event_none_runs_normally(
+        self,
+        mock_clone: MagicMock,
+        mock_venv: MagicMock,
+        mock_install: MagicMock,
+        mock_import: MagicMock,
+        mock_get_pkgs: MagicMock,
+        mock_test: MagicMock,
+    ) -> None:
+        """cancel_event=None (default) runs the full pipeline."""
+        mock_clone.return_value = "abc1234"
+        mock_install.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_import.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_get_pkgs.return_value = {}
+        mock_test.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="ok\n", stderr=""
+        )
+        pkg = _make_package()
+        result = run_package(pkg, self.config, self.run_dir, self.env, cancel_event=None)
+        self.assertEqual(result.status, "pass")
+
+
 if __name__ == "__main__":
     unittest.main()
