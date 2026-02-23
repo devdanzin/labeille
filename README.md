@@ -108,6 +108,8 @@ skip: false
 skip_reason: null
 notes: ""
 enriched: false            # set to true after manual review
+clone_depth: null           # null = shallow (depth=1); set higher for setuptools-scm
+import_name: null           # null = derived from package name; override when different
 ```
 
 ### Index file (`registry/index.yaml`)

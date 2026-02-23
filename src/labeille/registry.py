@@ -43,6 +43,8 @@ class PackageEntry:
     skip_reason: str | None = None
     notes: str = ""
     enriched: bool = False
+    clone_depth: int | None = None
+    import_name: str | None = None
 
 
 @dataclass

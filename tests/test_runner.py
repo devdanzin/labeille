@@ -70,6 +70,8 @@ def _make_package(
     skip: bool = False,
     enriched: bool = False,
     timeout: int | None = None,
+    clone_depth: int | None = None,
+    import_name: str | None = None,
 ) -> PackageEntry:
     return PackageEntry(
         package=name,
@@ -80,6 +82,8 @@ def _make_package(
         skip=skip,
         enriched=enriched,
         timeout=timeout,
+        clone_depth=clone_depth,
+        import_name=import_name,
     )
 
 
@@ -280,6 +284,7 @@ class TestRunPackage(unittest.TestCase):
 
     @patch("labeille.runner.run_test_command")
     @patch("labeille.runner.get_installed_packages")
+    @patch("labeille.runner.check_import")
     @patch("labeille.runner.install_package")
     @patch("labeille.runner.create_venv")
     @patch("labeille.runner.clone_repo")
@@ -288,11 +293,15 @@ class TestRunPackage(unittest.TestCase):
         mock_clone: MagicMock,
         mock_venv: MagicMock,
         mock_install: MagicMock,
+        mock_import: MagicMock,
         mock_get_pkgs: MagicMock,
         mock_test: MagicMock,
     ) -> None:
         mock_clone.return_value = "abc1234"
         mock_install.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_import.return_value = subprocess.CompletedProcess(
             args="", returncode=0, stdout="", stderr=""
         )
         mock_get_pkgs.return_value = {"testpkg": "1.0.0"}
@@ -307,6 +316,7 @@ class TestRunPackage(unittest.TestCase):
 
     @patch("labeille.runner.run_test_command")
     @patch("labeille.runner.get_installed_packages")
+    @patch("labeille.runner.check_import")
     @patch("labeille.runner.install_package")
     @patch("labeille.runner.create_venv")
     @patch("labeille.runner.clone_repo")
@@ -315,11 +325,15 @@ class TestRunPackage(unittest.TestCase):
         mock_clone: MagicMock,
         mock_venv: MagicMock,
         mock_install: MagicMock,
+        mock_import: MagicMock,
         mock_get_pkgs: MagicMock,
         mock_test: MagicMock,
     ) -> None:
         mock_clone.return_value = "abc1234"
         mock_install.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_import.return_value = subprocess.CompletedProcess(
             args="", returncode=0, stdout="", stderr=""
         )
         mock_get_pkgs.return_value = {}
@@ -333,6 +347,7 @@ class TestRunPackage(unittest.TestCase):
 
     @patch("labeille.runner.run_test_command")
     @patch("labeille.runner.get_installed_packages")
+    @patch("labeille.runner.check_import")
     @patch("labeille.runner.install_package")
     @patch("labeille.runner.create_venv")
     @patch("labeille.runner.clone_repo")
@@ -341,11 +356,15 @@ class TestRunPackage(unittest.TestCase):
         mock_clone: MagicMock,
         mock_venv: MagicMock,
         mock_install: MagicMock,
+        mock_import: MagicMock,
         mock_get_pkgs: MagicMock,
         mock_test: MagicMock,
     ) -> None:
         mock_clone.return_value = "abc1234"
         mock_install.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_import.return_value = subprocess.CompletedProcess(
             args="", returncode=0, stdout="", stderr=""
         )
         mock_get_pkgs.return_value = {}
@@ -366,6 +385,7 @@ class TestRunPackage(unittest.TestCase):
 
     @patch("labeille.runner.run_test_command")
     @patch("labeille.runner.get_installed_packages")
+    @patch("labeille.runner.check_import")
     @patch("labeille.runner.install_package")
     @patch("labeille.runner.create_venv")
     @patch("labeille.runner.clone_repo")
@@ -374,11 +394,15 @@ class TestRunPackage(unittest.TestCase):
         mock_clone: MagicMock,
         mock_venv: MagicMock,
         mock_install: MagicMock,
+        mock_import: MagicMock,
         mock_get_pkgs: MagicMock,
         mock_test: MagicMock,
     ) -> None:
         mock_clone.return_value = "abc1234"
         mock_install.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_import.return_value = subprocess.CompletedProcess(
             args="", returncode=0, stdout="", stderr=""
         )
         mock_get_pkgs.return_value = {}
@@ -420,6 +444,7 @@ class TestRunPackage(unittest.TestCase):
 
     @patch("labeille.runner.run_test_command")
     @patch("labeille.runner.get_installed_packages")
+    @patch("labeille.runner.check_import")
     @patch("labeille.runner.install_package")
     @patch("labeille.runner.create_venv")
     @patch("labeille.runner.clone_repo")
@@ -428,12 +453,16 @@ class TestRunPackage(unittest.TestCase):
         mock_clone: MagicMock,
         mock_venv: MagicMock,
         mock_install: MagicMock,
+        mock_import: MagicMock,
         mock_get_pkgs: MagicMock,
         mock_test: MagicMock,
     ) -> None:
         """Package-level timeout override is respected."""
         mock_clone.return_value = "abc1234"
         mock_install.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_import.return_value = subprocess.CompletedProcess(
             args="", returncode=0, stdout="", stderr=""
         )
         mock_get_pkgs.return_value = {}
@@ -485,9 +514,9 @@ class TestRunAll(unittest.TestCase):
         mock_jit.return_value = True
         self._setup_registry([_make_package(name="pkg1")])
 
-        results, summary = run_all(self.config)
+        output = run_all(self.config)
         mock_run_pkg.assert_not_called()
-        self.assertEqual(summary.skipped, 1)
+        self.assertEqual(output.summary.skipped, 1)
 
     @patch("labeille.runner.validate_target_python")
     @patch("labeille.runner.check_jit_enabled")
@@ -512,12 +541,12 @@ class TestRunAll(unittest.TestCase):
         append_result(run_dir, PackageResult(package="done", status="pass"))
 
         mock_run_pkg.return_value = PackageResult(package="todo", status="pass")
-        results, summary = run_all(self.config)
+        output = run_all(self.config)
         # Only "todo" should be run.
         self.assertEqual(mock_run_pkg.call_count, 1)
         pkg_arg = mock_run_pkg.call_args[0][0]
         self.assertEqual(pkg_arg.package, "todo")
-        self.assertEqual(summary.skipped, 1)
+        self.assertEqual(output.summary.skipped, 1)
 
     @patch("labeille.runner.validate_target_python")
     @patch("labeille.runner.check_jit_enabled")
@@ -542,10 +571,10 @@ class TestRunAll(unittest.TestCase):
             PackageResult(package="pkg1", status="crash", signal=11),
             PackageResult(package="pkg2", status="pass"),
         ]
-        results, summary = run_all(self.config)
+        output = run_all(self.config)
         # Should stop after 1 crash (pkg1), not test pkg2 or pkg3.
         self.assertEqual(mock_run_pkg.call_count, 1)
-        self.assertEqual(summary.crashed, 1)
+        self.assertEqual(output.summary.crashed, 1)
 
     @patch("labeille.runner.validate_target_python")
     @patch("labeille.runner.check_jit_enabled")
@@ -570,11 +599,11 @@ class TestRunAll(unittest.TestCase):
             PackageResult(package="p2", status="fail"),
             PackageResult(package="p3", status="crash", signal=11),
         ]
-        results, summary = run_all(self.config)
-        self.assertEqual(summary.tested, 3)
-        self.assertEqual(summary.passed, 1)
-        self.assertEqual(summary.failed, 1)
-        self.assertEqual(summary.crashed, 1)
+        output = run_all(self.config)
+        self.assertEqual(output.summary.tested, 3)
+        self.assertEqual(output.summary.passed, 1)
+        self.assertEqual(output.summary.failed, 1)
+        self.assertEqual(output.summary.crashed, 1)
 
     @patch("labeille.runner.validate_target_python")
     @patch("labeille.runner.check_jit_enabled")
@@ -688,6 +717,7 @@ class TestRepoReuse(unittest.TestCase):
 
     @patch("labeille.runner.run_test_command")
     @patch("labeille.runner.get_installed_packages")
+    @patch("labeille.runner.check_import")
     @patch("labeille.runner.install_package")
     @patch("labeille.runner.create_venv")
     @patch("labeille.runner.pull_repo")
@@ -698,6 +728,7 @@ class TestRepoReuse(unittest.TestCase):
         mock_pull: MagicMock,
         mock_venv: MagicMock,
         mock_install: MagicMock,
+        mock_import: MagicMock,
         mock_get_pkgs: MagicMock,
         mock_test: MagicMock,
     ) -> None:
@@ -710,6 +741,9 @@ class TestRepoReuse(unittest.TestCase):
 
         mock_pull.return_value = "def5678"
         mock_install.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_import.return_value = subprocess.CompletedProcess(
             args="", returncode=0, stdout="", stderr=""
         )
         mock_get_pkgs.return_value = {}
@@ -756,6 +790,7 @@ class TestRepoReuse(unittest.TestCase):
 
     @patch("labeille.runner.run_test_command")
     @patch("labeille.runner.get_installed_packages")
+    @patch("labeille.runner.check_import")
     @patch("labeille.runner.install_package")
     @patch("labeille.runner.create_venv")
     @patch("labeille.runner.pull_repo")
@@ -766,6 +801,7 @@ class TestRepoReuse(unittest.TestCase):
         mock_pull: MagicMock,
         mock_venv: MagicMock,
         mock_install: MagicMock,
+        mock_import: MagicMock,
         mock_get_pkgs: MagicMock,
         mock_test: MagicMock,
     ) -> None:
@@ -778,6 +814,9 @@ class TestRepoReuse(unittest.TestCase):
         mock_pull.side_effect = subprocess.CalledProcessError(1, "git pull")
         mock_clone.return_value = "new1234"
         mock_install.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_import.return_value = subprocess.CompletedProcess(
             args="", returncode=0, stdout="", stderr=""
         )
         mock_get_pkgs.return_value = {}
@@ -793,6 +832,7 @@ class TestRepoReuse(unittest.TestCase):
 
     @patch("labeille.runner.run_test_command")
     @patch("labeille.runner.get_installed_packages")
+    @patch("labeille.runner.check_import")
     @patch("labeille.runner.install_package")
     @patch("labeille.runner.create_venv")
     @patch("labeille.runner.clone_repo")
@@ -801,6 +841,7 @@ class TestRepoReuse(unittest.TestCase):
         mock_clone: MagicMock,
         mock_venv: MagicMock,
         mock_install: MagicMock,
+        mock_import: MagicMock,
         mock_get_pkgs: MagicMock,
         mock_test: MagicMock,
     ) -> None:
@@ -814,6 +855,9 @@ class TestRepoReuse(unittest.TestCase):
 
         mock_clone.return_value = "abc1234"
         mock_install.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_import.return_value = subprocess.CompletedProcess(
             args="", returncode=0, stdout="", stderr=""
         )
         mock_get_pkgs.return_value = {}
@@ -868,6 +912,284 @@ class TestRepoReuse(unittest.TestCase):
         self.config.keep_work_dirs = False
         self.assertTrue(repos_dir.exists())
         self.assertTrue(venvs_dir.exists())
+
+
+class TestCloneDepth(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmpdir = tempfile.TemporaryDirectory()
+        self.base = Path(self.tmpdir.name)
+        self.config = _make_config(self.base)
+        self.config.repos_dir = self.base / "repos"
+        self.config.venvs_dir = self.base / "venvs"
+        self.run_dir = create_run_dir(self.config.results_dir, self.config.run_id)
+        self.env = build_env(self.config)
+
+    def tearDown(self) -> None:
+        self.tmpdir.cleanup()
+
+    @patch("labeille.runner.run_test_command")
+    @patch("labeille.runner.get_installed_packages")
+    @patch("labeille.runner.check_import")
+    @patch("labeille.runner.install_package")
+    @patch("labeille.runner.create_venv")
+    @patch("labeille.runner.clone_repo")
+    def test_clone_depth_none_defaults_to_shallow(
+        self,
+        mock_clone: MagicMock,
+        mock_venv: MagicMock,
+        mock_install: MagicMock,
+        mock_import: MagicMock,
+        mock_get_pkgs: MagicMock,
+        mock_test: MagicMock,
+    ) -> None:
+        """clone_depth=None passes None to clone_repo (default depth=1)."""
+        mock_clone.return_value = "abc1234"
+        mock_install.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_import.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_get_pkgs.return_value = {}
+        mock_test.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="ok\n", stderr=""
+        )
+        pkg = _make_package(clone_depth=None)
+        run_package(pkg, self.config, self.run_dir, self.env)
+        _, kwargs = mock_clone.call_args
+        self.assertIsNone(kwargs.get("clone_depth"))
+
+    @patch("labeille.runner.run_test_command")
+    @patch("labeille.runner.get_installed_packages")
+    @patch("labeille.runner.check_import")
+    @patch("labeille.runner.install_package")
+    @patch("labeille.runner.create_venv")
+    @patch("labeille.runner.clone_repo")
+    def test_clone_depth_passed_to_clone_repo(
+        self,
+        mock_clone: MagicMock,
+        mock_venv: MagicMock,
+        mock_install: MagicMock,
+        mock_import: MagicMock,
+        mock_get_pkgs: MagicMock,
+        mock_test: MagicMock,
+    ) -> None:
+        """clone_depth=50 is passed through to clone_repo."""
+        mock_clone.return_value = "abc1234"
+        mock_install.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_import.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_get_pkgs.return_value = {}
+        mock_test.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="ok\n", stderr=""
+        )
+        pkg = _make_package(clone_depth=50)
+        run_package(pkg, self.config, self.run_dir, self.env)
+        _, kwargs = mock_clone.call_args
+        self.assertEqual(kwargs.get("clone_depth"), 50)
+
+
+class TestImportCheck(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmpdir = tempfile.TemporaryDirectory()
+        self.base = Path(self.tmpdir.name)
+        self.config = _make_config(self.base)
+        self.run_dir = create_run_dir(self.config.results_dir, self.config.run_id)
+        self.env = build_env(self.config)
+
+    def tearDown(self) -> None:
+        self.tmpdir.cleanup()
+
+    @patch("labeille.runner.run_test_command")
+    @patch("labeille.runner.get_installed_packages")
+    @patch("labeille.runner.check_import")
+    @patch("labeille.runner.install_package")
+    @patch("labeille.runner.create_venv")
+    @patch("labeille.runner.clone_repo")
+    def test_import_check_failure_sets_install_error(
+        self,
+        mock_clone: MagicMock,
+        mock_venv: MagicMock,
+        mock_install: MagicMock,
+        mock_import: MagicMock,
+        mock_get_pkgs: MagicMock,
+        mock_test: MagicMock,
+    ) -> None:
+        """Failed import check sets status to install_error."""
+        mock_clone.return_value = "abc1234"
+        mock_install.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_import.return_value = subprocess.CompletedProcess(
+            args="", returncode=1, stdout="", stderr="ModuleNotFoundError: No module named 'x'"
+        )
+        pkg = _make_package()
+        result = run_package(pkg, self.config, self.run_dir, self.env)
+        self.assertEqual(result.status, "install_error")
+        self.assertIn("import failed", result.error_message or "")
+        mock_test.assert_not_called()
+
+    @patch("labeille.runner.run_test_command")
+    @patch("labeille.runner.get_installed_packages")
+    @patch("labeille.runner.check_import")
+    @patch("labeille.runner.install_package")
+    @patch("labeille.runner.create_venv")
+    @patch("labeille.runner.clone_repo")
+    def test_import_check_success_continues_to_tests(
+        self,
+        mock_clone: MagicMock,
+        mock_venv: MagicMock,
+        mock_install: MagicMock,
+        mock_import: MagicMock,
+        mock_get_pkgs: MagicMock,
+        mock_test: MagicMock,
+    ) -> None:
+        """Successful import check continues to run tests."""
+        mock_clone.return_value = "abc1234"
+        mock_install.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_import.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_get_pkgs.return_value = {}
+        mock_test.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="ok\n", stderr=""
+        )
+        pkg = _make_package()
+        result = run_package(pkg, self.config, self.run_dir, self.env)
+        self.assertEqual(result.status, "pass")
+        mock_test.assert_called_once()
+
+    @patch("labeille.runner.run_test_command")
+    @patch("labeille.runner.get_installed_packages")
+    @patch("labeille.runner.check_import")
+    @patch("labeille.runner.install_package")
+    @patch("labeille.runner.create_venv")
+    @patch("labeille.runner.clone_repo")
+    def test_import_check_uses_custom_import_name(
+        self,
+        mock_clone: MagicMock,
+        mock_venv: MagicMock,
+        mock_install: MagicMock,
+        mock_import: MagicMock,
+        mock_get_pkgs: MagicMock,
+        mock_test: MagicMock,
+    ) -> None:
+        """Custom import_name is used for the import check."""
+        mock_clone.return_value = "abc1234"
+        mock_install.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_import.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_get_pkgs.return_value = {}
+        mock_test.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="ok\n", stderr=""
+        )
+        pkg = _make_package(name="python-dateutil", import_name="dateutil")
+        run_package(pkg, self.config, self.run_dir, self.env)
+        # check_import should be called with "dateutil" not "python_dateutil"
+        args, _ = mock_import.call_args
+        self.assertEqual(args[1], "dateutil")
+
+    @patch("labeille.runner.run_test_command")
+    @patch("labeille.runner.get_installed_packages")
+    @patch("labeille.runner.install_package")
+    @patch("labeille.runner.create_venv")
+    @patch("labeille.runner.clone_repo")
+    def test_import_check_skipped_when_reusing_venv(
+        self,
+        mock_clone: MagicMock,
+        mock_venv: MagicMock,
+        mock_install: MagicMock,
+        mock_get_pkgs: MagicMock,
+        mock_test: MagicMock,
+    ) -> None:
+        """Import check is skipped when reusing an existing venv."""
+        self.config.repos_dir = self.base / "repos"
+        self.config.venvs_dir = self.base / "venvs"
+        pkg = _make_package()
+        # Pre-create the venv dir with bin/python.
+        venv_dir = self.base / "venvs" / "testpkg"
+        (venv_dir / "bin").mkdir(parents=True)
+        (venv_dir / "bin" / "python").touch()
+
+        mock_clone.return_value = "abc1234"
+        mock_get_pkgs.return_value = {}
+        mock_test.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="ok\n", stderr=""
+        )
+
+        with patch("labeille.runner.check_import") as mock_import:
+            result = run_package(pkg, self.config, self.run_dir, self.env)
+            mock_import.assert_not_called()
+        self.assertEqual(result.status, "pass")
+
+    @patch("labeille.runner.run_test_command")
+    @patch("labeille.runner.get_installed_packages")
+    @patch("labeille.runner.check_import")
+    @patch("labeille.runner.install_package")
+    @patch("labeille.runner.create_venv")
+    @patch("labeille.runner.clone_repo")
+    def test_import_check_timeout_sets_install_error(
+        self,
+        mock_clone: MagicMock,
+        mock_venv: MagicMock,
+        mock_install: MagicMock,
+        mock_import: MagicMock,
+        mock_get_pkgs: MagicMock,
+        mock_test: MagicMock,
+    ) -> None:
+        """Import check timeout sets status to install_error."""
+        mock_clone.return_value = "abc1234"
+        mock_install.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_import.side_effect = subprocess.TimeoutExpired(cmd="python", timeout=30)
+        pkg = _make_package()
+        result = run_package(pkg, self.config, self.run_dir, self.env)
+        self.assertEqual(result.status, "install_error")
+        self.assertIn("import timed out", result.error_message or "")
+        mock_test.assert_not_called()
+
+
+class TestSummaryFileWritten(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmpdir = tempfile.TemporaryDirectory()
+        self.base = Path(self.tmpdir.name)
+        self.config = _make_config(self.base)
+
+    def tearDown(self) -> None:
+        self.tmpdir.cleanup()
+
+    @patch("labeille.runner.validate_target_python")
+    @patch("labeille.runner.check_jit_enabled")
+    @patch("labeille.runner.run_package")
+    def test_summary_txt_written(
+        self,
+        mock_run_pkg: MagicMock,
+        mock_jit: MagicMock,
+        mock_validate: MagicMock,
+    ) -> None:
+        mock_validate.return_value = "3.15.0"
+        mock_jit.return_value = True
+        pkg = _make_package(name="pkg1")
+        save_package(pkg, self.config.registry_dir)
+        save_index(
+            Index(packages=[IndexEntry(name="pkg1", download_count=1000)]),
+            self.config.registry_dir,
+        )
+        mock_run_pkg.return_value = PackageResult(package="pkg1", status="pass")
+        output = run_all(self.config)
+        summary_file = output.run_dir / "summary.txt"
+        self.assertTrue(summary_file.exists())
+        content = summary_file.read_text()
+        self.assertIn("Packages tested:", content)
 
 
 if __name__ == "__main__":

@@ -103,6 +103,44 @@ To add a new package to the test registry:
 2. Add an entry to `registry/index.yaml`.
 3. Test that the package installs and its test suite runs locally before submitting.
 
+## Enriching Registry Packages
+
+After resolving a package with `labeille resolve`, the YAML file needs manual
+enrichment to configure install and test commands correctly. Here are best practices
+learned from enriching the first 50 packages:
+
+1. **Cross-check test imports against installed deps.** After determining the install
+   command, scan test files (`conftest.py`, early test files) for third-party imports
+   that aren't covered by the install command. Common missed deps: `trustme`,
+   `uvicorn`, `trio`, `tomli_w`, `appdirs`, `wcag_contrast_ratio`, `installer`,
+   `pytest-cov`, `pytest-timeout`.
+
+2. **Check for pytest plugin references.** Look at `pyproject.toml`
+   `[tool.pytest.ini_options]` addopts and `tox.ini` `[pytest]` addopts. If addopts
+   references `--cov`, `--timeout`, or other plugin-specific flags, either install
+   the corresponding plugin or add `-o "addopts="` to `test_command` to override
+   the config.
+
+3. **Handle setuptools-scm and version-from-git-tags tools.** Set `clone_depth: 50`
+   (or higher) so that git tags are available for version computation. Shallow clones
+   lose tags and version detection fails.
+
+4. **Avoid problematic transitive dependencies.** When test extras pull in heavy or
+   problematic transitive dependencies (numpy, rpds-py, pydantic-core), use a minimal
+   install approach: `pip install -e . && pip install pytest <specific-needed-test-deps>`
+   instead of `pip install -e ".[test]"`.
+
+5. **Skip packages with unreleased dependency pins.** For packages whose main branch
+   pins unreleased dependency versions (like pydantic pinning unreleased pydantic-core),
+   set `skip: true` with an explanatory `skip_reason`.
+
+6. **Remove `-x` / `--exitfirst` from test_command.** A single unrelated failure
+   shouldn't prevent us from seeing JIT crashes in later tests.
+
+7. **Disable pytest-xdist.** Always set `uses_xdist: true` and add `-p no:xdist` to
+   the test command if the project uses pytest-xdist, to ensure crashes propagate
+   directly instead of being masked by worker processes.
+
 ## AI-Assisted Development
 
 Contributors are welcome to use AI tools (Claude, Copilot, etc.) to help with their

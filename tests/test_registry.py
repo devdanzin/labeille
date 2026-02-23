@@ -98,6 +98,44 @@ class TestPackageIO(unittest.TestCase):
         loaded = load_package("mystery", self.registry)
         self.assertIsNone(loaded.repo)
 
+    def test_clone_depth_roundtrip(self) -> None:
+        entry = PackageEntry(package="scm-pkg", clone_depth=50)
+        save_package(entry, self.registry)
+        loaded = load_package("scm-pkg", self.registry)
+        self.assertEqual(loaded.clone_depth, 50)
+
+    def test_clone_depth_none_default(self) -> None:
+        entry = PackageEntry(package="default-pkg")
+        save_package(entry, self.registry)
+        loaded = load_package("default-pkg", self.registry)
+        self.assertIsNone(loaded.clone_depth)
+
+    def test_import_name_roundtrip(self) -> None:
+        entry = PackageEntry(package="python-dateutil", import_name="dateutil")
+        save_package(entry, self.registry)
+        loaded = load_package("python-dateutil", self.registry)
+        self.assertEqual(loaded.import_name, "dateutil")
+
+    def test_import_name_none_default(self) -> None:
+        entry = PackageEntry(package="simple")
+        save_package(entry, self.registry)
+        loaded = load_package("simple", self.registry)
+        self.assertIsNone(loaded.import_name)
+
+    def test_new_fields_tolerated_when_missing(self) -> None:
+        """Old YAML files without new fields load with defaults."""
+        import yaml
+
+        # Write a YAML file without clone_depth and import_name
+        p = self.registry / "packages" / "oldpkg.yaml"
+        p.parent.mkdir(parents=True, exist_ok=True)
+        data = {"package": "oldpkg", "repo": "https://github.com/x/y", "enriched": True}
+        p.write_text(yaml.dump(data), encoding="utf-8")
+        loaded = load_package("oldpkg", self.registry)
+        self.assertEqual(loaded.package, "oldpkg")
+        self.assertIsNone(loaded.clone_depth)
+        self.assertIsNone(loaded.import_name)
+
 
 class TestIndexIO(unittest.TestCase):
     def setUp(self) -> None:

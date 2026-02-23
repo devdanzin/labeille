@@ -95,6 +95,18 @@ class RunSummary:
     skipped: int = 0
 
 
+@dataclass
+class RunOutput:
+    """Complete output from a test run."""
+
+    results: list[PackageResult]
+    summary: RunSummary
+    total_duration: float
+    python_version: str
+    jit_enabled: bool
+    run_dir: Path = field(default_factory=lambda: Path("."))
+
+
 # ---------------------------------------------------------------------------
 # Run directory management
 # ---------------------------------------------------------------------------
@@ -259,12 +271,14 @@ def build_env(config: RunnerConfig) -> dict[str, str]:
     return env
 
 
-def clone_repo(repo_url: str, dest: Path) -> str | None:
-    """Clone a git repository (shallow, depth=1) and return the HEAD revision.
+def clone_repo(repo_url: str, dest: Path, clone_depth: int | None = None) -> str | None:
+    """Clone a git repository and return the HEAD revision.
 
     Args:
         repo_url: The URL of the git repository.
         dest: The destination directory for the clone.
+        clone_depth: Clone depth. ``None`` means shallow (depth=1).
+            A positive integer uses that depth.
 
     Returns:
         The HEAD commit hash, or ``None`` on failure.
@@ -272,9 +286,10 @@ def clone_repo(repo_url: str, dest: Path) -> str | None:
     Raises:
         subprocess.CalledProcessError: If the clone fails.
     """
-    log.debug("Running: git clone --depth=1 %s %s", repo_url, dest)
+    depth = clone_depth if clone_depth is not None else 1
+    log.debug("Running: git clone --depth=%d %s %s", depth, repo_url, dest)
     clone_proc = subprocess.run(
-        ["git", "clone", "--depth=1", repo_url, str(dest)],
+        ["git", "clone", f"--depth={depth}", repo_url, str(dest)],
         capture_output=True,
         text=True,
         timeout=120,
@@ -282,6 +297,21 @@ def clone_repo(repo_url: str, dest: Path) -> str | None:
     )
     if clone_proc.stderr:
         log.debug("git clone stderr: %s", clone_proc.stderr.strip())
+
+    # Fetch tags when using deeper clones (needed for setuptools-scm etc.).
+    if clone_depth is not None and clone_depth > 1:
+        log.debug("Fetching tags for %s (clone_depth=%d)", dest, clone_depth)
+        fetch_proc = subprocess.run(
+            ["git", "fetch", "--tags"],
+            capture_output=True,
+            text=True,
+            cwd=str(dest),
+            timeout=120,
+            check=False,
+        )
+        if fetch_proc.returncode != 0:
+            log.debug("git fetch --tags failed (non-fatal): %s", fetch_proc.stderr.strip())
+
     # Get the revision.
     proc = subprocess.run(
         ["git", "rev-parse", "HEAD"],
@@ -463,6 +493,25 @@ def get_package_version(package_name: str, installed: dict[str, str]) -> str | N
     return None
 
 
+def check_import(
+    venv_python: Path,
+    import_name: str,
+    env: dict[str, str],
+) -> subprocess.CompletedProcess[str]:
+    """Check that a package can be imported in the venv.
+
+    Uses ``PYTHON_JIT=0`` to avoid JIT bugs during import validation.
+    """
+    import_env = {**env, "PYTHON_JIT": "0"}
+    return subprocess.run(
+        [str(venv_python), "-c", f"import {import_name}"],
+        capture_output=True,
+        text=True,
+        timeout=30,
+        env=import_env,
+    )
+
+
 # ---------------------------------------------------------------------------
 # Per-package runner
 # ---------------------------------------------------------------------------
@@ -568,7 +617,7 @@ def _run_package_inner(
     if not repo_existed:
         log.info("Cloning %s from %s to %s", pkg.package, pkg.repo, repo_dir)
         try:
-            result.git_revision = clone_repo(pkg.repo, repo_dir)
+            result.git_revision = clone_repo(pkg.repo, repo_dir, clone_depth=pkg.clone_depth)
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as exc:
             result.status = "clone_error"
             result.error_message = f"Clone failed: {exc}"
@@ -645,6 +694,26 @@ def _run_package_inner(
             )
             log.error("Install failed for %s (exit %d)", pkg.package, install_proc.returncode)
             return result
+
+    # --- Import check (skip if reusing venv) ---
+    if not venv_existed:
+        import_name = pkg.import_name or pkg.package.replace("-", "_")
+        log.info("Checking import for %s: import %s", pkg.package, import_name)
+        try:
+            import_proc = check_import(venv_python, import_name, env)
+            if import_proc.returncode != 0:
+                result.status = "install_error"
+                stderr_msg = import_proc.stderr.strip()[-200:] if import_proc.stderr else ""
+                result.error_message = f"Package installed but import failed: {stderr_msg}"
+                log.error("Import check failed for %s: %s", pkg.package, result.error_message)
+                return result
+        except subprocess.TimeoutExpired:
+            result.status = "install_error"
+            result.error_message = "Package installed but import timed out"
+            log.error("Import check timed out for %s", pkg.package)
+            return result
+        except OSError as exc:
+            log.warning("Import check failed for %s: %s (continuing)", pkg.package, exc)
 
     # --- Collect installed packages ---
     result.installed_dependencies = get_installed_packages(venv_python, env)
@@ -753,15 +822,16 @@ def filter_packages(
     return packages
 
 
-def run_all(config: RunnerConfig) -> tuple[list[PackageResult], RunSummary]:
+def run_all(config: RunnerConfig) -> RunOutput:
     """Run test suites for all selected packages.
 
     Args:
         config: The runner configuration.
 
     Returns:
-        A tuple of (results list, summary).
+        A :class:`RunOutput` with results, summary, and run metadata.
     """
+    run_start = time.monotonic()
     summary = RunSummary()
 
     # Load index and filter.
@@ -848,6 +918,7 @@ def run_all(config: RunnerConfig) -> tuple[list[PackageResult], RunSummary]:
             summary.errors += 1
 
     # Finalise run metadata.
+    total_duration = round(time.monotonic() - run_start, 2)
     finished_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     write_run_meta(
         run_dir,
@@ -859,4 +930,27 @@ def run_all(config: RunnerConfig) -> tuple[list[PackageResult], RunSummary]:
         finished_at=finished_at,
     )
 
-    return results, summary
+    # Write verbose summary to file and log.
+    from labeille.summary import format_summary
+
+    summary_text = format_summary(
+        results,
+        summary,
+        config,
+        python_version,
+        jit_enabled,
+        total_duration,
+        run_dir=run_dir,
+        mode="verbose",
+    )
+    (run_dir / "summary.txt").write_text(summary_text + "\n", encoding="utf-8")
+    log.info("Run summary:\n%s", summary_text)
+
+    return RunOutput(
+        results=results,
+        summary=summary,
+        total_duration=total_duration,
+        python_version=python_version,
+        jit_enabled=jit_enabled,
+        run_dir=run_dir,
+    )

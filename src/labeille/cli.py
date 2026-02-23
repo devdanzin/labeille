@@ -189,6 +189,7 @@ def run_cmd(
     from datetime import datetime, timezone
 
     from labeille.runner import RunnerConfig, run_all, validate_target_python
+    from labeille.summary import format_summary
 
     setup_logging(verbose=verbose, quiet=quiet, log_file=log_file)
 
@@ -249,22 +250,25 @@ def run_cmd(
     if dry_run:
         click.echo("(dry-run mode — no tests will be executed)")
 
-    results, summary = run_all(config)
+    output = run_all(config)
 
-    # Print summary.
-    click.echo("")
-    click.echo(f"Packages tested: {summary.tested}")
-    click.echo(f"  Passed:        {summary.passed}")
-    click.echo(f"  Failed:        {summary.failed}")
-    click.echo(f"  Crashed:       {summary.crashed}")
-    click.echo(f"  Timed out:     {summary.timed_out}")
-    click.echo(f"  Install errors:{summary.install_errors}")
-    click.echo(f"  Clone errors:  {summary.clone_errors}")
-    click.echo(f"  Other errors:  {summary.errors}")
-    click.echo(f"Skipped:         {summary.skipped}")
-    if summary.crashed > 0:
-        click.echo("")
-        click.echo("Crashes found:")
-        for r in results:
-            if r.status == "crash":
-                click.echo(f"  {r.package}: {r.crash_signature}")
+    # Determine summary mode.
+    if quiet:
+        mode = "quiet"
+    elif verbose:
+        mode = "verbose"
+    else:
+        mode = "default"
+
+    summary_text = format_summary(
+        output.results,
+        output.summary,
+        config,
+        output.python_version,
+        output.jit_enabled,
+        output.total_duration,
+        run_dir=output.run_dir,
+        mode=mode,
+    )
+    if summary_text:
+        click.echo(summary_text)
