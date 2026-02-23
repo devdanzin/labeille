@@ -9,6 +9,11 @@ from __future__ import annotations
 import signal as signal_module
 from pathlib import Path
 
+from labeille.formatting import (
+    format_duration,
+    format_section_header,
+    format_status_icon,
+)
 from labeille.runner import PackageResult, RunnerConfig, RunSummary
 
 # ---------------------------------------------------------------------------
@@ -25,40 +30,12 @@ _STATUS_ORDER: dict[str, int] = {
     "pass": 6,
 }
 
-_STATUS_DISPLAY: dict[str, str] = {
-    "crash": "\u2717 CRASH",
-    "timeout": "\u23f1 TIMEOUT",
-    "fail": "\u2717 FAIL",
-    "install_error": "\u26a0 ERROR",
-    "clone_error": "\u26a0 ERROR",
-    "error": "\u26a0 ERROR",
-    "pass": "\u2713 PASS",
-}
-
 _SEPARATOR = "\u2500" * 84
 
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-
-def format_duration(seconds: float) -> str:
-    """Format a duration in seconds to a human-readable string.
-
-    Returns strings like ``"3s"``, ``"2m  5s"``, or ``"1h 12m 34s"``.
-    """
-    total = int(seconds)
-    if total >= 3600:
-        h = total // 3600
-        m = (total % 3600) // 60
-        s = total % 60
-        return f"{h}h {m:2d}m {s:2d}s"
-    if total >= 60:
-        m = total // 60
-        s = total % 60
-        return f"{m}m {s:2d}s"
-    return f"{total}s"
 
 
 def _signal_name(sig: int | None) -> str:
@@ -126,13 +103,13 @@ def _format_package_table(
 
     header = f"  {'Package':<17s}{'Status':<13s}{'Duration':>10s}  {'Signal':<8s} {'Detail'}"
     lines: list[str] = [
-        f"\u2500\u2500\u2500 Results {'\u2500' * 75}",
+        format_section_header("Results", width=84),
         header,
     ]
 
     for r in rows:
         pkg_name = r.package[:16]
-        status = _STATUS_DISPLAY.get(r.status, r.status)
+        status = format_status_icon(r.status)
         dur = format_duration(r.duration_seconds)
         sig = _signal_name(r.signal)
         detail = _detail(r)
@@ -203,7 +180,7 @@ def _format_crash_detail(
     if not crashes:
         return ""
 
-    lines: list[str] = [f"\u2500\u2500\u2500 Crashes {'\u2500' * 75}"]
+    lines: list[str] = [format_section_header("Crashes", width=84)]
     for r in crashes:
         sig = _signal_name(r.signal)
         signature = r.crash_signature or "unknown"

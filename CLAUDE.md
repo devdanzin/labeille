@@ -32,7 +32,7 @@ ASAN_OPTIONS=detect_leaks=0 PYTHON_JIT=0 .venv/bin/python -m unittest discover t
 - Click CLI framework — Click 8.3+ (no `mix_stderr` in CliRunner)
 
 ## Architecture
-- `cli.py` — Click CLI entry point with `resolve`, `run`, and `registry` subcommands
+- `cli.py` — Click CLI entry point with `resolve`, `run`, `registry`, and `analyze` subcommands
 - `resolve.py` — PyPI metadata fetching, repo URL extraction, registry building
 - `runner.py` — Clone repos, create venvs, run test suites, detect crashes
 - `crash.py` — Crash detection from exit codes and stderr patterns
@@ -40,13 +40,17 @@ ASAN_OPTIONS=detect_leaks=0 PYTHON_JIT=0 .venv/bin/python -m unittest discover t
 - `registry.py` — YAML registry I/O (index + per-package configs)
 - `registry_cli.py` — Batch registry management CLI (add/remove/rename/set fields, validate)
 - `registry_ops.py` — Batch operations with filtering, atomic writes, dry-run previews
+- `analyze.py` — Data loading and analysis (run data, registry stats, comparison, flaky detection)
+- `analyze_cli.py` — Analysis CLI (registry, run, compare, history, package subcommands)
+- `formatting.py` — Shared text formatting (tables, histograms, sparklines, durations)
+- `summary.py` — Run summary formatting (uses formatting.py)
 - `yaml_lines.py` — Line-level YAML manipulation preserving formatting
 - `logging.py` — Structured logging setup
 
 ## Testing notes
 - Integration tests mock `fetch_pypi_metadata` to avoid network calls
 - Runner tests mock `subprocess.run` and `clone_repo` extensively
-- 323 tests total across 9 test files
+- 429 tests total across 12 test files
 
 ## Enriching packages
 

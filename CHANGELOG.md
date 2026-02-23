@@ -7,6 +7,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+- `labeille analyze` CLI subgroup with five subcommands: `registry`, `run`, `compare`, `history`, `package`.
+- `formatting.py` shared formatting module (tables, histograms, sparklines, duration, status icons).
+- `analyze.py` data loading and analysis module (run data, registry stats, comparison, flaky detection).
 - `labeille registry` CLI subgroup for batch registry management (add-field, remove-field, rename-field, set-field, validate, add-index-field, remove-index-field).
 - Line-level YAML manipulation (`yaml_lines.py`) preserving exact formatting.
 - Batch operations module (`registry_ops.py`) with filtering, atomic writes, and dry-run previews.
@@ -31,6 +34,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Parallel execution guidance, resource considerations, and ASAN vs non-ASAN trade-offs.
 
 ### Enhanced
+- Refactored `summary.py` to use shared formatters from `formatting.py`.
 - Improved repo URL resolution with secondary keys (bug tracker, issues, changelog) and legacy field fallbacks (home_page, download_url).
 - Run summary shows version-skipped count separately when skip_versions is active.
 - Progress reporting adapted for parallel execution with per-completion status lines.
