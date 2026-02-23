@@ -128,6 +128,8 @@ uses_xdist: false
 timeout: null
 skip: false
 skip_reason: null
+skip_versions:             # per-version skip reasons (empty = no version skips)
+  "3.15": "PyO3 not supported on 3.15"
 notes: ""
 enriched: false            # set to true after manual review
 clone_depth: null           # null = shallow (depth=1); set higher for setuptools-scm

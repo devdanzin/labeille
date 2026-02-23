@@ -137,6 +137,11 @@ def resolve(
 @click.option("--packages", "packages_csv", type=str, default=None)
 @click.option("--skip-extensions", is_flag=True)
 @click.option("--skip-completed", is_flag=True, help="Resume: skip already-tested packages.")
+@click.option(
+    "--force-run",
+    is_flag=True,
+    help="Override skip and skip_versions flags; run all selected packages.",
+)
 @click.option("--stop-after-crash", type=int, default=None)
 @click.option("--timeout", type=int, default=600, show_default=True)
 @click.option("--env", "env_pairs", type=str, multiple=True, help="KEY=VALUE env var.")
@@ -191,6 +196,7 @@ def run_cmd(
     packages_csv: str | None,
     skip_extensions: bool,
     skip_completed: bool,
+    force_run: bool,
     stop_after_crash: int | None,
     timeout: int,
     env_pairs: tuple[str, ...],
@@ -209,7 +215,12 @@ def run_cmd(
     """Run test suites against a JIT-enabled Python build and detect crashes."""
     from datetime import datetime, timezone
 
-    from labeille.runner import RunnerConfig, run_all, validate_target_python
+    from labeille.runner import (
+        RunnerConfig,
+        extract_python_minor_version,
+        run_all,
+        validate_target_python,
+    )
     from labeille.summary import format_summary
 
     setup_logging(verbose=verbose, quiet=quiet, log_file=log_file)
@@ -258,6 +269,8 @@ def run_cmd(
         packages_filter=packages_filter,
         skip_extensions=skip_extensions,
         skip_completed=skip_completed,
+        force_run=force_run,
+        target_python_version=extract_python_minor_version(python_version),
         stop_after_crash=stop_after_crash,
         env_overrides=env_overrides,
         dry_run=dry_run,

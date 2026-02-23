@@ -122,11 +122,42 @@ class TestPackageIO(unittest.TestCase):
         loaded = load_package("simple", self.registry)
         self.assertIsNone(loaded.import_name)
 
+    def test_skip_versions_roundtrip(self) -> None:
+        entry = PackageEntry(
+            package="mypkg",
+            skip_versions={"3.15": "PyO3 not supported", "3.14": "build broken"},
+        )
+        save_package(entry, self.registry)
+        loaded = load_package("mypkg", self.registry)
+        self.assertEqual(
+            loaded.skip_versions, {"3.15": "PyO3 not supported", "3.14": "build broken"}
+        )
+
+    def test_skip_versions_empty_default(self) -> None:
+        entry = PackageEntry(package="noskips")
+        save_package(entry, self.registry)
+        loaded = load_package("noskips", self.registry)
+        self.assertEqual(loaded.skip_versions, {})
+
+    def test_skip_versions_float_key_coercion(self) -> None:
+        """PyYAML parses bare 3.15 as a float; keys should be coerced to strings."""
+        import yaml
+
+        p = self.registry / "packages" / "floatpkg.yaml"
+        p.parent.mkdir(parents=True, exist_ok=True)
+        # Write YAML with a float key (simulates what PyYAML produces for bare 3.15).
+        data = {"package": "floatpkg", "skip_versions": {3.15: "broken", 3.14: "also broken"}}
+        p.write_text(yaml.dump(data), encoding="utf-8")
+        loaded = load_package("floatpkg", self.registry)
+        self.assertIn("3.15", loaded.skip_versions)
+        self.assertIn("3.14", loaded.skip_versions)
+        self.assertEqual(loaded.skip_versions["3.15"], "broken")
+
     def test_new_fields_tolerated_when_missing(self) -> None:
         """Old YAML files without new fields load with defaults."""
         import yaml
 
-        # Write a YAML file without clone_depth and import_name
+        # Write a YAML file without clone_depth, import_name, and skip_versions
         p = self.registry / "packages" / "oldpkg.yaml"
         p.parent.mkdir(parents=True, exist_ok=True)
         data = {"package": "oldpkg", "repo": "https://github.com/x/y", "enriched": True}
@@ -135,6 +166,7 @@ class TestPackageIO(unittest.TestCase):
         self.assertEqual(loaded.package, "oldpkg")
         self.assertIsNone(loaded.clone_depth)
         self.assertIsNone(loaded.import_name)
+        self.assertEqual(loaded.skip_versions, {})
 
 
 class TestIndexIO(unittest.TestCase):

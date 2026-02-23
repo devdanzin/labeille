@@ -56,6 +56,8 @@ class RunnerConfig:
     repos_dir: Path | None = None
     venvs_dir: Path | None = None
     refresh_venvs: bool = False
+    force_run: bool = False
+    target_python_version: str = ""
     workers: int = 1
     cli_args: list[str] = field(default_factory=list)
 
@@ -96,6 +98,7 @@ class RunSummary:
     clone_errors: int = 0
     errors: int = 0
     skipped: int = 0
+    version_skipped: int = 0
 
 
 @dataclass
@@ -821,14 +824,34 @@ def _run_package_inner(
 # ---------------------------------------------------------------------------
 
 
+def extract_python_minor_version(version_string: str) -> str:
+    """Extract the ``major.minor`` version from a full Python version string.
+
+    For example, ``"3.15.0a5+ (heads/main:abc1234)"`` returns ``"3.15"``.
+    """
+    parts = version_string.strip().split(".")
+    if len(parts) >= 2:
+        # The minor component may contain alpha/rc suffixes — strip non-digits.
+        minor = ""
+        for ch in parts[1]:
+            if ch.isdigit():
+                minor += ch
+            else:
+                break
+        if parts[0].isdigit() and minor:
+            return f"{parts[0]}.{minor}"
+    return version_string
+
+
 def filter_packages(
     index: Index,
     registry_dir: Path,
     config: RunnerConfig,
-) -> list[PackageEntry]:
+) -> tuple[list[PackageEntry], int]:
     """Select and load packages to test based on config filters.
 
-    Returns loaded :class:`PackageEntry` objects in download-count order.
+    Returns a tuple of (loaded :class:`PackageEntry` objects in download-count
+    order, count of packages skipped due to version-specific skip_versions).
     """
     entries = list(index.packages)
 
@@ -842,23 +865,32 @@ def filter_packages(
         entries = [e for e in entries if e.name.lower() in allowed]
 
     packages: list[PackageEntry] = []
+    version_skipped = 0
+    py_ver = config.target_python_version
+
     for entry in entries:
-        if entry.skip:
+        if not config.force_run and entry.skip:
             log.debug("Skipping %s (marked skip in index)", entry.name)
             continue
         if not package_exists(entry.name, registry_dir):
             log.debug("Skipping %s (no package YAML)", entry.name)
             continue
         pkg = load_package(entry.name, registry_dir)
-        if pkg.skip:
+        if not config.force_run and pkg.skip:
             log.debug("Skipping %s (marked skip in package)", pkg.package)
             continue
+        if not config.force_run and py_ver and pkg.skip_versions:
+            reason = pkg.skip_versions.get(py_ver)
+            if reason:
+                log.debug("Skipping %s (skip_versions[%s]: %s)", pkg.package, py_ver, reason)
+                version_skipped += 1
+                continue
         if config.skip_extensions and pkg.extension_type == "extensions":
             log.debug("Skipping %s (extension package)", pkg.package)
             continue
         packages.append(pkg)
 
-    return packages
+    return packages, version_skipped
 
 
 def _update_summary(summary: RunSummary, result: PackageResult) -> None:
@@ -1064,8 +1096,9 @@ def run_all(config: RunnerConfig) -> RunOutput:
 
     # Load index and filter.
     index = load_index(config.registry_dir)
-    packages = filter_packages(index, config.registry_dir, config)
+    packages, version_skipped = filter_packages(index, config.registry_dir, config)
     summary.total = len(packages)
+    summary.version_skipped = version_skipped
 
     log.debug(
         "Selected %d packages from registry (%d in index)", len(packages), len(index.packages)
