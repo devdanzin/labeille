@@ -75,6 +75,7 @@ schema with explanations.
 | `python_versions` | list | Python versions this package supports (informational). |
 | `skip` | bool | Skip this package entirely during `labeille run`. |
 | `skip_reason` | string or null | Why the package is skipped — build failures, missing 3.15 support, etc. |
+| `skip_versions` | dict | Per-Python-version skip reasons. Keys are `"major.minor"` strings (e.g. `"3.15"`), values are human-readable reasons. When the target Python matches a key, the package is skipped — unless `--force-run` is used. Use this instead of `skip: true` when a package only fails on specific Python versions. |
 | `notes` | string | Free-form notes about quirks, known issues, or enrichment decisions. |
 | `enriched` | bool | Whether this file has been reviewed and filled in. Set to `true` once you've determined the install and test commands, even if some tests fail. |
 
@@ -99,6 +100,7 @@ uses_xdist: false
 timeout: null
 skip: false
 skip_reason: null
+skip_versions: {}
 notes: Click CLI framework by Pallets. Uses flit_core build backend.
 enriched: true
 clone_depth: null
@@ -122,6 +124,7 @@ uses_xdist: false
 timeout: 180
 skip: false
 skip_reason: null
+skip_versions: {}
 notes: SCM-based version management. Needs git tags for version detection
   (git fetch --tags). Tests in testing/ directory.
 enriched: true
@@ -416,7 +419,16 @@ Some packages can't be built on 3.15 at all:
 | Changed C API | Some Cython packages | Check case-by-case |
 | Unreleased dependency pins | Packages pinning pre-release versions | Skip with reason |
 
-**Fix:** Set `skip: true` with a clear `skip_reason`.
+**Fix:** For version-specific failures, use `skip_versions` instead of `skip: true`:
+
+```yaml
+skip_versions:
+  "3.15": "PyO3 not supported on 3.15"
+```
+
+This keeps the package testable on other Python versions. Use `skip: true` only
+for packages that can never be tested (e.g. abandoned projects, broken repos).
+Use `--force-run` to override both `skip` and `skip_versions` for debugging.
 
 ### Timeout issues
 

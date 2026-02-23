@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+- `skip_versions` registry field for per-Python-version skip reasons (e.g. `3.15: "PyO3 not supported"`).
+- `--force-run` flag to override `skip` and `skip_versions` for debugging.
 - `--workers N` option for parallel package testing in `labeille run`.
 - `--workers N` option for parallel PyPI resolution in `labeille resolve`.
 - Cancellation support for `--stop-after-crash` in parallel mode.
@@ -25,6 +27,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Parallel execution guidance, resource considerations, and ASAN vs non-ASAN trade-offs.
 
 ### Enhanced
+- Improved repo URL resolution with secondary keys (bug tracker, issues, changelog) and legacy field fallbacks (home_page, download_url).
+- Run summary shows version-skipped count separately when skip_versions is active.
 - Progress reporting adapted for parallel execution with per-completion status lines.
 - Rich end-of-run summary with per-package table, timing stats, and crash details.
 - Quiet mode shows only crash information; default mode hides passing packages.

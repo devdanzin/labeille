@@ -9,6 +9,7 @@ workflow: read inputs, query PyPI, update the registry.
 from __future__ import annotations
 
 import json
+import re
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
@@ -46,8 +47,41 @@ _REPO_KEYS = [
     "github",
     "code",
 ]
+# Secondary keys that may contain repo-adjacent URLs (issue trackers, changelogs).
+# We only use these after all primary keys and homepage fallback have failed.
+_SECONDARY_KEYS = [
+    "bug tracker",
+    "issues",
+    "issue tracker",
+    "changelog",
+]
 # "Homepage" is only accepted when it points to a known forge.
 _FORGE_HOSTS = ("github.com", "gitlab.com")
+
+# Regex to extract the ``owner/repo`` from a GitHub URL, stripping paths like
+# ``/issues``, ``/tree/main``, ``/blob/master/...``, ``/wiki``, etc.
+_GITHUB_REPO_RE = re.compile(
+    r"https?://github\.com/(?P<owner>[^/]+)/(?P<repo>[^/]+?)(?:\.git)?(?:/.*)?$",
+    re.IGNORECASE,
+)
+
+
+def _normalize_github_url(url: str) -> str | None:
+    """Derive the canonical repo URL from a GitHub URL.
+
+    Handles issue tracker URLs, blob/tree links, wiki links, etc.
+    Returns ``https://github.com/{owner}/{repo}`` or ``None`` if the URL
+    doesn't look like a valid GitHub project URL.
+    """
+    m = _GITHUB_REPO_RE.match(url.strip())
+    if m:
+        owner = m.group("owner")
+        repo = m.group("repo")
+        # Filter out obviously non-repo paths (e.g. github.com/orgs/...).
+        if owner.lower() in ("orgs", "topics", "settings", "features"):
+            return None
+        return f"https://github.com/{owner}/{repo}"
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -217,9 +251,15 @@ def fetch_pypi_metadata(package_name: str, *, timeout: float = 10.0) -> dict[str
 def extract_repo_url(metadata: dict[str, Any]) -> str | None:
     """Extract the source repository URL from PyPI metadata.
 
-    Looks in ``info.project_urls`` for keys indicating a source repository,
-    in priority order. Falls back to ``Homepage`` only if it points to a
-    known code forge (github.com, gitlab.com).
+    Resolution order:
+
+    1. Primary ``project_urls`` keys (source, repository, github, code, …).
+    2. ``Homepage`` if it points to a known code forge.
+    3. Secondary ``project_urls`` keys (bug tracker, issues, changelog) —
+       the URL is normalised via :func:`_normalize_github_url` to derive
+       the repo root.
+    4. Legacy ``info.home_page`` / ``info.download_url`` fields, also
+       normalised through :func:`_normalize_github_url`.
 
     Args:
         metadata: The parsed PyPI JSON API response.
@@ -230,22 +270,38 @@ def extract_repo_url(metadata: dict[str, Any]) -> str | None:
     info = metadata.get("info", {})
     if not isinstance(info, dict):
         return None
+
     project_urls = info.get("project_urls")
-    if not isinstance(project_urls, dict):
-        return None
 
-    # Normalise keys to lowercase for matching.
-    normalised: dict[str, str] = {k.lower().strip(): v for k, v in project_urls.items()}
+    if isinstance(project_urls, dict):
+        # Normalise keys to lowercase for matching.
+        normalised: dict[str, str] = {k.lower().strip(): v for k, v in project_urls.items()}
 
-    # Try priority keys first.
-    for key in _REPO_KEYS:
-        if key in normalised:
-            return normalised[key]
+        # 1. Try primary keys first.
+        for key in _REPO_KEYS:
+            if key in normalised:
+                return normalised[key]
 
-    # Fall back to homepage if it points to a forge.
-    homepage = normalised.get("homepage", "")
-    if homepage and any(host in homepage.lower() for host in _FORGE_HOSTS):
-        return homepage
+        # 2. Fall back to homepage if it points to a forge.
+        homepage = normalised.get("homepage", "")
+        if homepage and any(host in homepage.lower() for host in _FORGE_HOSTS):
+            return homepage
+
+        # 3. Try secondary keys (issue trackers, changelogs) and normalise.
+        for key in _SECONDARY_KEYS:
+            url = normalised.get(key, "")
+            if url and "github.com" in url.lower():
+                repo = _normalize_github_url(url)
+                if repo:
+                    return repo
+
+    # 4. Legacy metadata fields.
+    for field_name in ("home_page", "download_url"):
+        legacy_url = info.get(field_name) or ""
+        if legacy_url and any(host in legacy_url.lower() for host in _FORGE_HOSTS):
+            repo = _normalize_github_url(legacy_url)
+            if repo:
+                return repo
 
     return None
 

@@ -11,6 +11,7 @@ import requests
 from labeille.registry import PackageEntry, load_index, load_package, save_package
 from labeille.resolve import (
     PackageInput,
+    _normalize_github_url,
     extract_repo_url,
     fetch_pypi_metadata,
     merge_inputs,
@@ -99,6 +100,113 @@ class TestExtractRepoUrl(unittest.TestCase):
             }
         )
         self.assertEqual(extract_repo_url(meta), "https://github.com/user/new")
+
+    def test_secondary_key_bug_tracker(self) -> None:
+        """Bug tracker URL on GitHub is normalised to repo root."""
+        meta = _make_pypi_response(
+            project_urls={"Bug Tracker": "https://github.com/user/repo/issues"}
+        )
+        self.assertEqual(extract_repo_url(meta), "https://github.com/user/repo")
+
+    def test_secondary_key_changelog(self) -> None:
+        """Changelog URL on GitHub is normalised to repo root."""
+        meta = _make_pypi_response(
+            project_urls={"Changelog": "https://github.com/user/repo/blob/main/CHANGELOG.md"}
+        )
+        self.assertEqual(extract_repo_url(meta), "https://github.com/user/repo")
+
+    def test_secondary_key_non_github_ignored(self) -> None:
+        """Secondary keys pointing to non-GitHub hosts are ignored."""
+        meta = _make_pypi_response(
+            project_urls={"Bug Tracker": "https://bugs.example.com/repo/issues"}
+        )
+        self.assertIsNone(extract_repo_url(meta))
+
+    def test_legacy_home_page_field(self) -> None:
+        """Legacy info.home_page field is used as last resort."""
+        meta: dict[str, object] = {
+            "info": {
+                "name": "oldpkg",
+                "project_urls": None,
+                "home_page": "https://github.com/user/repo",
+            },
+            "urls": [],
+        }
+        self.assertEqual(extract_repo_url(meta), "https://github.com/user/repo")
+
+    def test_legacy_download_url_field(self) -> None:
+        """Legacy info.download_url field is used as last resort."""
+        meta: dict[str, object] = {
+            "info": {
+                "name": "oldpkg",
+                "project_urls": None,
+                "download_url": "https://github.com/user/repo/archive/v1.0.tar.gz",
+            },
+            "urls": [],
+        }
+        self.assertEqual(extract_repo_url(meta), "https://github.com/user/repo")
+
+    def test_legacy_non_forge_ignored(self) -> None:
+        """Legacy fields pointing to non-forge hosts are ignored."""
+        meta: dict[str, object] = {
+            "info": {
+                "name": "oldpkg",
+                "project_urls": None,
+                "home_page": "https://example.com/docs",
+            },
+            "urls": [],
+        }
+        self.assertIsNone(extract_repo_url(meta))
+
+
+class TestNormalizeGithubUrl(unittest.TestCase):
+    def test_plain_repo(self) -> None:
+        self.assertEqual(
+            _normalize_github_url("https://github.com/user/repo"),
+            "https://github.com/user/repo",
+        )
+
+    def test_issues_url(self) -> None:
+        self.assertEqual(
+            _normalize_github_url("https://github.com/user/repo/issues"),
+            "https://github.com/user/repo",
+        )
+
+    def test_blob_url(self) -> None:
+        self.assertEqual(
+            _normalize_github_url("https://github.com/user/repo/blob/main/CHANGELOG.md"),
+            "https://github.com/user/repo",
+        )
+
+    def test_tree_url(self) -> None:
+        self.assertEqual(
+            _normalize_github_url("https://github.com/user/repo/tree/v2.0"),
+            "https://github.com/user/repo",
+        )
+
+    def test_wiki_url(self) -> None:
+        self.assertEqual(
+            _normalize_github_url("https://github.com/user/repo/wiki"),
+            "https://github.com/user/repo",
+        )
+
+    def test_dot_git_suffix(self) -> None:
+        self.assertEqual(
+            _normalize_github_url("https://github.com/user/repo.git"),
+            "https://github.com/user/repo",
+        )
+
+    def test_non_github_returns_none(self) -> None:
+        self.assertIsNone(_normalize_github_url("https://gitlab.com/user/repo"))
+
+    def test_orgs_path_returns_none(self) -> None:
+        self.assertIsNone(_normalize_github_url("https://github.com/orgs/myorg/repositories"))
+
+    def test_archive_url(self) -> None:
+        self.assertEqual(
+            _normalize_github_url("https://github.com/user/repo/archive/v1.0.tar.gz"),
+            "https://github.com/user/repo",
+        )
 
 
 class TestFetchPypiMetadata(unittest.TestCase):

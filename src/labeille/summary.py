@@ -172,6 +172,8 @@ def _format_aggregate(
         f"  Other errors:  {summary.errors:3d}",
         f"Skipped:         {summary.skipped:3d}",
     ]
+    if summary.version_skipped > 0:
+        left.append(f"  Version-skipped:{summary.version_skipped:3d}")
 
     right: list[str] = [
         f"Total time: {format_duration(total_duration)}",

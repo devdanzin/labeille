@@ -41,6 +41,7 @@ class PackageEntry:
     timeout: int | None = None
     skip: bool = False
     skip_reason: str | None = None
+    skip_versions: dict[str, str] = field(default_factory=dict)
     notes: str = ""
     enriched: bool = False
     clone_depth: int | None = None
@@ -78,14 +79,30 @@ class Index:
 
 
 def _package_to_dict(entry: PackageEntry) -> dict[str, Any]:
-    """Convert a PackageEntry to an ordered dict suitable for YAML output."""
-    return asdict(entry)
+    """Convert a PackageEntry to an ordered dict suitable for YAML output.
+
+    Ensures ``skip_versions`` keys are strings so that YAML round-trips
+    correctly (prevents PyYAML from emitting bare floats like ``3.15``).
+    """
+    data = asdict(entry)
+    sv = data.get("skip_versions")
+    if isinstance(sv, dict):
+        data["skip_versions"] = {str(k): str(v) for k, v in sv.items()}
+    return data
 
 
 def _dict_to_package(data: dict[str, Any]) -> PackageEntry:
-    """Create a PackageEntry from a dict, tolerating missing/extra keys."""
+    """Create a PackageEntry from a dict, tolerating missing/extra keys.
+
+    Coerces ``skip_versions`` keys to strings — PyYAML parses bare ``3.15``
+    as a float, but we need string keys like ``"3.15"``.
+    """
     known = {f.name for f in fields(PackageEntry)}
     filtered = {k: v for k, v in data.items() if k in known}
+    # Coerce skip_versions keys from float/int to str.
+    sv = filtered.get("skip_versions")
+    if isinstance(sv, dict):
+        filtered["skip_versions"] = {str(k): str(v) for k, v in sv.items()}
     return PackageEntry(**filtered)
 
 

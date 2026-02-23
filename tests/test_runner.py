@@ -22,6 +22,7 @@ from labeille.runner import (
     append_result,
     build_env,
     create_run_dir,
+    extract_python_minor_version,
     filter_packages,
     get_package_version,
     load_completed_packages,
@@ -42,6 +43,8 @@ def _make_config(
     top_n: int | None = None,
     packages_filter: list[str] | None = None,
     timeout: int = 600,
+    force_run: bool = False,
+    target_python_version: str = "",
 ) -> RunnerConfig:
     registry_dir = tmpdir / "registry"
     registry_dir.mkdir(parents=True, exist_ok=True)
@@ -58,6 +61,8 @@ def _make_config(
         skip_completed=skip_completed,
         stop_after_crash=stop_after_crash,
         dry_run=dry_run,
+        force_run=force_run,
+        target_python_version=target_python_version,
     )
 
 
@@ -72,6 +77,7 @@ def _make_package(
     timeout: int | None = None,
     clone_depth: int | None = None,
     import_name: str | None = None,
+    skip_versions: dict[str, str] | None = None,
 ) -> PackageEntry:
     return PackageEntry(
         package=name,
@@ -84,6 +90,7 @@ def _make_package(
         timeout=timeout,
         clone_depth=clone_depth,
         import_name=import_name,
+        skip_versions=skip_versions or {},
     )
 
 
@@ -211,8 +218,9 @@ class TestFilterPackages(unittest.TestCase):
                 IndexEntry(name="pkg3", download_count=100),
             ]
         )
-        result = filter_packages(index, self.config.registry_dir, self.config)
+        result, ver_skipped = filter_packages(index, self.config.registry_dir, self.config)
         self.assertEqual(len(result), 3)
+        self.assertEqual(ver_skipped, 0)
 
     def test_top_n(self) -> None:
         self.config.top_n = 2
@@ -223,7 +231,7 @@ class TestFilterPackages(unittest.TestCase):
                 IndexEntry(name="pkg3", download_count=100),
             ]
         )
-        result = filter_packages(index, self.config.registry_dir, self.config)
+        result, _ = filter_packages(index, self.config.registry_dir, self.config)
         self.assertEqual(len(result), 2)
         names = [p.package for p in result]
         self.assertIn("pkg1", names)
@@ -238,7 +246,7 @@ class TestFilterPackages(unittest.TestCase):
                 IndexEntry(name="pkg3", download_count=100),
             ]
         )
-        result = filter_packages(index, self.config.registry_dir, self.config)
+        result, _ = filter_packages(index, self.config.registry_dir, self.config)
         names = [p.package for p in result]
         self.assertNotIn("pkg2", names)
         self.assertIn("pkg1", names)
@@ -253,7 +261,7 @@ class TestFilterPackages(unittest.TestCase):
                 IndexEntry(name="pkg3", download_count=100),
             ]
         )
-        result = filter_packages(index, self.config.registry_dir, self.config)
+        result, _ = filter_packages(index, self.config.registry_dir, self.config)
         names = [p.package for p in result]
         self.assertEqual(set(names), {"pkg1", "pkg3"})
 
@@ -266,9 +274,78 @@ class TestFilterPackages(unittest.TestCase):
                 IndexEntry(name="skipped", download_count=900),
             ]
         )
-        result = filter_packages(index, self.config.registry_dir, self.config)
+        result, _ = filter_packages(index, self.config.registry_dir, self.config)
         names = [p.package for p in result]
         self.assertNotIn("skipped", names)
+
+    def test_skip_versions_filters_matching_version(self) -> None:
+        """Packages with skip_versions matching target are filtered out."""
+        self.config.target_python_version = "3.15"
+        ver_pkg = _make_package(name="verpkg", skip_versions={"3.15": "PyO3 not supported"})
+        save_package(ver_pkg, self.config.registry_dir)
+        index = Index(
+            packages=[
+                IndexEntry(name="pkg1", download_count=1000),
+                IndexEntry(name="verpkg", download_count=900),
+            ]
+        )
+        result, ver_skipped = filter_packages(index, self.config.registry_dir, self.config)
+        names = [p.package for p in result]
+        self.assertNotIn("verpkg", names)
+        self.assertIn("pkg1", names)
+        self.assertEqual(ver_skipped, 1)
+
+    def test_skip_versions_allows_non_matching_version(self) -> None:
+        """Packages with skip_versions for other versions are NOT filtered."""
+        self.config.target_python_version = "3.14"
+        ver_pkg = _make_package(name="verpkg", skip_versions={"3.15": "PyO3 not supported"})
+        save_package(ver_pkg, self.config.registry_dir)
+        index = Index(
+            packages=[
+                IndexEntry(name="verpkg", download_count=900),
+            ]
+        )
+        result, ver_skipped = filter_packages(index, self.config.registry_dir, self.config)
+        names = [p.package for p in result]
+        self.assertIn("verpkg", names)
+        self.assertEqual(ver_skipped, 0)
+
+    def test_force_run_overrides_skip(self) -> None:
+        """--force-run overrides both skip and skip_versions."""
+        self.config.force_run = True
+        self.config.target_python_version = "3.15"
+        skip_pkg = _make_package(name="skipped", skip=True)
+        ver_pkg = _make_package(name="verpkg", skip_versions={"3.15": "broken"})
+        save_package(skip_pkg, self.config.registry_dir)
+        save_package(ver_pkg, self.config.registry_dir)
+        index = Index(
+            packages=[
+                IndexEntry(name="pkg1", download_count=1000),
+                IndexEntry(name="skipped", download_count=900),
+                IndexEntry(name="verpkg", download_count=800),
+            ]
+        )
+        result, ver_skipped = filter_packages(index, self.config.registry_dir, self.config)
+        names = [p.package for p in result]
+        self.assertIn("skipped", names)
+        self.assertIn("verpkg", names)
+        self.assertIn("pkg1", names)
+        self.assertEqual(ver_skipped, 0)
+
+    def test_skip_versions_no_target_version_set(self) -> None:
+        """When target_python_version is empty, skip_versions is not checked."""
+        self.config.target_python_version = ""
+        ver_pkg = _make_package(name="verpkg", skip_versions={"3.15": "broken"})
+        save_package(ver_pkg, self.config.registry_dir)
+        index = Index(
+            packages=[
+                IndexEntry(name="verpkg", download_count=900),
+            ]
+        )
+        result, ver_skipped = filter_packages(index, self.config.registry_dir, self.config)
+        names = [p.package for p in result]
+        self.assertIn("verpkg", names)
+        self.assertEqual(ver_skipped, 0)
 
 
 class TestRunPackage(unittest.TestCase):
@@ -1401,6 +1478,26 @@ class TestCancelEvent(unittest.TestCase):
         pkg = _make_package()
         result = run_package(pkg, self.config, self.run_dir, self.env, cancel_event=None)
         self.assertEqual(result.status, "pass")
+
+
+class TestExtractPythonMinorVersion(unittest.TestCase):
+    def test_full_version_string(self) -> None:
+        self.assertEqual(extract_python_minor_version("3.15.0a5+"), "3.15")
+
+    def test_release_version(self) -> None:
+        self.assertEqual(extract_python_minor_version("3.14.2"), "3.14")
+
+    def test_version_with_build_info(self) -> None:
+        self.assertEqual(extract_python_minor_version("3.15.0a5+ (heads/main:abc1234)"), "3.15")
+
+    def test_short_version(self) -> None:
+        self.assertEqual(extract_python_minor_version("3.15"), "3.15")
+
+    def test_empty_string(self) -> None:
+        self.assertEqual(extract_python_minor_version(""), "")
+
+    def test_malformed_version(self) -> None:
+        self.assertEqual(extract_python_minor_version("not-a-version"), "not-a-version")
 
 
 if __name__ == "__main__":
