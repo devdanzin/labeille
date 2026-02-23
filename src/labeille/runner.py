@@ -53,6 +53,7 @@ class RunnerConfig:
     keep_work_dirs: bool = False
     repos_dir: Path | None = None
     venvs_dir: Path | None = None
+    refresh_venvs: bool = False
     cli_args: list[str] = field(default_factory=list)
 
 
@@ -580,6 +581,11 @@ def _run_package_inner(
     # --- Create or reuse venv ---
     venv_python = venv_dir / "bin" / "python"
     venv_existed = venv_dir.exists() and venv_python.exists()
+
+    if venv_existed and config.refresh_venvs:
+        log.info("Refreshing venv for %s at %s", pkg.package, venv_dir)
+        shutil.rmtree(venv_dir)
+        venv_existed = False
 
     if venv_existed:
         log.info("Reusing venv for %s at %s", pkg.package, venv_dir)

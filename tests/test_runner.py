@@ -791,6 +791,73 @@ class TestRepoReuse(unittest.TestCase):
         self.assertEqual(result.git_revision, "new1234")
         self.assertEqual(result.status, "pass")
 
+    @patch("labeille.runner.run_test_command")
+    @patch("labeille.runner.get_installed_packages")
+    @patch("labeille.runner.install_package")
+    @patch("labeille.runner.create_venv")
+    @patch("labeille.runner.clone_repo")
+    def test_refresh_venvs_deletes_and_recreates(
+        self,
+        mock_clone: MagicMock,
+        mock_venv: MagicMock,
+        mock_install: MagicMock,
+        mock_get_pkgs: MagicMock,
+        mock_test: MagicMock,
+    ) -> None:
+        """When refresh_venvs is True, existing venv is deleted and recreated."""
+        self.config.refresh_venvs = True
+        pkg = _make_package()
+        # Pre-create the venv dir with bin/python.
+        venv_dir = self.base / "venvs" / "testpkg"
+        (venv_dir / "bin").mkdir(parents=True)
+        (venv_dir / "bin" / "python").touch()
+
+        mock_clone.return_value = "abc1234"
+        mock_install.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_get_pkgs.return_value = {}
+        mock_test.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="ok\n", stderr=""
+        )
+
+        result = run_package(pkg, self.config, self.run_dir, self.env)
+        mock_venv.assert_called_once()
+        mock_install.assert_called_once()
+        self.assertEqual(result.status, "pass")
+
+    @patch("labeille.runner.run_test_command")
+    @patch("labeille.runner.get_installed_packages")
+    @patch("labeille.runner.install_package")
+    @patch("labeille.runner.create_venv")
+    @patch("labeille.runner.clone_repo")
+    def test_refresh_venvs_false_still_reuses(
+        self,
+        mock_clone: MagicMock,
+        mock_venv: MagicMock,
+        mock_install: MagicMock,
+        mock_get_pkgs: MagicMock,
+        mock_test: MagicMock,
+    ) -> None:
+        """When refresh_venvs is False (default), existing venv is reused."""
+        self.config.refresh_venvs = False
+        pkg = _make_package()
+        # Pre-create the venv dir with bin/python.
+        venv_dir = self.base / "venvs" / "testpkg"
+        (venv_dir / "bin").mkdir(parents=True)
+        (venv_dir / "bin" / "python").touch()
+
+        mock_clone.return_value = "abc1234"
+        mock_get_pkgs.return_value = {}
+        mock_test.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="ok\n", stderr=""
+        )
+
+        result = run_package(pkg, self.config, self.run_dir, self.env)
+        mock_venv.assert_not_called()
+        mock_install.assert_not_called()
+        self.assertEqual(result.status, "pass")
+
     def test_persistent_dirs_not_deleted(self) -> None:
         """Persistent repos/venvs dirs are NOT cleaned up after run."""
         repos_dir = self.base / "repos"
