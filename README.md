@@ -50,6 +50,9 @@ labeille run --target-python /path/to/jit-python --skip-extensions
 
 # Stop after finding the first crash
 labeille run --target-python /path/to/jit-python --stop-after-crash 1
+
+# Run tests in parallel (4 workers)
+labeille run --target-python /path/to/jit-python --workers 4
 ```
 
 ## How It Works
@@ -84,6 +87,10 @@ Runs test suites and detects crashes:
 5. For crashes: extracts a signature (signal + stderr context) and saves the
    full stderr output.
 6. Writes results as JSONL for analysis, with full metadata for reproducibility.
+
+Runs can execute packages in parallel with `--workers N` for faster batch
+testing. Each worker handles one package end-to-end with results collected
+thread-safely.
 
 Runs are **resumable**: use `--skip-completed` with the same `--run-id` to
 continue after an interruption.

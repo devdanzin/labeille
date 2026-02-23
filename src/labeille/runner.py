@@ -14,7 +14,9 @@ import shutil
 import socket
 import subprocess
 import tempfile
+import threading
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -54,6 +56,7 @@ class RunnerConfig:
     repos_dir: Path | None = None
     venvs_dir: Path | None = None
     refresh_venvs: bool = False
+    workers: int = 1
     cli_args: list[str] = field(default_factory=list)
 
 
@@ -542,6 +545,7 @@ def run_package(
     config: RunnerConfig,
     run_dir: Path,
     env: dict[str, str],
+    cancel_event: threading.Event | None = None,
 ) -> PackageResult:
     """Run a single package's test suite end-to-end.
 
@@ -552,6 +556,7 @@ def run_package(
         config: The runner configuration.
         run_dir: The run output directory.
         env: The environment dict for subprocesses.
+        cancel_event: If set, the worker should stop early.
 
     Returns:
         A :class:`PackageResult` with the outcome.
@@ -570,7 +575,16 @@ def run_package(
     start = time.monotonic()
     try:
         result = _run_package_inner(
-            pkg, config, run_dir, env, result, per_pkg_timeout, work_dir, repo_dir, venv_dir
+            pkg,
+            config,
+            run_dir,
+            env,
+            result,
+            per_pkg_timeout,
+            work_dir,
+            repo_dir,
+            venv_dir,
+            cancel_event=cancel_event,
         )
     except Exception as exc:
         result.status = "error"
@@ -594,9 +608,19 @@ def _run_package_inner(
     work_dir: Path | None,
     repo_dir: Path,
     venv_dir: Path,
+    cancel_event: threading.Event | None = None,
 ) -> PackageResult:
     """Inner implementation of per-package testing (no cleanup responsibility)."""
+
+    def _cancelled() -> bool:
+        return cancel_event is not None and cancel_event.is_set()
+
     # --- Clone or pull ---
+    if _cancelled():
+        result.status = "error"
+        result.error_message = "Run stopped (crash limit reached)"
+        return result
+
     if not pkg.repo:
         result.status = "clone_error"
         result.error_message = "No repository URL"
@@ -628,6 +652,11 @@ def _run_package_inner(
     log.debug("Git revision for %s: %s (%.2fs)", pkg.package, result.git_revision, clone_dur)
 
     # --- Create or reuse venv ---
+    if _cancelled():
+        result.status = "error"
+        result.error_message = "Run stopped (crash limit reached)"
+        return result
+
     venv_python = venv_dir / "bin" / "python"
     venv_existed = venv_dir.exists() and venv_python.exists()
 
@@ -651,6 +680,11 @@ def _run_package_inner(
         log.debug("Venv created for %s in %.2fs", pkg.package, time.monotonic() - venv_start)
 
     # --- Install (skip if reusing venv) ---
+    if _cancelled():
+        result.status = "error"
+        result.error_message = "Run stopped (crash limit reached)"
+        return result
+
     if venv_existed:
         log.info("Skipping install for %s (reusing venv)", pkg.package)
     else:
@@ -730,6 +764,11 @@ def _run_package_inner(
         log.debug("Dependency list:\n%s", "\n".join(dep_lines))
 
     # --- Run tests ---
+    if _cancelled():
+        result.status = "error"
+        result.error_message = "Run stopped (crash limit reached)"
+        return result
+
     test_cmd = pkg.test_command or "python -m pytest"
     result.test_command = test_cmd
     log.info("Running tests for %s: %s", pkg.package, test_cmd)
@@ -822,8 +861,197 @@ def filter_packages(
     return packages
 
 
+def _update_summary(summary: RunSummary, result: PackageResult) -> None:
+    """Update summary counters from a single result."""
+    summary.tested += 1
+    if result.status == "pass":
+        summary.passed += 1
+    elif result.status == "fail":
+        summary.failed += 1
+    elif result.status == "crash":
+        summary.crashed += 1
+    elif result.status == "timeout":
+        summary.timed_out += 1
+    elif result.status == "install_error":
+        summary.install_errors += 1
+    elif result.status == "clone_error":
+        summary.clone_errors += 1
+    else:
+        summary.errors += 1
+
+
+def _log_parallel_progress(
+    result: PackageResult,
+    completed_count: int,
+    total: int,
+    crashes: int,
+    config: RunnerConfig,
+) -> None:
+    """Log a one-line progress update for parallel mode."""
+    duration = f"{result.duration_seconds:.0f}s"
+    if result.status == "crash":
+        sig_name = ""
+        if result.signal is not None:
+            sig_name = f" SIG{result.signal}"
+        line = f"[{completed_count}/{total}] CRASH {result.package} ({duration}){sig_name}"
+        if result.crash_signature:
+            line += f": {result.crash_signature}"
+        log.warning(line)
+    elif config.quiet:
+        return  # quiet mode: only print crashes
+    elif result.status == "pass":
+        log.info("[%d/%d] pass %s (%s)", completed_count, total, result.package, duration)
+    elif result.status == "fail":
+        log.info(
+            "[%d/%d] fail %s (exit %d, %s)",
+            completed_count,
+            total,
+            result.package,
+            result.exit_code,
+            duration,
+        )
+    else:
+        log.info(
+            "[%d/%d] %s %s (%s)",
+            completed_count,
+            total,
+            result.status,
+            result.package,
+            duration,
+        )
+
+
+def _run_all_sequential(
+    packages: list[PackageEntry],
+    config: RunnerConfig,
+    run_dir: Path,
+    env: dict[str, str],
+    summary: RunSummary,
+    completed: set[str],
+) -> list[PackageResult]:
+    """Sequential execution path (workers=1)."""
+    results: list[PackageResult] = []
+    crashes_found = 0
+
+    for pkg in packages:
+        if pkg.package in completed:
+            log.info("Skipping %s: already completed in this run", pkg.package)
+            summary.skipped += 1
+            continue
+
+        if config.dry_run:
+            log.info("[dry-run] Would test: %s", pkg.package)
+            summary.skipped += 1
+            continue
+
+        if config.stop_after_crash is not None and crashes_found >= config.stop_after_crash:
+            log.info("Stopping: reached %d crash(es)", crashes_found)
+            break
+
+        log.info("--- Testing %s (%d/%d) ---", pkg.package, summary.tested + 1, summary.total)
+        result = run_package(pkg, config, run_dir, env)
+        results.append(result)
+        append_result(run_dir, result)
+        log.debug(
+            "Result for %s: %s (%.2fs total)",
+            pkg.package,
+            result.status,
+            result.duration_seconds,
+        )
+
+        _update_summary(summary, result)
+        if result.status == "crash":
+            crashes_found += 1
+
+    return results
+
+
+def _run_all_parallel(
+    packages: list[PackageEntry],
+    config: RunnerConfig,
+    run_dir: Path,
+    env: dict[str, str],
+    summary: RunSummary,
+    completed: set[str],
+) -> list[PackageResult]:
+    """Parallel execution path (workers>=2)."""
+    results: list[PackageResult] = []
+    results_lock = threading.Lock()
+    cancel_event = threading.Event()
+    crashes_found = 0
+    completed_count = 0
+
+    # Filter out already-completed and dry-run packages before submitting.
+    to_run: list[PackageEntry] = []
+    for pkg in packages:
+        if pkg.package in completed:
+            log.info("Skipping %s: already completed in this run", pkg.package)
+            summary.skipped += 1
+            continue
+        if config.dry_run:
+            log.info("[dry-run] Would test: %s", pkg.package)
+            summary.skipped += 1
+            continue
+        to_run.append(pkg)
+
+    def _worker(pkg: PackageEntry) -> PackageResult:
+        nonlocal crashes_found, completed_count
+
+        if cancel_event.is_set():
+            return PackageResult(
+                package=pkg.package,
+                repo=pkg.repo,
+                status="error",
+                error_message="Run stopped (crash limit reached)",
+                timestamp=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            )
+
+        result = run_package(pkg, config, run_dir, env, cancel_event=cancel_event)
+
+        with results_lock:
+            append_result(run_dir, result)
+            completed_count += 1
+            if result.status == "crash":
+                crashes_found += 1
+                if (
+                    config.stop_after_crash is not None
+                    and crashes_found >= config.stop_after_crash
+                ):
+                    cancel_event.set()
+            _log_parallel_progress(result, completed_count, len(to_run), crashes_found, config)
+
+        return result
+
+    with ThreadPoolExecutor(max_workers=config.workers) as pool:
+        futures = {pool.submit(_worker, pkg): pkg for pkg in to_run}
+        for future in as_completed(futures):
+            pkg = futures[future]
+            try:
+                result = future.result()
+                results.append(result)
+                _update_summary(summary, result)
+            except Exception as exc:
+                log.error("Worker exception for %s: %s", pkg.package, exc)
+                error_result = PackageResult(
+                    package=pkg.package,
+                    repo=pkg.repo,
+                    status="error",
+                    error_message=f"Worker exception: {exc}",
+                    timestamp=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                )
+                results.append(error_result)
+                _update_summary(summary, error_result)
+
+    return results
+
+
 def run_all(config: RunnerConfig) -> RunOutput:
     """Run test suites for all selected packages.
+
+    When ``config.workers`` is 1 (default), packages are tested sequentially.
+    When ``config.workers`` >= 2, packages are tested in parallel using a
+    thread pool.  All CPU-intensive work happens in subprocesses, so the GIL
+    is not a bottleneck.
 
     Args:
         config: The runner configuration.
@@ -859,6 +1087,8 @@ def run_all(config: RunnerConfig) -> RunOutput:
     log.info("Target Python: %s", python_version)
     log.info("JIT enabled: %s", jit_enabled)
     log.debug("Target binary: %s", config.target_python)
+    if config.workers > 1:
+        log.info("Parallel mode: %d workers", config.workers)
 
     started_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     write_run_meta(run_dir, config, python_version, jit_enabled, started_at=started_at)
@@ -871,51 +1101,12 @@ def run_all(config: RunnerConfig) -> RunOutput:
             log.info("Resuming: %d packages already completed", len(completed))
 
     env = build_env(config)
-    results: list[PackageResult] = []
-    crashes_found = 0
 
-    for pkg in packages:
-        # Skip completed.
-        if pkg.package in completed:
-            log.info("Skipping %s: already completed in this run", pkg.package)
-            summary.skipped += 1
-            continue
-
-        if config.dry_run:
-            log.info("[dry-run] Would test: %s", pkg.package)
-            summary.skipped += 1
-            continue
-
-        # Stop after N crashes.
-        if config.stop_after_crash is not None and crashes_found >= config.stop_after_crash:
-            log.info("Stopping: reached %d crash(es)", crashes_found)
-            break
-
-        log.info("--- Testing %s (%d/%d) ---", pkg.package, summary.tested + 1, summary.total)
-        result = run_package(pkg, config, run_dir, env)
-        results.append(result)
-        append_result(run_dir, result)
-        log.debug(
-            "Result for %s: %s (%.2fs total)", pkg.package, result.status, result.duration_seconds
-        )
-
-        # Update summary.
-        summary.tested += 1
-        if result.status == "pass":
-            summary.passed += 1
-        elif result.status == "fail":
-            summary.failed += 1
-        elif result.status == "crash":
-            summary.crashed += 1
-            crashes_found += 1
-        elif result.status == "timeout":
-            summary.timed_out += 1
-        elif result.status == "install_error":
-            summary.install_errors += 1
-        elif result.status == "clone_error":
-            summary.clone_errors += 1
-        else:
-            summary.errors += 1
+    workers = max(1, config.workers)
+    if workers == 1:
+        results = _run_all_sequential(packages, config, run_dir, env, summary, completed)
+    else:
+        results = _run_all_parallel(packages, config, run_dir, env, summary, completed)
 
     # Finalise run metadata.
     total_duration = round(time.monotonic() - run_start, 2)

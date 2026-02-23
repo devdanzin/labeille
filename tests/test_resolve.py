@@ -408,5 +408,52 @@ class TestResolveAll(unittest.TestCase):
         self.assertEqual(index.packages[1].name, "small")
 
 
+class TestResolveAllParallel(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmpdir = tempfile.TemporaryDirectory()
+        self.registry = Path(self.tmpdir.name)
+        (self.registry / "packages").mkdir(parents=True)
+
+    def tearDown(self) -> None:
+        self.tmpdir.cleanup()
+
+    @patch("labeille.resolve.fetch_pypi_metadata")
+    def test_parallel_resolve_collects_all(self, mock_fetch: MagicMock) -> None:
+        """Parallel resolve collects results from all packages."""
+        mock_fetch.side_effect = [
+            _make_pypi_response(
+                project_urls={"Source": "https://github.com/psf/requests"},
+                urls=[{"filename": "requests-2.31.0-py3-none-any.whl"}],
+            ),
+            _make_pypi_response(
+                project_urls={"Source": "https://github.com/pallets/click"},
+                urls=[{"filename": "click-8.0-py3-none-any.whl"}],
+            ),
+        ]
+        packages = [PackageInput("requests", 1_000_000), PackageInput("click", 500_000)]
+        results, summary = resolve_all(packages, self.registry, workers=2)
+        self.assertEqual(summary.total, 2)
+        self.assertEqual(summary.resolved, 2)
+        self.assertEqual(summary.created, 2)
+        # Index should be created with both packages.
+        index = load_index(self.registry)
+        self.assertEqual(len(index.packages), 2)
+
+    @patch("labeille.resolve.fetch_pypi_metadata")
+    def test_parallel_partial_failure(self, mock_fetch: MagicMock) -> None:
+        """Parallel resolve handles partial failures."""
+        mock_fetch.side_effect = [
+            None,  # first fails
+            _make_pypi_response(
+                project_urls={"Source": "https://github.com/pallets/click"},
+                urls=[{"filename": "click-8.0-py3-none-any.whl"}],
+            ),
+        ]
+        packages = [PackageInput("broken"), PackageInput("click")]
+        results, summary = resolve_all(packages, self.registry, workers=2)
+        self.assertEqual(summary.failed, 1)
+        self.assertEqual(summary.resolved, 1)
+
+
 if __name__ == "__main__":
     unittest.main()

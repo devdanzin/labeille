@@ -72,5 +72,18 @@ Update index after editing package files: `load_index()` → `update_index_from_
 - **meson-python** (numpy, pandas): need `pip install meson-python meson cython ninja` before `--no-build-isolation`
 - **moto[server]**: requires pydantic → pydantic-core (PyO3), blocks aiobotocore testing
 
+## Performance and resource usage
+
+### Parallel execution
+- `--workers N` runs N packages in parallel (default: 1, sequential)
+- Each worker spawns its own subprocesses (git, pip, pytest) — threads just wait on child processes, so the GIL is not a bottleneck
+- Memory scales linearly with worker count; each test process uses the full interpreter + test suite + any ASAN overhead
+
+### ASAN and resource pressure
+- The dev .venv uses an ASAN-enabled build: ~2-3x memory per process
+- For parallel runs with ASAN, --workers 2-3 is the practical limit
+- For large batch runs (50+ packages), consider a non-ASAN JIT build: most JIT crashes (segfaults, aborts, assertion failures) reproduce identically without ASAN, and you can run --workers 4-8 comfortably
+- Specific crashes can be reproduced under ASAN afterward for detailed memory error analysis
+
 ## Workflow
 - Use `/task-workflow <description>` for the full issue → branch → code → test → commit → PR → merge cycle

@@ -7,6 +7,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+- `--workers N` option for parallel package testing in `labeille run`.
+- `--workers N` option for parallel PyPI resolution in `labeille resolve`.
+- Cancellation support for `--stop-after-crash` in parallel mode.
 - `clone_depth` registry field for packages needing git tags (e.g. setuptools-scm).
 - `import_name` registry field for packages whose import name differs from PyPI name.
 - `summary.py` module for formatting run results.
@@ -19,8 +22,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ### Documentation
 - Comprehensive enrichment guide with manual workflow, troubleshooting, and Claude Code prompts (doc/enrichment.md).
 - Updated README with enrichment overview and link to guide.
+- Parallel execution guidance, resource considerations, and ASAN vs non-ASAN trade-offs.
 
 ### Enhanced
+- Progress reporting adapted for parallel execution with per-completion status lines.
 - Rich end-of-run summary with per-package table, timing stats, and crash details.
 - Quiet mode shows only crash information; default mode hides passing packages.
 - Post-install import validation catches broken installs before running tests.
