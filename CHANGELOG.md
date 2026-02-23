@@ -7,6 +7,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+- `labeille scan-deps` command for static test dependency discovery via AST-based import analysis.
+- `import_map.py` module with 100+ import-name-to-pip-package mappings for common mismatches (PIL->Pillow, yaml->PyYAML, etc.).
+- Three output formats for scan-deps: human-readable (default), JSON, and pip (for direct shell use).
+- Automatic test directory detection and local module filtering in scan-deps.
+- Comparison against existing install_command to identify missing deps.
+- Registry cross-referencing for import_name resolution in scan-deps.
 - `labeille analyze` CLI subgroup with five subcommands: `registry`, `run`, `compare`, `history`, `package`.
 - `formatting.py` shared formatting module (tables, histograms, sparklines, duration, status icons).
 - `analyze.py` data loading and analysis module (run data, registry stats, comparison, flaky detection).

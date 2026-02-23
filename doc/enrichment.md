@@ -133,6 +133,44 @@ import_name: setuptools_scm
 ```
 
 
+## Dependency Discovery with scan-deps
+
+Before manually examining project files for test dependencies, always
+run scan-deps first:
+
+```bash
+labeille scan-deps /path/to/cloned/repo --package-name PACKAGE \
+    --registry-dir registry/ --install-command "CURRENT_INSTALL_CMD"
+```
+
+This statically analyzes test imports and reports which pip packages are
+needed. Use its output as the starting point for install_command, then
+supplement with any deps needed for test configuration (pytest plugins
+referenced in addopts, etc.).
+
+If scan-deps reports unresolved imports:
+- Check if they're local test modules (common: dummyserver, testutils,
+  helpers, fixtures)
+- If they're real packages with unusual import names, resolve them and
+  consider adding the mapping to `src/labeille/import_map.py`
+
+### Updated enrichment workflow
+
+```
+1. Clone the repo
+2. Run: labeille scan-deps /path/to/repo --package-name X --registry-dir registry/
+3. Use the output to build install_command:
+   - Start with: pip install -e . && pip install <resolved deps from scan>
+   - Or if the project has test extras: pip install -e ".[test]" && pip install <missing deps>
+4. Examine pyproject.toml / tox.ini ONLY for test configuration:
+   - pytest addopts (plugins referenced? markers? flags?)
+   - conftest.py fixtures (do they need special setup?)
+   - xdist usage (set uses_xdist: true, add -p no:xdist)
+5. Run labeille run --packages X to validate
+6. Fix any remaining issues (typically config, not deps)
+```
+
+
 ## Manual enrichment walkthrough
 
 Let's walk through enriching a package from scratch using `packaging` as our
