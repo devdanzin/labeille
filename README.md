@@ -88,6 +88,21 @@ Runs test suites and detects crashes:
 Runs are **resumable**: use `--skip-completed` with the same `--run-id` to
 continue after an interruption.
 
+## Enriching Packages
+
+After `labeille resolve` creates skeleton registry files, each package needs
+to be *enriched* with specific installation and test instructions. This is
+the most important step — without accurate enrichment, test runs will fail
+with missing dependencies, broken installs, or pytest configuration errors.
+
+Enrichment can be done manually, with Claude Code, or with another AI coding
+agent. The process is iterative: fill in the YAML fields, run the tests,
+diagnose any failures, fix the YAML, and re-run until the test harness works.
+
+For the complete guide — including field reference, step-by-step walkthrough,
+common problems, and ready-to-use Claude Code prompts — see
+**[doc/enrichment.md](doc/enrichment.md)**.
+
 ## Registry Format
 
 ### Package file (`registry/packages/{name}.yaml`)
@@ -149,6 +164,8 @@ labeille/
 │   ├── classifier.py    # Pure Python / C extension detection
 │   ├── crash.py         # Crash detection and signature extraction
 │   └── logging.py       # Structured logging setup
+├── doc/                 # Documentation
+│   └── enrichment.md    # Package enrichment guide
 ├── tests/               # Unit and integration tests
 ├── registry/            # Package test configurations
 │   ├── index.yaml       # Index of tracked packages
