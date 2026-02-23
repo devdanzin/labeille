@@ -1,6 +1,6 @@
 """Command-line interface for labeille.
 
-Provides the main CLI entry point with ``resolve`` and ``run`` subcommands.
+Provides the main CLI entry point with ``resolve``, ``run``, and ``scan-deps`` subcommands.
 """
 
 from __future__ import annotations
@@ -320,3 +320,169 @@ def run_cmd(
     )
     if summary_text:
         click.echo(summary_text)
+
+
+@main.command("scan-deps")
+@click.argument("repo_path", type=click.Path(exists=True, path_type=Path))
+@click.option(
+    "--package-name",
+    type=str,
+    default=None,
+    help="PyPI package name (default: inferred from repo directory name).",
+)
+@click.option(
+    "--test-dirs",
+    type=str,
+    default=None,
+    help="Comma-separated test directories to scan (default: auto-detect).",
+)
+@click.option(
+    "--scan-source",
+    is_flag=True,
+    help="Also scan package source code (default: tests only).",
+)
+@click.option(
+    "--install-command",
+    type=str,
+    default=None,
+    help="Current install_command to compare against.",
+)
+@click.option(
+    "--registry-dir",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Registry directory for cross-referencing import_names.",
+)
+@click.option(
+    "--include-conditional/--no-conditional",
+    default=True,
+    help="Include imports inside try/except ImportError (default: true).",
+)
+@click.option(
+    "--format",
+    "output_format",
+    type=click.Choice(["human", "json", "pip"]),
+    default="human",
+    show_default=True,
+    help="Output format.",
+)
+def scan_deps_cmd(
+    repo_path: Path,
+    package_name: str | None,
+    test_dirs: str | None,
+    scan_source: bool,
+    install_command: str | None,
+    registry_dir: Path | None,
+    include_conditional: bool,
+    output_format: str,
+) -> None:
+    """Scan a repository for external test dependencies via AST import analysis."""
+    import json as json_mod
+    from dataclasses import asdict
+
+    from labeille.scan_deps import scan_package_deps
+
+    if package_name is None:
+        package_name = repo_path.resolve().name
+
+    parsed_test_dirs: list[str] | None = None
+    if test_dirs is not None:
+        parsed_test_dirs = [d.strip() for d in test_dirs.split(",") if d.strip()]
+
+    # Load registry entries for cross-referencing if registry-dir is provided.
+    registry_entries = None
+    if registry_dir is not None:
+        from labeille.registry import load_package
+
+        packages_dir = registry_dir / "packages"
+        if packages_dir.is_dir():
+            registry_entries = []
+            for yaml_file in sorted(packages_dir.glob("*.yaml")):
+                try:
+                    registry_entries.append(load_package(yaml_file.stem, registry_dir))
+                except Exception:  # noqa: BLE001
+                    pass
+
+    result = scan_package_deps(
+        repo_path.resolve(),
+        package_name,
+        test_dirs=parsed_test_dirs,
+        scan_source=scan_source,
+        install_command=install_command,
+        registry_entries=registry_entries,
+        include_conditional=include_conditional,
+    )
+
+    if output_format == "json":
+        click.echo(json_mod.dumps(asdict(result), indent=2))
+    elif output_format == "pip":
+        _print_pip_format(result)
+    else:
+        _print_human_format(result, install_command)
+
+
+def _print_pip_format(result: "ScanResult") -> None:  # type: ignore[name-defined]  # noqa: F821
+    """Print just the pip install command for missing deps."""
+    from labeille.scan_deps import ScanResult
+
+    assert isinstance(result, ScanResult)
+    if result.missing:
+        line = "pip install " + " ".join(sorted(result.missing))
+        click.echo(line)
+    if result.unresolved:
+        names = ", ".join(dep.import_name for dep in result.unresolved)
+        click.echo(f"# Unresolved: {names}")
+
+
+def _print_human_format(result: "ScanResult", install_command: str | None) -> None:  # type: ignore[name-defined]  # noqa: F821, E501
+    """Print human-readable scan results."""
+    from labeille.scan_deps import ScanResult
+
+    assert isinstance(result, ScanResult)
+    click.echo(f"Scanning: {result.package_name}")
+    click.echo(f"  Test directories: {', '.join(result.scan_dirs)}")
+    click.echo(f"  Files scanned: {result.total_files_scanned}")
+    click.echo(f"  Total imports found: {result.total_imports_found}")
+    click.echo(f"  External dependencies: {len(result.resolved)}")
+    click.echo()
+
+    if result.resolved:
+        click.echo(f"Resolved dependencies ({len(result.resolved)}):")
+        for dep in result.resolved:
+            files_str = ", ".join(dep.import_files[:3])
+            if len(dep.import_files) > 3:
+                files_str += f" (+{len(dep.import_files) - 3} more)"
+            cond = "  [conditional]" if dep.is_conditional else ""
+            name_col = f"  {dep.pip_package:<20s}"
+            source_col = f"({dep.source})"
+            click.echo(f"{name_col} {source_col:<12s} {files_str}{cond}")
+        click.echo()
+
+    if result.unresolved:
+        click.echo(f"Unresolved imports ({len(result.unresolved)}):")
+        for dep in result.unresolved:
+            files_str = ", ".join(dep.import_files[:3])
+            if len(dep.import_files) > 3:
+                files_str += f" (+{len(dep.import_files) - 3} more)"
+            click.echo(f"  {dep.import_name:<20s} {files_str}")
+        click.echo()
+
+    if install_command:
+        click.echo("Comparison with install_command:")
+        click.echo(f"  install_command: {install_command}")
+        # Show extras.
+        from labeille.scan_deps import _parse_install_packages
+
+        _, extras = _parse_install_packages(install_command)
+        for extra in extras:
+            click.echo(f"  Extras: {extra}")
+        if result.already_installed:
+            click.echo(f"  Already installed: {', '.join(sorted(result.already_installed))}")
+        if result.missing:
+            click.echo("  Missing (add to install_command):")
+            click.echo(f"    {result.suggested_install}")
+        else:
+            click.echo("  All resolved dependencies are already installed.")
+    elif result.suggested_install:
+        click.echo("Suggested install command:")
+        click.echo(f"  {result.suggested_install}")

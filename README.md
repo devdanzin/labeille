@@ -95,6 +95,26 @@ thread-safely.
 Runs are **resumable**: use `--skip-completed` with the same `--run-id` to
 continue after an interruption.
 
+## Dependency Scanning
+
+Before enriching a package, scan its test imports to discover dependencies:
+
+```bash
+# Clone and scan
+git clone --depth=1 https://github.com/psf/requests /tmp/requests
+labeille scan-deps /tmp/requests --package-name requests
+
+# Compare against existing install_command
+labeille scan-deps /tmp/requests --package-name requests \
+    --install-command "pip install -e '.[dev]'"
+
+# Get just the pip install line for missing deps
+labeille scan-deps /tmp/requests --format pip
+
+# JSON output for scripting
+labeille scan-deps /tmp/requests --format json
+```
+
 ## Enriching Packages
 
 After `labeille resolve` creates skeleton registry files, each package needs
@@ -217,7 +237,7 @@ Result statuses: `pass`, `fail`, `crash`, `timeout`, `install_error`,
 ```
 labeille/
 ├── src/labeille/        # Main package
-│   ├── cli.py           # Click CLI with resolve, run, registry, and analyze subcommands
+│   ├── cli.py           # Click CLI with resolve, run, scan-deps, registry, and analyze subcommands
 │   ├── resolve.py       # Resolve PyPI packages to source repositories
 │   ├── runner.py        # Run test suites and capture results
 │   ├── registry.py      # Registry reading/writing/schema
@@ -229,6 +249,8 @@ labeille/
 │   ├── summary.py       # Run summary formatting
 │   ├── yaml_lines.py    # Line-level YAML manipulation
 │   ├── classifier.py    # Pure Python / C extension detection
+│   ├── scan_deps.py     # AST-based test dependency scanner
+│   ├── import_map.py    # Import name to pip package mapping
 │   ├── crash.py         # Crash detection and signature extraction
 │   └── logging.py       # Structured logging setup
 ├── doc/                 # Documentation
