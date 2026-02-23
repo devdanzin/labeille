@@ -7,6 +7,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+- `labeille registry migrate` command with a migration framework for registry schema transformations.
+- `skip-to-skip-versions` migration to convert 3.15-specific `skip:true` entries to `skip_versions["3.15"]`.
+- Migration log (`migrations.log`) to track applied migrations and prevent re-application.
+- Dry-run support for migrations with preview of affected packages.
 - `labeille scan-deps` command for static test dependency discovery via AST-based import analysis.
 - `import_map.py` module with 100+ import-name-to-pip-package mappings for common mismatches (PIL->Pillow, yaml->PyYAML, etc.).
 - Three output formats for scan-deps: human-readable (default), JSON, and pip (for direct shell use).

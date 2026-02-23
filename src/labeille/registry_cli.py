@@ -543,3 +543,99 @@ def remove_index_field_cmd(
         click.echo("Re-run with --apply to write changes.")
     else:
         click.echo(f"Index updated ({len(result.modified)} packages).")
+
+
+# ---------------------------------------------------------------------------
+# migrate
+# ---------------------------------------------------------------------------
+
+
+@registry.command("migrate")
+@click.argument("migration_name", required=False)
+@click.option("--list", "list_flag", is_flag=True, help="List available migrations.")
+@_apply_option
+@_registry_dir_option
+@_update_index_option
+def migrate_cmd(
+    migration_name: str | None,
+    list_flag: bool,
+    apply: bool,
+    registry_dir: Path | None,
+    update_index: bool,
+) -> None:
+    """Apply a named registry migration."""
+    from labeille.migrations import (
+        MigrationDryRun,
+        execute_migration,
+        get_applied_date,
+        get_migration,
+        has_been_applied,
+        list_migrations,
+    )
+
+    registry_dir = _auto_detect_registry(registry_dir)
+
+    if list_flag:
+        migrations = list_migrations()
+        if not migrations:
+            click.echo("No migrations registered.")
+            return
+        click.echo("Available migrations:\n")
+        for m in migrations:
+            applied = has_been_applied(registry_dir, m.name)
+            status = "applied" if applied else "not applied"
+            date = get_applied_date(registry_dir, m.name)
+            if date:
+                status = f"applied on {date}"
+            click.echo(f"  {m.name:<30s} {m.description}")
+            click.echo(f"  {'':30s} Status: {status}")
+            click.echo()
+        return
+
+    if migration_name is None:
+        click.echo("Error: missing MIGRATION_NAME. Use --list to see available migrations.")
+        sys.exit(1)
+
+    migration = get_migration(migration_name)
+    if migration is None:
+        click.echo(f"Error: unknown migration '{migration_name}'.")
+        available = list_migrations()
+        if available:
+            click.echo("Available migrations:")
+            for m in available:
+                click.echo(f"  {m.name}")
+        sys.exit(1)
+
+    if has_been_applied(registry_dir, migration_name):
+        date = get_applied_date(registry_dir, migration_name)
+        click.echo(f"Error: migration '{migration_name}' was already applied on {date}.")
+        click.echo("To re-run, manually remove the entry from registry/migrations.log.")
+        sys.exit(1)
+
+    result = execute_migration(migration, registry_dir, dry_run=not apply)
+
+    if isinstance(result, MigrationDryRun):
+        click.echo(f"DRY RUN — migration '{migration.name}'")
+        click.echo(f"Description: {migration.description}")
+        click.echo()
+        click.echo(
+            f"Would modify {result.affected_count} files, skip {result.skipped_count} files."
+        )
+
+        if result.sample_results:
+            count = len(result.sample_results)
+            click.echo(f"\nSample changes ({count} of {result.affected_count}):\n")
+            for mr in result.sample_results:
+                click.echo(f"  {mr.package}: {mr.description}")
+            click.echo()
+
+        click.echo("Re-run with --apply to execute.")
+    else:
+        click.echo(
+            f"Applied migration '{migration.name}': "
+            f"modified {result.modified_count} files, skipped {result.skipped_count} files."
+        )
+
+        if update_index and result.modified_count > 0:
+            count = rebuild_index(registry_dir)
+            click.echo(f"Index updated ({count} packages).")
