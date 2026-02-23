@@ -139,6 +139,11 @@ def resolve(
 )
 @click.option("--keep-work-dirs", is_flag=True, help="Don't clean up working directories.")
 @click.option(
+    "--refresh-venvs",
+    is_flag=True,
+    help="Delete and recreate existing venvs to pick up install command changes.",
+)
+@click.option(
     "--repos-dir",
     type=click.Path(path_type=Path),
     default=None,
@@ -175,6 +180,7 @@ def run_cmd(
     quiet: bool,
     log_file: Path,
     keep_work_dirs: bool,
+    refresh_venvs: bool,
     repos_dir: Path | None,
     venvs_dir: Path | None,
     work_dir: Path | None,
@@ -233,6 +239,7 @@ def run_cmd(
         verbose=verbose,
         quiet=quiet,
         keep_work_dirs=keep_work_dirs,
+        refresh_venvs=refresh_venvs,
         repos_dir=repos_dir,
         venvs_dir=venvs_dir,
         cli_args=list(ctx.params.keys()),

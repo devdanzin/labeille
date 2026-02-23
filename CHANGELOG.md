@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+- `--refresh-venvs` flag to delete and recreate existing venvs, ensuring updated install commands take effect.
 - Initial project scaffolding.
 - CLI skeleton with `resolve` and `run` subcommands.
 - Registry schema and data structures.
