@@ -4,15 +4,14 @@ import signal
 import unittest
 from pathlib import Path
 
+from labeille.analyze import result_detail
+from labeille.formatting import format_duration, format_signal_name
 from labeille.runner import PackageResult, RunnerConfig, RunSummary
 from labeille.summary import (
-    _detail,
     _format_aggregate,
     _format_crash_detail,
     _format_package_table,
     _format_run_header,
-    _signal_name,
-    format_duration,
     format_summary,
 )
 
@@ -111,41 +110,41 @@ class TestFormatDuration(unittest.TestCase):
         self.assertEqual(format_duration(61.0), "1m  1s")
 
 
-class TestSignalName(unittest.TestCase):
+class TestFormatSignalName(unittest.TestCase):
     def test_none(self) -> None:
-        self.assertEqual(_signal_name(None), "")
+        self.assertEqual(format_signal_name(None), "")
 
     def test_sigsegv(self) -> None:
-        self.assertEqual(_signal_name(signal.SIGSEGV), "SIGSEGV")
+        self.assertEqual(format_signal_name(signal.SIGSEGV), "SIGSEGV")
 
     def test_sigabrt(self) -> None:
-        self.assertEqual(_signal_name(signal.SIGABRT), "SIGABRT")
+        self.assertEqual(format_signal_name(signal.SIGABRT), "SIGABRT")
 
 
-class TestDetail(unittest.TestCase):
+class TestResultDetail(unittest.TestCase):
     def test_crash(self) -> None:
         r = PackageResult(package="p", status="crash", crash_signature="Fatal error in something")
-        self.assertEqual(_detail(r), "Fatal error in something")
+        self.assertEqual(result_detail(r), "Fatal error in something")
 
     def test_crash_truncates_at_60(self) -> None:
         r = PackageResult(package="p", status="crash", crash_signature="A" * 80)
-        self.assertEqual(len(_detail(r)), 60)
+        self.assertEqual(len(result_detail(r)), 60)
 
     def test_timeout(self) -> None:
         r = PackageResult(package="p", status="timeout", duration_seconds=900.0)
-        self.assertEqual(_detail(r), "(timeout: 900s)")
+        self.assertEqual(result_detail(r), "(timeout: 900s)")
 
     def test_fail(self) -> None:
         r = PackageResult(package="p", status="fail", exit_code=2)
-        self.assertEqual(_detail(r), "exit code 2")
+        self.assertEqual(result_detail(r), "exit code 2")
 
     def test_error(self) -> None:
         r = PackageResult(package="p", status="install_error", error_message="build failed")
-        self.assertEqual(_detail(r), "build failed")
+        self.assertEqual(result_detail(r), "build failed")
 
     def test_pass(self) -> None:
         r = PackageResult(package="p", status="pass")
-        self.assertEqual(_detail(r), "")
+        self.assertEqual(result_detail(r), "")
 
 
 class TestFormatRunHeader(unittest.TestCase):
@@ -193,7 +192,7 @@ class TestFormatPackageTable(unittest.TestCase):
         self.assertIn("CRASH", data_lines[0])
         self.assertIn("PASS", data_lines[-1])
 
-    def test_truncates_long_detail(self) -> None:
+    def test_truncates_longresult_detail(self) -> None:
         results = [
             PackageResult(
                 package="long",
@@ -349,7 +348,7 @@ class TestFormatSummary(unittest.TestCase):
         text = format_summary([], summary, config, "3.15.0", True, 0.0, mode="default")
         self.assertIn("Packages tested: 0 / 5", text)
 
-    def test_run_dir_in_crash_detail(self) -> None:
+    def test_run_dir_in_crashresult_detail(self) -> None:
         results = _make_results()
         summary = _make_summary(results)
         config = _make_config()

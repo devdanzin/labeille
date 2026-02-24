@@ -14,7 +14,6 @@ from labeille.analyze import (
     ComparisonResult,
     HistoryAnalysis,
     PackageHistory,
-    PackageResult,
     RegistryStats,
     ResultsStore,
     RunAnalysis,
@@ -26,12 +25,15 @@ from labeille.analyze import (
     build_reproduce_command,
     categorize_install_errors,
     compare_runs,
+    extract_minor_version,
+    result_detail,
 )
 from labeille.formatting import (
     format_duration,
     format_histogram,
     format_percentage,
     format_section_header,
+    format_signal_name,
     format_sparkline,
     format_status_icon,
     format_table,
@@ -248,17 +250,16 @@ def run_cmd(
         raise click.ClickException(f"Run not found: {run_id}")
 
     # Find previous run with same Python minor version.
-    from labeille.analyze import _extract_minor_version
 
     all_runs = store.list_runs()
-    current_pv = _extract_minor_version(run.meta.python_version)
+    current_pv = extract_minor_version(run.meta.python_version)
     previous: RunData | None = None
     found_current = False
     for r in all_runs:
         if r.run_id == run.run_id:
             found_current = True
             continue
-        if found_current and _extract_minor_version(r.meta.python_version) == current_pv:
+        if found_current and extract_minor_version(r.meta.python_version) == current_pv:
             previous = r
             break
 
@@ -296,7 +297,7 @@ def _print_run_quiet(analysis: RunAnalysis, run: RunData) -> None:
 
     click.echo(format_section_header("Crashes"))
     for r in crashes:
-        sig_name = _signal_name(r.signal)
+        sig_name = format_signal_name(r.signal)
         signature = r.crash_signature or "unknown"
         click.echo(f"  {r.package}: {sig_name}: {signature}")
         if run.run_dir:
@@ -363,8 +364,8 @@ def _print_run_summary(
             tag = change_tags.get(r.package, "")
             if tag:
                 status_str += f" {tag}"
-            sig = _signal_name(r.signal)
-            detail = _result_detail_str(r)
+            sig = format_signal_name(r.signal)
+            detail = result_detail(r)
             rows.append(
                 [
                     r.package,
@@ -455,7 +456,7 @@ def _print_run_summary(
     if analysis.crashes:
         click.echo(format_section_header("Crashes"))
         for r in analysis.crashes:
-            sig = _signal_name(r.signal)
+            sig = format_signal_name(r.signal)
             signature = r.crash_signature or "unknown"
             click.echo(f"  {r.package}: {sig}: {signature}")
             if run.run_dir:
@@ -473,7 +474,7 @@ def _print_run_summary(
                 entry = load_package(r.package, registry_dir)
 
             if entry is not None:
-                sig = _signal_name(r.signal)
+                sig = format_signal_name(r.signal)
                 click.echo(f"# {r.package} ({sig}):")
                 cmd = build_reproduce_command(r, entry, str(meta.target_python))
                 click.echo(cmd)
@@ -502,10 +503,10 @@ def _print_run_table(analysis: RunAnalysis, *, verbose: bool = False) -> None:
                 format_status_icon(r.status),
                 format_duration(r.duration_seconds),
                 format_duration(r.install_duration_seconds),
-                _signal_name(r.signal),
+                format_signal_name(r.signal),
                 str(r.exit_code),
                 "yes" if r.timeout_hit else "",
-                truncate(_result_detail_str(r), 50),
+                truncate(result_detail(r), 50),
             ]
         )
 
@@ -789,11 +790,10 @@ def _print_history_timeline(history: HistoryAnalysis) -> None:
     click.echo()
 
     # Group by Python version.
-    from labeille.analyze import _extract_minor_version
 
     by_version: dict[str, list[RunData]] = {}
     for run in history.runs:
-        pv = _extract_minor_version(run.meta.python_version)
+        pv = extract_minor_version(run.meta.python_version)
         by_version.setdefault(pv, []).append(run)
 
     if len(by_version) > 1:
@@ -864,9 +864,7 @@ def _print_package_history(history: PackageHistory) -> None:
     if history.run_results:
         click.echo(f"Run history ({len(history.run_results)} runs):")
         for run, result in history.run_results:
-            from labeille.analyze import _extract_minor_version
-
-            pv = _extract_minor_version(run.meta.python_version)
+            pv = extract_minor_version(run.meta.python_version)
             rev = ""
             if result.git_revision:
                 rev = f" ({result.git_revision[:7]})"
@@ -922,33 +920,3 @@ def _print_package_history(history: PackageHistory) -> None:
                     click.echo(f"    - {key} {old_v}")
                 elif old_v != new_v:
                     click.echo(f"    ~ {key} {old_v} \u2192 {new_v}")
-
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-
-def _signal_name(sig: int | None) -> str:
-    """Convert a signal number to its name."""
-    if sig is None:
-        return ""
-    import signal as signal_module
-
-    try:
-        return signal_module.Signals(sig).name
-    except (ValueError, AttributeError):
-        return f"SIG{sig}"
-
-
-def _result_detail_str(r: PackageResult) -> str:
-    """Build a brief detail string for a result."""
-    if r.status == "crash":
-        return (r.crash_signature or "")[:60]
-    if r.status == "timeout":
-        return f"(timeout: {int(r.duration_seconds)}s)"
-    if r.status == "fail":
-        return f"exit code {r.exit_code}"
-    if r.status in ("install_error", "clone_error", "error"):
-        return (r.error_message or "")[:60]
-    return ""

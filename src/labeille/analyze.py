@@ -167,8 +167,12 @@ class RunData:
         return results
 
 
-def _extract_minor_version(version_string: str) -> str:
-    """Extract major.minor from a full Python version string."""
+def extract_minor_version(version_string: str) -> str:
+    """Extract major.minor from a full Python version string.
+
+    See also :func:`labeille.runner.extract_python_minor_version` which
+    handles the same task in the runner context.
+    """
     parts = version_string.strip().split(".")
     if len(parts) >= 2:
         minor = ""
@@ -204,7 +208,7 @@ class ResultsStore:
         if python_version is not None:
             filtered: list[RunData] = []
             for run in runs:
-                pv = _extract_minor_version(run.meta.python_version)
+                pv = extract_minor_version(run.meta.python_version)
                 if pv == python_version:
                     filtered.append(run)
             runs = filtered
@@ -398,7 +402,7 @@ class RunAnalysis:
     status_changes: list[StatusChange] | None = None
 
 
-def _result_detail(r: PackageResult) -> str:
+def result_detail(r: PackageResult) -> str:
     """Build a brief detail string for a result."""
     if r.status == "crash":
         return (r.crash_signature or "")[:60]
@@ -489,8 +493,8 @@ def _compute_status_changes(old_run: RunData, new_run: RunData) -> list[StatusCh
                     package=r.package,
                     old_status=old_r.status,
                     new_status=r.status,
-                    old_detail=_result_detail(old_r),
-                    new_detail=_result_detail(r),
+                    old_detail=result_detail(old_r),
+                    new_detail=result_detail(r),
                 )
             )
 
@@ -614,8 +618,8 @@ def compare_runs(
                     package=pkg,
                     old_status=ra.status,
                     new_status=rb.status,
-                    old_detail=_result_detail(ra),
-                    new_detail=_result_detail(rb),
+                    old_detail=result_detail(ra),
+                    new_detail=result_detail(rb),
                 )
             )
         else:
@@ -629,12 +633,7 @@ def compare_runs(
         # Timing changes.
         if ra.duration_seconds > 0 and rb.duration_seconds > 0:
             abs_change = abs(rb.duration_seconds - ra.duration_seconds)
-            if ra.duration_seconds > 0:
-                pct_change = (
-                    (rb.duration_seconds - ra.duration_seconds) / ra.duration_seconds * 100
-                )
-            else:
-                pct_change = 0.0
+            pct_change = (rb.duration_seconds - ra.duration_seconds) / ra.duration_seconds * 100
 
             if abs(pct_change) >= timing_threshold_pct and abs_change >= timing_threshold_abs:
                 result.timing_changes.append(
@@ -729,7 +728,7 @@ def detect_flaky_packages(
     # Group runs by Python minor version.
     by_version: dict[str, list[RunData]] = {}
     for run in runs:
-        pv = _extract_minor_version(run.meta.python_version)
+        pv = extract_minor_version(run.meta.python_version)
         by_version.setdefault(pv, []).append(run)
 
     flaky: list[tuple[str, list[str]]] = []

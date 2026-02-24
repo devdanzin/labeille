@@ -66,7 +66,7 @@ schema with explanations.
 | `test_command` | string | The exact shell command to run the test suite. `python` in this command gets replaced with the venv's Python automatically. Runs with `shell=True`, so quotes and pipes work. |
 | `test_framework` | string | `pytest`, `unittest`, or `custom`. Informational. |
 | `uses_xdist` | bool | Whether the project uses pytest-xdist for parallel testing. If true, the test command should include `-p no:xdist` to disable it — parallel workers mask JIT-specific crashes. |
-| `timeout` | int or null | Per-package timeout in seconds. Null means use the runner's default (300s). Set higher for packages with large test suites. |
+| `timeout` | int or null | Per-package timeout in seconds. Null means use the runner's default (600s). Set higher for packages with large test suites. |
 
 ### Control
 
