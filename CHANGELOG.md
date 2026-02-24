@@ -17,6 +17,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Rewrote `batch_set_field` to use line-level manipulation instead of PyYAML round-trip, preserving YAML formatting.
 - Added `set_field_value` to `yaml_lines.py` for in-place field value replacement.
 - `format_yaml_value` and `parse_default_value` now handle `None`/`null` values.
+- `_is_version_specific_skip` now uses word-boundary regex patterns to prevent false positives (e.g. "trust" no longer matches the "rust" pattern).
+- `scan-deps` now warns about namespace packages (`google`, `azure`, `zope`, etc.) where pip resolution is uncertain, and tries full import paths before falling back to top-level modules.
 
 ### Added
 - 350 enriched package configurations with full test commands, install commands, and metadata.

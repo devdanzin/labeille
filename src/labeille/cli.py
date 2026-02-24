@@ -456,6 +456,8 @@ def _print_human_format(result: "ScanResult", install_command: str | None) -> No
             name_col = f"  {dep.pip_package:<20s}"
             source_col = f"({dep.source})"
             click.echo(f"{name_col} {source_col:<12s} {files_str}{cond}")
+            if dep.note:
+                click.echo(f"  {'':20s} \u26a0 {dep.note}")
         click.echo()
 
     if result.unresolved:
