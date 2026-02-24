@@ -239,6 +239,21 @@ def truncate(text: str, max_len: int, suffix: str = "...") -> str:
     return text[: max_len - len(suffix)] + suffix
 
 
+def format_signal_name(sig: int | None) -> str:
+    """Convert a signal number to its name, e.g. 11 → 'SIGSEGV'.
+
+    Returns ``""`` if *sig* is ``None``.
+    """
+    if sig is None:
+        return ""
+    import signal as signal_module
+
+    try:
+        return signal_module.Signals(sig).name
+    except (ValueError, AttributeError):
+        return f"SIG{sig}"
+
+
 def format_percentage(count: int, total: int) -> str:
     """Format as percentage: ``'44.2%'``. Returns ``'-'`` if *total* is 0."""
     if total == 0:

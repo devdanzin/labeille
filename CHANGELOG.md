@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Fixed
+- Deduplicated `_signal_name` (3 copies → `format_signal_name` in `formatting.py`).
+- Deduplicated `_result_detail` (3 copies → public `result_detail` in `analyze.py`).
+- Made `_extract_minor_version` public as `extract_minor_version` in `analyze.py`.
+- Removed redundant zero-check in `compare_runs` duration percentage calculation.
+- Fixed timeout documentation (300s → 600s) in `doc/enrichment.md`.
+
 ### Added
 - 350 enriched package configurations with full test commands, install commands, and metadata.
 - Applied `skip-to-skip-versions` migration on 36 packages (PyO3, maturin, Cython, JIT crashes).

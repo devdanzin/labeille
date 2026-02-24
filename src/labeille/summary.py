@@ -6,12 +6,13 @@ with per-package tables, timing statistics, and crash details.
 
 from __future__ import annotations
 
-import signal as signal_module
 from pathlib import Path
 
+from labeille.analyze import result_detail
 from labeille.formatting import (
     format_duration,
     format_section_header,
+    format_signal_name,
     format_status_icon,
 )
 from labeille.runner import PackageResult, RunnerConfig, RunSummary
@@ -31,34 +32,6 @@ _STATUS_ORDER: dict[str, int] = {
 }
 
 _SEPARATOR = "\u2500" * 84
-
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-
-def _signal_name(sig: int | None) -> str:
-    """Convert a signal number to its name (e.g. 11 -> ``"SIGSEGV"``)."""
-    if sig is None:
-        return ""
-    try:
-        return signal_module.Signals(sig).name
-    except (ValueError, AttributeError):
-        return f"SIG{sig}"
-
-
-def _detail(result: PackageResult) -> str:
-    """Build a brief detail string for a single result."""
-    if result.status == "crash":
-        return (result.crash_signature or "")[:60]
-    if result.status == "timeout":
-        return f"(timeout: {int(result.duration_seconds)}s)"
-    if result.status == "fail":
-        return f"exit code {result.exit_code}"
-    if result.status in ("install_error", "clone_error", "error"):
-        return (result.error_message or "")[:60]
-    return ""
 
 
 # ---------------------------------------------------------------------------
@@ -111,8 +84,8 @@ def _format_package_table(
         pkg_name = r.package[:16]
         status = format_status_icon(r.status)
         dur = format_duration(r.duration_seconds)
-        sig = _signal_name(r.signal)
-        detail = _detail(r)
+        sig = format_signal_name(r.signal)
+        detail = result_detail(r)  # type: ignore[arg-type]
         if len(detail) > 50:
             detail = detail[:49] + "\u2026"
         lines.append(f"  {pkg_name:<17s}{status:<13s}{dur:>10s}  {sig:<8s} {detail}")
@@ -182,7 +155,7 @@ def _format_crash_detail(
 
     lines: list[str] = [format_section_header("Crashes", width=84)]
     for r in crashes:
-        sig = _signal_name(r.signal)
+        sig = format_signal_name(r.signal)
         signature = r.crash_signature or "unknown"
         lines.append(f"  {r.package}: {sig}: {signature}")
         if run_dir:
