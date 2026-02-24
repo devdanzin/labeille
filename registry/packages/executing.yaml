@@ -1,0 +1,19 @@
+package: executing
+repo: https://github.com/alexmojaki/executing
+pypi_url: https://pypi.org/project/executing/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: git fetch --tags --depth 1 && pip install -e . && pip install pytest
+  asttokens littleutils rich
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 300
+skip: false
+skip_reason: null
+notes: Get information about the currently executing AST node. Uses setuptools-scm
+  for versioning.
+enriched: true
+clone_depth: 50
+import_name: null

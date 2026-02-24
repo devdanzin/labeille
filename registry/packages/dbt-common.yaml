@@ -1,0 +1,17 @@
+package: dbt-common
+repo: https://github.com/dbt-labs/dbt-common.git
+pypi_url: https://pypi.org/project/dbt-common/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Depends on dbt-core.
+notes: dbt common utilities.
+enriched: true
+clone_depth: null
+import_name: null

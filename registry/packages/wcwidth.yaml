@@ -1,0 +1,17 @@
+package: wcwidth
+repo: https://github.com/jquast/wcwidth
+pypi_url: https://pypi.org/project/wcwidth/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-cov
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Unicode character width (wcswidth/wcwidth). Used by terminal libraries.
+enriched: true
+clone_depth: null
+import_name: null

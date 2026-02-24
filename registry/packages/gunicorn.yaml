@@ -1,0 +1,18 @@
+package: gunicorn
+repo: https://github.com/benoitc/gunicorn
+pypi_url: https://pypi.org/project/gunicorn/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-cov
+test_command: python -m pytest tests/ -o "addopts="
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+notes: WSGI HTTP server. Uses setuptools build backend. Tests spawn worker processes,
+  timeout set to 10min. Linux only (uses fcntl/os.fork).
+enriched: true
+clone_depth: null
+import_name: null

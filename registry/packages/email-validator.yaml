@@ -1,0 +1,18 @@
+package: email-validator
+repo: https://github.com/JoshData/python-email-validator
+pypi_url: https://pypi.org/project/email-validator/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 120
+skip: false
+skip_reason: null
+notes: Email address validation library. Depends on dnspython and idna. Some tests
+  may do DNS lookups but most are offline. Uses setuptools.
+enriched: true
+clone_depth: null
+import_name: email_validator

@@ -1,0 +1,18 @@
+package: googleapis-common-protos
+repo: https://github.com/googleapis/google-cloud-python/tree/main/packages/googleapis-common-protos
+pypi_url: https://pypi.org/project/googleapis-common-protos/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Protobuf definitions package with no meaningful test suite.
+notes: Common protobuf type definitions for Google APIs. Primarily generated code.
+  Lives in googleapis/google-cloud-python monorepo.
+enriched: true
+clone_depth: null
+import_name: google.api

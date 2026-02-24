@@ -1,0 +1,21 @@
+package: google-cloud-aiplatform
+repo: https://github.com/googleapis/python-aiplatform
+pypi_url: https://pypi.org/project/google-cloud-aiplatform/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-cov google-auth google-api-core
+  google-cloud-core google-cloud-storage google-cloud-bigquery mock
+test_command: python -m pytest tests/unit/ -p no:xdist
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': Depends on pydantic-core (PyO3, no 3.15 support).
+notes: 'Google AI Platform (Vertex AI) client. Has unit tests in tests/unit/ that
+  mock API calls. Large test suite. Standalone repo: googleapis/python-aiplatform.'
+enriched: true
+clone_depth: null
+import_name: google.cloud.aiplatform

@@ -1,0 +1,18 @@
+package: ply
+repo: https://github.com/dabeaz/ply
+pypi_url: https://pypi.org/project/ply/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e .
+test_command: python tests/testlex.py && python tests/testyacc.py
+test_framework: unittest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: Python lex-yacc. Abandoned project but tests still work.
+enriched: true
+clone_depth: null
+import_name: null

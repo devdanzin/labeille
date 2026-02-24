@@ -1,0 +1,17 @@
+package: aliyun-python-sdk-core
+repo: https://github.com/aliyun/aliyun-openapi-python-sdk
+pypi_url: https://pypi.org/project/aliyun-python-sdk-core/
+extension_type: unknown
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Alibaba Cloud SDK. Tests require cloud credentials.
+notes: Alibaba Cloud SDK core.
+enriched: true
+clone_depth: null
+import_name: null

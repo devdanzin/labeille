@@ -1,0 +1,18 @@
+package: mpmath
+repo: https://github.com/fredrik-johansson/mpmath
+pypi_url: https://pypi.org/project/mpmath/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-timeout hypothesis
+test_command: python -m pytest mpmath/tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 1200
+skip: false
+skip_reason: null
+notes: Arbitrary-precision floating-point math. Uses setuptools-scm. Large test suite,
+  some tests slow.
+enriched: true
+clone_depth: 50
+import_name: null

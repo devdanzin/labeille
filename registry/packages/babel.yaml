@@ -1,0 +1,19 @@
+package: babel
+repo: https://github.com/python-babel/babel
+pypi_url: https://pypi.org/project/babel/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install . && pip install pytest pytest-cov freezegun
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: true
+skip_reason: Locale data (.dat files) not in git repo; requires running 'make import-cldr'
+  to download and process CLDR XML data (~100MB).
+notes: Internationalization library. Uses setuptools build backend. Tests use freezegun
+  for time-dependent locale tests. Large CLDR dataset makes some tests slow.
+enriched: true
+clone_depth: null
+import_name: null

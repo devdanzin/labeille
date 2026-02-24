@@ -1,0 +1,19 @@
+package: importlib-resources
+repo: https://github.com/python/importlib_resources
+pypi_url: https://pypi.org/project/importlib-resources/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e ".[test]"
+test_command: python -m pytest importlib_resources/tests/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': Tests use import_helper/os_helper compat shims incompatible with 3.15.
+notes: Backport of importlib.resources. Pure Python.
+enriched: true
+clone_depth: null
+import_name: importlib_resources

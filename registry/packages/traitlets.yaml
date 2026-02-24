@@ -1,0 +1,18 @@
+package: traitlets
+repo: https://github.com/ipython/traitlets
+pypi_url: https://pypi.org/project/traitlets/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-mock pytest-mypy-testing
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 300
+skip: false
+skip_reason: null
+notes: Configuration system for Python applications. Used by IPython/Jupyter. Uses
+  hatchling build backend.
+enriched: true
+clone_depth: null
+import_name: null

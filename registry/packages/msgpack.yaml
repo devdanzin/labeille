@@ -1,0 +1,18 @@
+package: msgpack
+repo: https://github.com/msgpack/msgpack-python/
+pypi_url: https://pypi.org/project/msgpack/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install cython && python -m cython msgpack/_cmsgpack.pyx && pip install . && pip install pytest
+test_command: python -m pytest test/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: MessagePack serialization with C extension. Uses setuptools build backend.
+  C extension (Cython-generated) should build on 3.15. Tests in test/ directory.
+enriched: true
+clone_depth: null
+import_name: null

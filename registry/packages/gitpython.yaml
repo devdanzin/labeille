@@ -1,0 +1,19 @@
+package: gitpython
+repo: https://github.com/gitpython-developers/GitPython
+pypi_url: https://pypi.org/project/gitpython/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: git fetch --unshallow || true && pip install -e . && pip install pytest
+  pytest-cov ddt
+test_command: python -m pytest test/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+notes: Python Git library wrapping git commands. Tests require git to be installed.
+  Tests are in test/ directory. Uses setuptools build backend.
+enriched: true
+clone_depth: null
+import_name: git

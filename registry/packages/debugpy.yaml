@@ -1,0 +1,18 @@
+package: debugpy
+repo: https://github.com/microsoft/debugpy
+pypi_url: https://pypi.org/project/debugpy/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Debug adapter protocol with complex subprocess-based testing infrastructure.
+notes: Microsoft debug adapter for Python. Tests require complex setup with subprocess
+  debugging.
+enriched: true
+clone_depth: null
+import_name: null

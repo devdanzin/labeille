@@ -1,0 +1,17 @@
+package: jinja2
+repo: https://github.com/pallets/jinja/
+pypi_url: https://pypi.org/project/jinja2/
+extension_type: pure
+python_versions:
+- '3.15'
+- '3.14'
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-timeout trio
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Depends on MarkupSafe. Uses flit_core build backend. Requires Python 3.10+.
+enriched: true

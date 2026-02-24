@@ -1,0 +1,18 @@
+package: sqlparse
+repo: https://github.com/andialbrecht/sqlparse
+pypi_url: https://pypi.org/project/sqlparse/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Non-validating SQL parser. Uses hatchling build backend. Pure Python. Tests
+  are self-contained, no external test deps.
+enriched: true
+clone_depth: null
+import_name: null

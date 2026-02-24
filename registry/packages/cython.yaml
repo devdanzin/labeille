@@ -1,0 +1,17 @@
+package: cython
+repo: https://github.com/cython/cython
+pypi_url: https://pypi.org/project/cython/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Compiler package with complex internal test infrastructure.
+notes: Python-to-C compiler.
+enriched: true
+clone_depth: null
+import_name: null

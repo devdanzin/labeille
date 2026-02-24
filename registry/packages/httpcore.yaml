@@ -1,0 +1,18 @@
+package: httpcore
+repo: https://github.com/encode/httpcore
+pypi_url: https://pypi.org/project/httpcore/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-asyncio pytest-trio trio h2 socksio trustme anyio "jsonschema<4.18"
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: HTTP transport library. Uses hatchling build backend. Tests require trio for
+  async, h2 for HTTP/2, socksio for SOCKS, trustme for SSL test certs.
+enriched: true
+clone_depth: null
+import_name: null

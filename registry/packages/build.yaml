@@ -1,0 +1,20 @@
+package: build
+repo: https://github.com/pypa/build
+pypi_url: https://pypi.org/project/build/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-cov pytest-rerunfailures
+  pytest-xdist pytest-mock filelock setuptools wheel virtualenv tomli-w
+test_command: python -m pytest tests/ -p no:xdist
+test_framework: pytest
+uses_xdist: true
+timeout: 900
+skip: false
+skip_reason: null
+notes: Python build frontend (PEP 517). Uses flit-core build backend. Tests require
+  setuptools, wheel, virtualenv as build backends to test against. Uses xdist, disabled
+  for JIT testing.
+enriched: true
+clone_depth: null
+import_name: null

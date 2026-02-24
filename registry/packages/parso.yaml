@@ -1,0 +1,18 @@
+package: parso
+repo: https://github.com/davidhalter/parso
+pypi_url: https://pypi.org/project/parso/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest test/
+test_framework: pytest
+uses_xdist: false
+timeout: 300
+skip: false
+skip_reason: null
+notes: Python parser that supports error recovery and round-trip parsing. Dependency
+  of jedi. Tests are in test/ directory. Uses setuptools build backend.
+enriched: true
+clone_depth: null
+import_name: null

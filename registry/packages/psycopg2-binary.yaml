@@ -1,0 +1,17 @@
+package: psycopg2-binary
+repo: https://github.com/psycopg/psycopg2
+pypi_url: https://pypi.org/project/psycopg2-binary/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Binary package with no source tests. Use psycopg2 from source instead.
+notes: PostgreSQL adapter. Binary distribution, no test suite included.
+enriched: true
+clone_depth: null
+import_name: psycopg2

@@ -1,0 +1,17 @@
+package: pyarrow
+repo: https://github.com/apache/arrow
+pypi_url: https://pypi.org/project/pyarrow/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Apache Arrow C++ library. Very complex build.
+notes: Apache Arrow Python bindings.
+enriched: true
+clone_depth: null
+import_name: null

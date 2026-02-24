@@ -1,0 +1,20 @@
+package: starlette
+repo: https://github.com/encode/starlette
+pypi_url: https://pypi.org/project/starlette/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-asyncio httpx python-multipart
+  trio anyio[trio] jinja2 typing_extensions itsdangerous itsdangerous
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: ASGI framework. Uses hatchling build backend. Tests require httpx for test
+  client, python-multipart for form parsing, trio and anyio for async backend tests,
+  jinja2 for template tests.
+enriched: true
+clone_depth: null
+import_name: null

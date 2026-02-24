@@ -1,0 +1,19 @@
+package: msal
+repo: https://github.com/AzureAD/microsoft-authentication-library-for-python
+pypi_url: https://pypi.org/project/msal/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest requests-mock
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': JIT crash (_PyEval_EvalFrameDefault abort) during pip install.
+notes: Microsoft Authentication Library. Unit tests use mocked HTTP.
+enriched: true
+clone_depth: null
+import_name: null

@@ -1,0 +1,19 @@
+package: jupyter-client
+repo: https://github.com/jupyter/jupyter_client
+pypi_url: https://pypi.org/project/jupyter-client/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-timeout pytest-asyncio
+  ipykernel
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+notes: Jupyter protocol client APIs. Tests launch kernels and can be slow. Uses hatchling
+  build backend.
+enriched: true
+clone_depth: null
+import_name: jupyter_client

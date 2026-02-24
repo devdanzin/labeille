@@ -1,0 +1,20 @@
+package: arrow
+repo: https://github.com/arrow-py/arrow
+pypi_url: https://pypi.org/project/arrow/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-cov pytest-mock python-dateutil
+  pytz simplejson
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Date/time library. Uses flit_core build backend. Depends on python-dateutil.
+  Tests use pytest-mock. addopts includes --cov so pytest-cov needed to avoid plugin
+  errors.
+enriched: true
+clone_depth: null
+import_name: null

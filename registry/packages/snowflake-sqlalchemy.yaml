@@ -1,0 +1,17 @@
+package: snowflake-sqlalchemy
+repo: https://github.com/snowflakedb/snowflake-sqlalchemy
+pypi_url: https://pypi.org/project/snowflake-sqlalchemy/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Depends on snowflake-connector-python.
+notes: SQLAlchemy dialect for Snowflake.
+enriched: true
+clone_depth: null
+import_name: null

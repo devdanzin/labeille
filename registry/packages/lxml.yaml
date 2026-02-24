@@ -1,0 +1,18 @@
+package: lxml
+repo: https://github.com/lxml/lxml
+pypi_url: https://pypi.org/project/lxml/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Complex C extension requiring libxml2 and libxslt development headers.
+  Build from source is fragile and version-sensitive.
+notes: XML/HTML processing library wrapping libxml2/libxslt C libraries.
+enriched: true
+clone_depth: null
+import_name: null

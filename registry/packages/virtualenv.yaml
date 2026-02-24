@@ -1,0 +1,18 @@
+package: virtualenv
+repo: https://github.com/pypa/virtualenv
+pypi_url: https://pypi.org/project/virtualenv/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-mock pytest-env flaky setuptools
+test_command: python -m pytest tests/ --ignore=tests/unit/create/via_global_ref/builtin
+test_framework: pytest
+uses_xdist: false
+timeout: 900
+skip: false
+skip_reason: null
+notes: Virtual environment creator. Uses hatch-vcs build backend. Tests create real
+  virtualenvs. Needs setuptools available.
+enriched: true
+clone_depth: null
+import_name: null

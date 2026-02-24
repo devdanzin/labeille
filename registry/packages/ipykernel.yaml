@@ -1,0 +1,19 @@
+package: ipykernel
+repo: https://github.com/ipython/ipykernel
+pypi_url: https://pypi.org/project/ipykernel/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-timeout pytest-asyncio
+  jupyter-client flaky ipyparallel
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 900
+skip: false
+skip_reason: null
+notes: IPython kernel for Jupyter. Tests use kernel launches and can be slow. Uses
+  hatchling build backend. Some tests need a running Jupyter infrastructure.
+enriched: true
+clone_depth: null
+import_name: null

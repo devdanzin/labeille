@@ -1,0 +1,18 @@
+package: cfgv
+repo: https://github.com/asottile/cfgv
+pypi_url: https://pypi.org/project/cfgv/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 60
+skip: false
+skip_reason: null
+notes: Config file validation library. Used by pre-commit. Uses setuptools build backend.
+  Very small test suite.
+enriched: true
+clone_depth: null
+import_name: null

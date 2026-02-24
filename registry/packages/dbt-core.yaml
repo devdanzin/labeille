@@ -1,0 +1,17 @@
+package: dbt-core
+repo: https://github.com/dbt-labs/dbt-core.git
+pypi_url: https://pypi.org/project/dbt-core/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Complex data transformation framework with database dependencies.
+notes: Data build tool core.
+enriched: true
+clone_depth: null
+import_name: null

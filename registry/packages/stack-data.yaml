@@ -1,0 +1,19 @@
+package: stack-data
+repo: https://github.com/alexmojaki/stack_data
+pypi_url: https://pypi.org/project/stack-data/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest littleutils asttokens executing pure-eval cython
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 300
+skip: false
+skip_reason: null
+notes: Extract data from stack frames and tracebacks. Used by IPython for enhanced
+  tracebacks. Uses setuptools-scm for versioning. Typeguard incompatible with 3.15
+  (cache_from_source API change).
+enriched: true
+clone_depth: 50
+import_name: stack_data

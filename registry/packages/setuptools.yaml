@@ -1,0 +1,18 @@
+package: setuptools
+repo: https://github.com/pypa/setuptools
+pypi_url: https://pypi.org/project/setuptools/
+extension_type: pure
+python_versions:
+- '3.15'
+- '3.14'
+install_method: pip
+install_command: pip install -e ".[test]" && pip install coverage
+test_command: python -m pytest setuptools/tests/ -k "not integration"
+test_framework: pytest
+uses_xdist: false
+timeout: 1800
+skip: false
+skip_reason: null
+notes: Large test suite (43 test files). Integration tests excluded. Uses pytest-timeout
+  and doctest-modules.
+enriched: true

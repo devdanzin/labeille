@@ -1,0 +1,21 @@
+package: langsmith
+repo: https://github.com/langchain-ai/langsmith-sdk
+pypi_url: https://pypi.org/project/langsmith/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': Requires LangSmith API key for most tests. Depends on pydantic which requires
+    pydantic-core (PyO3).
+notes: LangSmith observability SDK. Python package in python/ subdirectory. Most tests
+  require API access.
+enriched: true
+clone_depth: null
+import_name: null

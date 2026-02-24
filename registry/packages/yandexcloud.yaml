@@ -1,0 +1,17 @@
+package: yandexcloud
+repo: https://github.com/yandex-cloud/python-sdk
+pypi_url: https://pypi.org/project/yandexcloud/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Requires protobuf/grpc and Yandex Cloud credentials for tests.
+notes: Yandex Cloud SDK.
+enriched: true
+clone_depth: null
+import_name: null

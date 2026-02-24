@@ -1,0 +1,18 @@
+package: jsonpointer
+repo: https://github.com/stefankoegl/python-json-pointer
+pypi_url: https://pypi.org/project/jsonpointer/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest tests.py
+test_framework: pytest
+uses_xdist: false
+timeout: 120
+skip: false
+skip_reason: null
+notes: JSON Pointer (RFC 6901) implementation. Minimal pure Python library. Tests
+  in tests.py at repo root. Uses setuptools build backend.
+enriched: true
+clone_depth: null
+import_name: null

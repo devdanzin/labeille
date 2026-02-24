@@ -1,0 +1,18 @@
+package: protobuf
+repo: https://github.com/protocolbuffers/protobuf
+pypi_url: https://pypi.org/project/protobuf/
+extension_type: extensions
+python_versions:
+- '3.15'
+- '3.14'
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: unittest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Monorepo using Bazel build system. Requires protoc compiler and complex
+  build infrastructure. Not practical for pip-based testing.
+notes: ''
+enriched: true

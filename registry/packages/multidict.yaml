@@ -1,0 +1,17 @@
+package: multidict
+repo: https://github.com/aio-libs/multidict
+pypi_url: https://pypi.org/project/multidict/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-cov objgraph psutil
+test_command: python -m pytest tests/ --ignore=tests/test_multidict_benchmarks.py --ignore=tests/test_views_benchmarks.py --ignore=tests/isolated
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Multidict with C extension speedups. Part of aiohttp ecosystem.
+enriched: true
+clone_depth: null
+import_name: null

@@ -1,0 +1,17 @@
+package: contourpy
+repo: https://github.com/contourpy/contourpy
+pypi_url: https://pypi.org/project/contourpy/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: C++ extension requiring meson build system.
+notes: Contour plotting library.
+enriched: true
+clone_depth: null
+import_name: null

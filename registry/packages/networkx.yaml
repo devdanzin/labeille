@@ -1,0 +1,19 @@
+package: networkx
+repo: https://github.com/networkx/networkx
+pypi_url: https://pypi.org/project/networkx/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-cov
+test_command: python -m pytest networkx/
+test_framework: pytest
+uses_xdist: false
+timeout: 1800
+skip: false
+skip_reason: null
+notes: Graph library. Uses setuptools build backend. Tests are co-located with source
+  in networkx/ subdirectories. Large test suite. Some tests may use scipy/numpy/matplotlib
+  optionally. Timeout 30min due to large test count.
+enriched: true
+clone_depth: null
+import_name: null

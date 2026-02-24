@@ -1,0 +1,18 @@
+package: annotated-doc
+repo: https://github.com/fastapi/annotated-doc
+pypi_url: https://pypi.org/project/annotated-doc/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Documentation from Annotated types. By FastAPI author. Uses pdm-backend. Small
+  package with minimal test deps.
+enriched: true
+clone_depth: null
+import_name: annotated_doc

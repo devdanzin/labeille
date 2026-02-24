@@ -1,0 +1,18 @@
+package: comm
+repo: https://github.com/ipython/comm
+pypi_url: https://pypi.org/project/comm/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 120
+skip: false
+skip_reason: null
+notes: Jupyter Comm implementation. Small package for communication protocol between
+  frontends and kernels. Uses hatchling build backend.
+enriched: true
+clone_depth: null
+import_name: null

@@ -1,0 +1,19 @@
+package: psutil
+repo: https://github.com/giampaolo/psutil
+pypi_url: https://pypi.org/project/psutil/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-instafail pytest-xdist
+test_command: python -m pytest psutil/tests/ -p no:xdist -o "addopts="
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+notes: System and process utilities. Uses setuptools build backend. C extensions for
+  platform-specific system info. Tests in psutil/tests/. Some tests need root or may
+  be platform-specific. Timeout 10min.
+enriched: true
+clone_depth: null
+import_name: null

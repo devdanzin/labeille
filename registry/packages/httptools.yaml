@@ -1,0 +1,18 @@
+package: httptools
+repo: https://github.com/MagicStack/httptools
+pypi_url: https://pypi.org/project/httptools/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: C extension build requires vendored llhttp headers missing from editable
+  install.
+notes: HTTP parser based on llhttp (C extension).
+enriched: true
+clone_depth: null
+import_name: null

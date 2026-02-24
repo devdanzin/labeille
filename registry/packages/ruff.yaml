@@ -1,0 +1,17 @@
+package: ruff
+repo: https://github.com/astral-sh/ruff
+pypi_url: https://pypi.org/project/ruff/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Rust binary with no Python test suite.
+notes: Rust binary.
+enriched: true
+clone_depth: null
+import_name: null

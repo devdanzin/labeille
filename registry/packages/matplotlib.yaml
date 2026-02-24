@@ -1,0 +1,17 @@
+package: matplotlib
+repo: https://github.com/matplotlib/matplotlib
+pypi_url: https://pypi.org/project/matplotlib/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Complex C extension build with many system dependencies.
+notes: Plotting library.
+enriched: true
+clone_depth: null
+import_name: null

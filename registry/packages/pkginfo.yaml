@@ -1,0 +1,18 @@
+package: pkginfo
+repo: null
+pypi_url: https://pypi.org/project/pkginfo/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Source on Launchpad Bazaar (not git). No git repo available.
+skip_versions: {}
+notes: Package metadata query library.
+enriched: true
+clone_depth: null
+import_name: null

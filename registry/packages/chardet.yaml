@@ -1,0 +1,18 @@
+package: chardet
+repo: https://github.com/chardet/chardet
+pypi_url: https://pypi.org/project/chardet/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-xdist pytest-timeout
+test_command: python -m pytest test.py -o "addopts=-v --timeout=60"
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+notes: Character encoding auto-detection. Uses setuptools. Test suite may be slow
+  with large corpora.
+enriched: true
+clone_depth: null
+import_name: null

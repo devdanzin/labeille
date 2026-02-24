@@ -1,0 +1,19 @@
+package: pexpect
+repo: https://github.com/pexpect/pexpect
+pypi_url: https://pypi.org/project/pexpect/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+notes: Expect-like tool for controlling interactive programs. Tests require a working
+  PTY (Linux CI is fine). Uses setuptools build backend. Some tests spawn subprocesses
+  and can be slow.
+enriched: true
+clone_depth: null
+import_name: null

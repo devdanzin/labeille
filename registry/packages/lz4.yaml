@@ -1,0 +1,19 @@
+package: lz4
+repo: https://github.com/python-lz4/python-lz4
+pypi_url: https://pypi.org/project/lz4/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-cov psutil
+test_command: python -m pytest tests/ --ignore=tests/stream
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: LZ4 compression with C extension. Uses setuptools_scm build backend. C extension
+  wraps lz4 library. Tests need psutil for memory tests. addopts includes --cov so
+  pytest-cov needed.
+enriched: true
+clone_depth: 50
+import_name: null

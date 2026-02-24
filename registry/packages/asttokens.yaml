@@ -1,0 +1,19 @@
+package: asttokens
+repo: https://github.com/gristlabs/asttokens
+pypi_url: https://pypi.org/project/asttokens/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: git fetch --tags --depth 1 && pip install -e . && pip install pytest
+  astroid
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 300
+skip: false
+skip_reason: null
+notes: Annotate AST trees with source text positions. Uses setuptools-scm. Tests compare
+  AST node positions against source text.
+enriched: true
+clone_depth: 50
+import_name: null

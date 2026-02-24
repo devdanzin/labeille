@@ -10,9 +10,9 @@ install_command: pip install -e . && pip install -r requirements-dev.txt
 test_command: python -m pytest tests/unit/ tests/functional/
 test_framework: pytest
 uses_xdist: false
-timeout: null
-skip: false
-skip_reason: null
+timeout: 1800
+skip: true
+skip_reason: It times out even with a 30 minute timeout.
 notes: Tests use unittest.TestCase base class run by pytest. Integration tests excluded
   (require AWS credentials). Tests should run from repo root.
 enriched: true

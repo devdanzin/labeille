@@ -1,0 +1,18 @@
+package: decorator
+repo: https://github.com/micheles/decorator
+pypi_url: https://pypi.org/project/decorator/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest tests/test.py -p no:xdist
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: Decorator utilities. Single test file using unittest.TestCase.
+enriched: true
+clone_depth: null
+import_name: null

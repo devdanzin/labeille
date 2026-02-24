@@ -1,0 +1,18 @@
+package: sortedcontainers
+repo: https://github.com/grantjenks/python-sortedcontainers
+pypi_url: https://pypi.org/project/sortedcontainers/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest tests -p no:xdist
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: Sorted collections library. Pure Python.
+enriched: true
+clone_depth: null
+import_name: null

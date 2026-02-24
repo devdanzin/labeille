@@ -1,0 +1,17 @@
+package: rapidfuzz
+repo: https://github.com/rapidfuzz/RapidFuzz.git
+pypi_url: https://pypi.org/project/rapidfuzz/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: C++ extension using scikit-build-core.
+notes: Fuzzy string matching.
+enriched: true
+clone_depth: null
+import_name: null

@@ -1,0 +1,18 @@
+package: pytest-xdist
+repo: https://github.com/pytest-dev/pytest-xdist
+pypi_url: https://pypi.org/project/pytest-xdist/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: git fetch --tags --depth 1 && pip install -e . && pip install pytest
+  execnet filelock
+test_command: python -m pytest testing/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Pytest distributed testing plugin. Uses setuptools-scm. Tests in testing/ dir.
+enriched: true
+clone_depth: 50
+import_name: xdist

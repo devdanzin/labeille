@@ -1,0 +1,23 @@
+package: pydantic
+repo: https://github.com/pydantic/pydantic
+pypi_url: https://pypi.org/project/pydantic/
+extension_type: pure
+python_versions:
+- '3.15'
+- '3.14'
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-mock cloudpickle
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': Dev branch requires unreleased pydantic-core version, and pydantic-core
+    needs PyO3 3.15 support
+notes: Main branch pins unreleased pydantic-core. Even if available, pydantic-core
+  is a Rust/PyO3 extension that doesn't support 3.15 yet.
+enriched: true
+clone_depth: null
+import_name: null

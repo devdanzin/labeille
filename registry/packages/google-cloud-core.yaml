@@ -1,0 +1,21 @@
+package: google-cloud-core
+repo: https://github.com/googleapis/python-cloud-core
+pypi_url: https://pypi.org/project/google-cloud-core/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-cov google-auth google-api-core
+  mock
+test_command: python -m pytest tests/unit/ -p no:xdist
+test_framework: pytest
+uses_xdist: false
+timeout: 120
+skip: true
+skip_reason: Source moved to googleapis/google-cloud-python monorepo and standalone
+  repo archived.
+skip_versions: {}
+notes: 'Core helpers for Google Cloud client libraries. Has unit tests in tests/unit/.
+  Standalone repo: googleapis/python-cloud-core.'
+enriched: true
+clone_depth: null
+import_name: google.cloud

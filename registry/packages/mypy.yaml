@@ -1,0 +1,19 @@
+package: mypy
+repo: https://github.com/python/mypy
+pypi_url: https://pypi.org/project/mypy/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-xdist attrs filelock tomli
+test_command: python -m pytest mypy/test/ -p no:xdist -o "addopts="
+test_framework: pytest
+uses_xdist: true
+timeout: 900
+skip: false
+skip_reason: null
+notes: Type checker. Uses setuptools build backend. Has optional mypyc C extensions
+  but builds in interpreted (pure Python) mode from source by default. Very large
+  test suite. Uses xdist, disabled for JIT.
+enriched: true
+clone_depth: null
+import_name: null

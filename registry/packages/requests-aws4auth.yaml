@@ -1,0 +1,20 @@
+package: requests-aws4auth
+repo: https://github.com/tedder/requests-aws4auth
+pypi_url: https://pypi.org/project/requests-aws4auth/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest httpx
+test_command: python -m pytest test/ -p no:xdist
+test_framework: pytest
+uses_xdist: false
+timeout: 120
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': JIT crash (SIGABRT) during pip install.
+notes: 'AWS Signature Version 4 auth for requests. Tests in test/ directory cover
+  signing logic without AWS credentials. Repo: tedder/requests-aws4auth.'
+enriched: true
+clone_depth: null
+import_name: requests_aws4auth

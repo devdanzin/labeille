@@ -1,0 +1,19 @@
+package: threadpoolctl
+repo: https://github.com/joblib/threadpoolctl
+pypi_url: https://pypi.org/project/threadpoolctl/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Thread pool control for native libraries. Uses flit_core build backend. Tests
+  check interactions with native BLAS/OpenMP libraries. Pure Python wrapper, tests
+  may skip if no native libs available.
+enriched: true
+clone_depth: null
+import_name: null

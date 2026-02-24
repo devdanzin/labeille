@@ -1,0 +1,18 @@
+package: google-cloud-batch
+repo: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-batch
+pypi_url: https://pypi.org/project/google-cloud-batch/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Monorepo package in google-cloud-python. Complex to test standalone.
+notes: Cloud Batch client. Lives in googleapis/google-cloud-python monorepo under
+  packages/google-cloud-batch/.
+enriched: true
+clone_depth: null
+import_name: null

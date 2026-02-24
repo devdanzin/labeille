@@ -1,0 +1,18 @@
+package: pyjwt
+repo: https://github.com/jpadilla/pyjwt
+pypi_url: https://pypi.org/project/pyjwt/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e '.[crypto]' && pip install pytest
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 120
+skip: false
+skip_reason: null
+notes: JSON Web Token implementation. The [crypto] extra installs cryptography for
+  RSA/EC key support. Uses setuptools build backend.
+enriched: true
+clone_depth: null
+import_name: jwt

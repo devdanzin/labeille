@@ -1,0 +1,19 @@
+package: tenacity
+repo: https://github.com/jd/tenacity
+pypi_url: https://pypi.org/project/tenacity/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-asyncio trio typeguard
+  tornado
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Retry library. Uses setuptools_scm build backend. Tests cover asyncio, trio,
+  and tornado async backends. typeguard used for runtime type checking in some tests.
+enriched: true
+clone_depth: 50
+import_name: null

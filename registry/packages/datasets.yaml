@@ -1,0 +1,17 @@
+package: datasets
+repo: https://github.com/huggingface/datasets
+pypi_url: https://pypi.org/project/datasets/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: HuggingFace datasets. Heavy dependencies including pyarrow.
+notes: HuggingFace datasets library.
+enriched: true
+clone_depth: null
+import_name: null

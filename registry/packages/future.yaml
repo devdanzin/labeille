@@ -1,0 +1,17 @@
+package: future
+repo: https://github.com/PythonCharmers/python-future
+pypi_url: https://pypi.org/project/future/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Python 2/3 compatibility library. Largely obsolete for Python 3.13+.
+notes: Python 2/3 compatibility layer. Obsolete for modern Python.
+enriched: true
+clone_depth: null
+import_name: null

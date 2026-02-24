@@ -1,0 +1,17 @@
+package: mypy-extensions
+repo: https://github.com/python/mypy_extensions
+pypi_url: https://pypi.org/project/mypy-extensions/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest mypy
+test_command: python -m pytest tests/testextensions.py
+test_framework: pytest
+uses_xdist: false
+timeout: 60
+skip: false
+skip_reason: null
+notes: Helpers for mypy plugins. Uses setuptools build backend. Very small package.
+enriched: true
+clone_depth: null
+import_name: mypy_extensions

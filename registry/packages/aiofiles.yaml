@@ -1,0 +1,18 @@
+package: aiofiles
+repo: https://github.com/Tinche/aiofiles
+pypi_url: https://pypi.org/project/aiofiles/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-asyncio
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Async file I/O wrapper. Pure Python, minimal test deps. Uses hatchling build
+  backend.
+enriched: true
+clone_depth: null
+import_name: null

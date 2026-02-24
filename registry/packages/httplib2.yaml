@@ -1,0 +1,19 @@
+package: httplib2
+repo: https://github.com/httplib2/httplib2
+pypi_url: https://pypi.org/project/httplib2/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-cov pytest-timeout cryptography
+  pysocks pyparsing
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+notes: HTTP client library. Has comprehensive tests including proxy and SSL tests.
+  Some tests may need network.
+enriched: true
+clone_depth: null
+import_name: null

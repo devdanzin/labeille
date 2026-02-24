@@ -1,0 +1,18 @@
+package: poetry
+repo: https://github.com/python-poetry/poetry
+pypi_url: https://pypi.org/project/poetry/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-mock pytest-xdist httpretty deepdiff flatdict installer responses
+test_command: python -m pytest tests/ -p no:xdist -o "addopts="
+test_framework: pytest
+uses_xdist: true
+timeout: 600
+skip: false
+skip_reason: null
+notes: Full Poetry packaging tool. Uses poetry-core build backend. Large test suite
+  with many integration tests. Uses xdist, disabled for JIT testing.
+enriched: true
+clone_depth: null
+import_name: null

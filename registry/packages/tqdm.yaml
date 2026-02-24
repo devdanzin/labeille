@@ -1,0 +1,18 @@
+package: tqdm
+repo: https://github.com/tqdm/tqdm
+pypi_url: https://pypi.org/project/tqdm/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-asyncio pytest-timeout
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: true
+skip_reason: Tests hang/get stuck during execution.
+notes: Progress bar library. Uses setuptools_scm build backend. Tests cover CLI, notebook,
+  asyncio, pandas integration. Some tests may be slow, timeout 10min.
+enriched: true
+clone_depth: 50
+import_name: null

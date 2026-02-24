@@ -1,0 +1,19 @@
+package: sentry-sdk
+repo: https://github.com/getsentry/sentry-python
+pypi_url: https://pypi.org/project/sentry-sdk/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-forked responses brotli pytest-localserver
+test_command: python -m pytest tests/ -k 'not integrations'
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+notes: Sentry error tracking SDK. Large test suite with many integration-specific
+  tests. Run core tests excluding integrations/ to avoid needing Django, Flask, Celery,
+  etc. Uses responses for HTTP mocking.
+enriched: true
+clone_depth: null
+import_name: sentry_sdk

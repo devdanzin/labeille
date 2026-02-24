@@ -1,0 +1,18 @@
+package: wrapt
+repo: https://github.com/GrahamDumpleton/wrapt
+pypi_url: https://pypi.org/project/wrapt/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Function wrappers and decorators. Has optional C extension; falls back to pure
+  Python.
+enriched: true
+clone_depth: null
+import_name: null

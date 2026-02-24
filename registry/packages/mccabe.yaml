@@ -1,0 +1,22 @@
+package: mccabe
+repo: https://github.com/pycqa/mccabe
+pypi_url: https://pypi.org/project/mccabe/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest hypothesis
+test_command: python -m pytest test_mccabe.py
+test_framework: pytest
+uses_xdist: false
+timeout: 60
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': Test file uses @settings decorator from hypothesis at module level but only
+    imports it inside try/except with hypothesmith; hypothesmith requires libcst which
+    needs Rust compiler. Collection fails with NameError on settings.
+notes: McCabe complexity checker plugin for flake8. Uses setuptools build backend.
+  Very small, single-file package.
+enriched: true
+clone_depth: null
+import_name: null

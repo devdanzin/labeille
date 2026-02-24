@@ -1,0 +1,19 @@
+package: jedi
+repo: https://github.com/davidhalter/jedi
+pypi_url: https://pypi.org/project/jedi/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: git submodule update --init && pip install -e . && pip install pytest
+  parso
+test_command: python -m pytest test/
+test_framework: pytest
+uses_xdist: false
+timeout: 900
+skip: false
+skip_reason: null
+notes: Autocompletion and static analysis library for Python. Tests are in test/ directory.
+  Large test suite with many completion/inference tests. Uses setuptools build backend.
+enriched: true
+clone_depth: null
+import_name: null

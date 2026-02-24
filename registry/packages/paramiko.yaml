@@ -1,0 +1,18 @@
+package: paramiko
+repo: https://github.com/paramiko/paramiko
+pypi_url: https://pypi.org/project/paramiko/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-relaxed mock icecream
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 300
+skip: false
+skip_reason: null
+notes: SSH2 protocol library. Depends on cryptography, bcrypt, pynacl. Tests use pytest-relaxed
+  for spec-style output and mock. Uses setuptools build backend.
+enriched: true
+clone_depth: null
+import_name: null

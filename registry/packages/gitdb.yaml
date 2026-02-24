@@ -1,0 +1,18 @@
+package: gitdb
+repo: https://github.com/gitpython-developers/gitdb
+pypi_url: https://pypi.org/project/gitdb/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: git fetch --unshallow || true && pip install -e . && pip install pytest
+test_command: python -m pytest gitdb/test/
+test_framework: pytest
+uses_xdist: false
+timeout: 300
+skip: false
+skip_reason: null
+notes: Git object database. Dependency of GitPython. Tests are inside the gitdb/test/
+  directory. Uses setuptools build backend.
+enriched: true
+clone_depth: null
+import_name: null

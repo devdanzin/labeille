@@ -1,0 +1,17 @@
+package: deprecated
+repo: https://github.com/laurent-laporte-pro/deprecated
+pypi_url: https://pypi.org/project/deprecated/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest setuptools
+test_command: python -m pytest tests/ --ignore=tests/test.py
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Deprecation decorator built on wrapt. Uses bump2version for versioning.
+enriched: true
+clone_depth: null
+import_name: null

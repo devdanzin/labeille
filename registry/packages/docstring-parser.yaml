@@ -1,0 +1,18 @@
+package: docstring-parser
+repo: https://github.com/rr-/docstring_parser
+pypi_url: https://pypi.org/project/docstring-parser/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest docstring_parser/tests/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Parse docstrings (Google, NumPy, Sphinx styles). Uses poetry-core build backend.
+  Pure Python. Small test suite with minimal deps.
+enriched: true
+clone_depth: null
+import_name: docstring_parser

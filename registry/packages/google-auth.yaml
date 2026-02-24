@@ -1,0 +1,18 @@
+package: google-auth
+repo: https://github.com/googleapis/google-auth-library-python
+pypi_url: https://pypi.org/project/google-auth/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-cov pytest-asyncio mock pyopenssl responses cryptography requests pyu2f freezegun urllib3
+test_command: python -m pytest tests/ -p no:xdist --ignore=tests/transport/aio
+test_framework: pytest
+uses_xdist: false
+timeout: 300
+skip: false
+skip_reason: null
+notes: 'Google auth library. Has extensive unit tests in tests/ covering transport,
+  credentials, and OAuth2 flows. No live services needed. Repo: googleapis/google-auth-library-python.'
+enriched: true
+clone_depth: null
+import_name: google.auth

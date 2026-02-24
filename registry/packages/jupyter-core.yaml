@@ -1,0 +1,17 @@
+package: jupyter-core
+repo: https://github.com/jupyter/jupyter_core
+pypi_url: https://pypi.org/project/jupyter-core/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 300
+skip: false
+skip_reason: null
+notes: Core Jupyter functionality (paths, configuration). Uses hatchling build backend.
+enriched: true
+clone_depth: null
+import_name: jupyter_core

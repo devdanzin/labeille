@@ -1,0 +1,18 @@
+package: pyparsing
+repo: https://github.com/pyparsing/pyparsing.git
+pypi_url: https://pypi.org/project/pyparsing/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest railroad-diagrams jinja2
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: General parsing library. Uses flit_core build backend. railroad-diagrams optional
+  for diagram tests.
+enriched: true
+clone_depth: null
+import_name: null

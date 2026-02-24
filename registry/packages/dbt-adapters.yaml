@@ -1,0 +1,17 @@
+package: dbt-adapters
+repo: https://github.com/dbt-labs/dbt-adapters.git#subdirectory=dbt-adapters
+pypi_url: https://pypi.org/project/dbt-adapters/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Depends on dbt-core.
+notes: dbt database adapters.
+enriched: true
+clone_depth: null
+import_name: null

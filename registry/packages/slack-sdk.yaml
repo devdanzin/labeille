@@ -1,0 +1,19 @@
+package: slack-sdk
+repo: https://github.com/slackapi/python-slack-sdk
+pypi_url: https://pypi.org/project/slack-sdk/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-asyncio websocket-client sqlalchemy
+test_command: python -m pytest tests/slack_sdk/ --ignore=tests/slack_sdk/socket_mode
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+notes: Slack SDK for Python. Has offline unit tests in tests/slack_sdk/ that mock
+  API calls. Avoid tests/slack_sdk/web/ integration tests that need a Slack token.
+  Uses setuptools build backend.
+enriched: true
+clone_depth: null
+import_name: slack_sdk

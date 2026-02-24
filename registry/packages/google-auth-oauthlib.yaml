@@ -1,0 +1,19 @@
+package: google-auth-oauthlib
+repo: https://github.com/GoogleCloudPlatform/google-auth-library-python-oauthlib
+pypi_url: https://pypi.org/project/google-auth-oauthlib/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-cov google-auth requests-oauthlib
+  click mock
+test_command: python -m pytest tests/ -p no:xdist
+test_framework: pytest
+uses_xdist: false
+timeout: 120
+skip: false
+skip_reason: null
+notes: 'OAuthlib integration for google-auth. Unit tests cover OAuth2 flows without
+  live services. Repo: googleapis/google-auth-library-python-oauthlib.'
+enriched: true
+clone_depth: null
+import_name: google_auth_oauthlib

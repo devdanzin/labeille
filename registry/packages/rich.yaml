@@ -1,0 +1,18 @@
+package: rich
+repo: https://github.com/Textualize/rich
+pypi_url: https://pypi.org/project/rich/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest attrs
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Rich text/formatting library by Textualize. Uses poetry-core build backend.
+  Depends on pygments, markdown-it-py. Tests are self-contained, no extra test deps.
+enriched: true
+clone_depth: null
+import_name: null

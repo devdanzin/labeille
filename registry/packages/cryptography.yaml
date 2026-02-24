@@ -1,0 +1,19 @@
+package: cryptography
+repo: https://github.com/pyca/cryptography/
+pypi_url: https://pypi.org/project/cryptography/
+extension_type: extensions
+python_versions:
+- '3.15'
+- '3.14'
+install_method: pip
+install_command: pip install -e ./vectors && pip install -e ".[test]"
+test_command: python -m pytest tests/ -p no:xdist
+test_framework: pytest
+uses_xdist: true
+timeout: null
+skip: false
+skip_reason: null
+notes: Requires Rust toolchain for building (maturin backend). Uses xdist (-n auto
+  --dist=worksteal) by default, disabled for JIT testing. Test vectors package may
+  need separate install.
+enriched: true

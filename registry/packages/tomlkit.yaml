@@ -1,0 +1,19 @@
+package: tomlkit
+repo: https://github.com/sdispater/tomlkit
+pypi_url: https://pypi.org/project/tomlkit/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && git submodule update --init && pip install pytest
+  pyyaml
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Style-preserving TOML library. Uses poetry-core build backend. pyyaml used
+  by test fixtures for expected-value comparisons.
+enriched: true
+clone_depth: null
+import_name: null

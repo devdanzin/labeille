@@ -1,0 +1,19 @@
+package: black
+repo: https://github.com/psf/black
+pypi_url: https://pypi.org/project/black/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-xdist ipynb click
+test_command: python -m pytest tests/ -p no:xdist --ignore=tests/test_blackd.py
+test_framework: pytest
+uses_xdist: true
+timeout: 600
+skip: false
+skip_reason: null
+notes: Code formatter. Uses hatchling build backend. Has optional C extension via
+  mypyc (blib2to3), but installs in pure Python mode from source. Uses xdist, disabled
+  for JIT. Large test suite.
+enriched: true
+clone_depth: null
+import_name: null

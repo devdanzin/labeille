@@ -1,0 +1,19 @@
+package: google-cloud-storage
+repo: https://github.com/googleapis/python-storage
+pypi_url: https://pypi.org/project/google-cloud-storage/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-cov google-auth google-api-core google-cloud-core google-resumable-media google-crc32c mock
+test_command: python -m pytest tests/unit/ -p no:xdist --rootdir . --ignore=tests/unit/gapic --ignore=tests/unit/asyncio --ignore=tests/unit/test_grpc_client.py
+test_framework: pytest
+uses_xdist: false
+timeout: 300
+skip: false
+skip_reason: null
+notes: 'Google Cloud Storage client. Has unit tests in tests/unit/ that mock GCS calls.
+  Integration tests require credentials and are in tests/system/. Standalone repo:
+  googleapis/python-storage.'
+enriched: true
+clone_depth: null
+import_name: google.cloud.storage

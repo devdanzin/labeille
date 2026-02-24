@@ -1,0 +1,17 @@
+package: types-awscrt
+repo: https://github.com/youtype/types-awscrt
+pypi_url: https://pypi.org/project/types-awscrt/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Type stub package with no meaningful test suite.
+notes: Type stubs for awscrt.
+enriched: true
+clone_depth: null
+import_name: null

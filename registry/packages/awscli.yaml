@@ -1,0 +1,18 @@
+package: awscli
+repo: https://github.com/aws/aws-cli
+pypi_url: https://pypi.org/project/awscli/
+extension_type: pure
+python_versions:
+- '3.15'
+- '3.14'
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest tests/unit/ tests/functional/
+test_framework: pytest
+uses_xdist: false
+timeout: 1800
+skip: false
+skip_reason: null
+notes: Large test suite. Integration tests excluded (require AWS credentials). Tests
+  use unittest.TestCase run by pytest.
+enriched: true

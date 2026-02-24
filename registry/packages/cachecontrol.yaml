@@ -1,0 +1,20 @@
+package: cachecontrol
+repo: https://github.com/psf/cachecontrol
+pypi_url: https://pypi.org/project/cachecontrol/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-cov requests mock lockfile
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 300
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': JIT crash (_PyOptimizer_Optimize abort) during msgpack install.
+notes: HTTP caching for requests. Uses flit_core build backend. Tests mock HTTP responses,
+  no network required.
+enriched: true
+clone_depth: null
+import_name: cachecontrol

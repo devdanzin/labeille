@@ -1,0 +1,18 @@
+package: isort
+repo: https://github.com/PyCQA/isort
+pypi_url: https://pypi.org/project/isort/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-mock hypothesis colorama
+test_command: python -m pytest tests/ --ignore=tests/unit/test_wrap_third_party.py --ignore=tests/unit/profiles/test_black.py --ignore=tests/integration/test_hypothesmith.py
+test_framework: pytest
+uses_xdist: false
+timeout: 300
+skip: false
+skip_reason: null
+notes: Import sorter. Uses hatchling build backend. Pure Python. Tests use hypothesis
+  for property-based testing.
+enriched: true
+clone_depth: null
+import_name: null

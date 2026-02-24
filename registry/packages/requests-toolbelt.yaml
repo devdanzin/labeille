@@ -1,0 +1,20 @@
+package: requests-toolbelt
+repo: https://github.com/requests/toolbelt
+pypi_url: https://pypi.org/project/requests-toolbelt/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest betamax mock
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 300
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': JIT crash (SIGABRT) during pip install.
+notes: Requests utility belt. Tests use betamax for HTTP recording. Uses setuptools
+  build backend.
+enriched: true
+clone_depth: null
+import_name: null

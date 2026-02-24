@@ -1,0 +1,18 @@
+package: websocket-client
+repo: https://github.com/websocket-client/websocket-client/
+pypi_url: https://pypi.org/project/websocket-client/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest websocket/tests/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: WebSocket client library. Tests inside package directory. Some tests require
+  network.
+enriched: true
+clone_depth: null
+import_name: websocket

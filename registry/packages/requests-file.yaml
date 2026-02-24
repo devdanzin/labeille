@@ -1,0 +1,18 @@
+package: requests-file
+repo: https://codeberg.org/dashea/requests-file
+pypi_url: https://pypi.org/project/requests-file/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: git fetch --tags --depth 1 && pip install -e . && pip install pytest
+test_command: python -m pytest tests -p no:xdist
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: File transport adapter for requests. Uses setuptools-scm (needs tags).
+enriched: true
+clone_depth: null
+import_name: requests_file

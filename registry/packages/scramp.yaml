@@ -1,0 +1,18 @@
+package: scramp
+repo: https://codeberg.org/tlocke/scramp
+pypi_url: https://pypi.org/project/scramp/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: git fetch --tags --depth 1 && pip install -e . && pip install pytest
+test_command: python -m pytest test -p no:xdist
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: SCRAM authentication. Uses versioningit (needs tags).
+enriched: true
+clone_depth: null
+import_name: null

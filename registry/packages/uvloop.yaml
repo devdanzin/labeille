@@ -1,0 +1,17 @@
+package: uvloop
+repo: https://github.com/MagicStack/uvloop
+pypi_url: https://pypi.org/project/uvloop/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install setuptools cython && pip install --no-build-isolation -e . && pip install pytest
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: true
+skip_reason: Cython/setuptools build fails (pkg_resources not found during metadata generation).
+notes: Fast event loop based on libuv (C extension). Cython-based.
+enriched: true
+clone_depth: null
+import_name: null
