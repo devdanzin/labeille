@@ -37,33 +37,36 @@ def find_field_extent(lines: list[str], start: int) -> tuple[int, int]:
     Returns:
         A ``(start, end)`` tuple where ``end`` is exclusive.
     """
-    # Check if the key line has a block-style value (value after colon is empty
-    # or just whitespace, meaning the actual values are on subsequent lines).
     key_line = lines[start]
     colon_idx = key_line.index(":")
     after_colon = key_line[colon_idx + 1 :].strip()
     is_block = after_colon == "" or after_colon.startswith("#")
 
     end = start + 1
-    while end < len(lines):
-        line = lines[end]
-        # Blank lines or lines starting with whitespace are continuations
-        if line.strip() == "":
-            end += 1
-            continue
-        if line[0] in (" ", "\t"):
-            end += 1
-            continue
-        # Block-style list items at column 0 (e.g. "- value")
-        if is_block and line.startswith("- "):
-            end += 1
-            continue
-        # Non-indented, non-blank line is the next field
-        break
-
-    # Trim trailing blank lines from the extent
-    while end > start + 1 and lines[end - 1].strip() == "":
-        end -= 1
+    if is_block:
+        # Block-style value: include indented continuation lines.
+        while end < len(lines):
+            line = lines[end]
+            if line.strip() == "":
+                # Blank line might be mid-block or trailing — peek ahead.
+                # If the next non-blank line is indented, it's mid-block.
+                peek = end + 1
+                while peek < len(lines) and lines[peek].strip() == "":
+                    peek += 1
+                if peek < len(lines) and lines[peek][0] in (" ", "\t"):
+                    end = peek  # skip blank lines within block
+                    continue
+                else:
+                    break  # trailing blank line, not part of block
+            if line[0] in (" ", "\t"):
+                end += 1
+                continue
+            if line.startswith("- "):
+                end += 1
+                continue
+            break
+    # For scalar fields, extent is just the single line.
+    # Don't consume trailing blank lines.
 
     return (start, end)
 
@@ -187,19 +190,62 @@ def format_yaml_value(value: Any, field_type: str) -> str:
 
 
 def _quote_yaml_scalar(value: Any) -> str:
-    """Quote a scalar value for YAML if needed."""
+    """Quote a scalar value for YAML if needed.
+
+    Quotes values that YAML would interpret as non-string types:
+    integers, floats, booleans, null, and special float values.
+    """
     s = str(value)
-    # Numeric strings that look like floats should be quoted
+
+    # Empty string must be quoted.
+    if not s:
+        return '""'
+
+    # YAML boolean/null keywords.
+    if s.lower() in ("true", "false", "null", "yes", "no", "on", "off", "~"):
+        return f'"{s}"'
+
+    # Strings that YAML would parse as numbers (int or float).
+    # This includes: "42", "3.15", "1e10", "0x1F", "0o17", "0b101",
+    # ".inf", "-.inf", ".nan"
     try:
-        float(s)
-        if "." in s or s.lower() in ("inf", "-inf", "nan"):
+        # If Python can parse it as int or float, YAML probably will too.
+        if s.isdigit():
             return f'"{s}"'
+        float(s)
+        return f'"{s}"'
     except ValueError:
         pass
-    if s.lower() in ("true", "false", "null", "yes", "no", "on", "off"):
+
+    # Strings starting with 0 followed by digits (octal-like: "0123").
+    if len(s) > 1 and s[0] == "0" and s[1:].isdigit():
         return f'"{s}"'
-    if any(c in s for c in (":", "#", "{", "}", "[", "]", ",", "&", "*", "?", "|", ">", "'")):
+
+    # YAML special characters that require quoting.
+    if any(
+        c in s
+        for c in (
+            ":",
+            "#",
+            "{",
+            "}",
+            "[",
+            "]",
+            ",",
+            "&",
+            "*",
+            "?",
+            "|",
+            ">",
+            "'",
+            "!",
+            "%",
+            "@",
+            "`",
+        )
+    ):
         return f'"{s}"'
+
     return s
 
 
