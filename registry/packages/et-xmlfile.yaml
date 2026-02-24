@@ -1,0 +1,18 @@
+package: et-xmlfile
+repo: https://foss.heptapod.net/openpyxl/et_xmlfile
+pypi_url: https://pypi.org/project/et-xmlfile/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest lxml
+test_command: python -m pytest
+test_framework: pytest
+uses_xdist: false
+timeout: 120
+skip: true
+skip_reason: Repo is on Heptapod (foss.heptapod.net) which is unreachable via git clone.
+notes: Low-memory XML file writer based on ElementTree. Dependency of openpyxl. Repo
+  is on Heptapod. Small test suite. Uses setuptools build backend.
+enriched: true
+clone_depth: null
+import_name: et_xmlfile

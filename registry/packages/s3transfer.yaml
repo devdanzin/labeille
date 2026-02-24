@@ -1,0 +1,18 @@
+package: s3transfer
+repo: https://github.com/boto/s3transfer
+pypi_url: https://pypi.org/project/s3transfer/
+extension_type: pure
+python_versions:
+- '3.15'
+- '3.14'
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest tests/unit/ tests/functional/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Integration tests excluded (require AWS credentials). Tests should run from
+  repo root.
+enriched: true

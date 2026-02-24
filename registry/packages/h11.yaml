@@ -1,0 +1,17 @@
+package: h11
+repo: https://github.com/python-hyper/h11
+pypi_url: https://pypi.org/project/h11/
+extension_type: pure
+python_versions:
+- '3.15'
+- '3.14'
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Pure Python HTTP/1.1 library. Tests in h11/tests/ directory.
+enriched: true

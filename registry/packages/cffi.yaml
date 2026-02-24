@@ -1,0 +1,18 @@
+package: cffi
+repo: https://github.com/python-cffi/cffi
+pypi_url: https://pypi.org/project/cffi/
+extension_type: extensions
+python_versions:
+- '3.15'
+- '3.14'
+install_method: pip
+install_command: pip install -e . && pip install pytest setuptools
+test_command: python -m pytest
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Requires libffi-dev for C extension build. Tests in testing/ directory (cffi0/
+  and cffi1/ subdirectories).
+enriched: true

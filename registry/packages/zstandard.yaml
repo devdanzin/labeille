@@ -1,0 +1,19 @@
+package: zstandard
+repo: https://github.com/indygreg/python-zstandard
+pypi_url: https://pypi.org/project/zstandard/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest hypothesis
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+notes: Zstandard compression with C extension. Uses setuptools build backend. Bundles
+  zstd C library source. Tests use hypothesis for property testing. Timeout 10min
+  for compression fuzzing tests.
+enriched: true
+clone_depth: null
+import_name: zstandard

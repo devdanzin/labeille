@@ -1,0 +1,18 @@
+package: trove-classifiers
+repo: https://github.com/pypa/trove-classifiers
+pypi_url: https://pypi.org/project/trove-classifiers/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 60
+skip: false
+skip_reason: null
+notes: Canonical list of PyPI classifiers. Uses setuptools build backend. Very small
+  test suite, mostly validation of classifier strings.
+enriched: true
+clone_depth: null
+import_name: trove_classifiers

@@ -1,0 +1,19 @@
+package: jaraco-functools
+repo: https://github.com/jaraco/jaraco.functools
+pypi_url: https://pypi.org/project/jaraco-functools/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: git fetch --tags --depth 1 && pip install -e . && pip install pytest
+  jaraco.classes
+test_command: python -m pytest test_functools.py
+test_framework: pytest
+uses_xdist: false
+timeout: 120
+skip: false
+skip_reason: null
+notes: Functools extensions for the jaraco namespace. Uses setuptools-scm. Small test
+  suite. Depends on jaraco.classes.
+enriched: true
+clone_depth: 50
+import_name: jaraco.functools

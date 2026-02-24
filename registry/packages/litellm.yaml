@@ -1,0 +1,17 @@
+package: litellm
+repo: https://github.com/BerriAI/litellm
+pypi_url: https://pypi.org/project/litellm/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: LLM gateway requiring API keys for all providers.
+notes: LLM API gateway.
+enriched: true
+clone_depth: null
+import_name: null

@@ -1,0 +1,17 @@
+package: pysocks
+repo: https://github.com/Anorov/PySocks
+pypi_url: https://pypi.org/project/pysocks/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest psutil
+test_command: python -m pytest test/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: SOCKS proxy client. Uses setuptools. Tests in test/ directory (singular).
+enriched: true
+clone_depth: null
+import_name: socks

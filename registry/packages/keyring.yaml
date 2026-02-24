@@ -1,0 +1,19 @@
+package: keyring
+repo: https://github.com/jaraco/keyring
+pypi_url: https://pypi.org/project/keyring/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: git fetch --tags --depth 1 && pip install -e . && pip install pytest
+  pytest-cov
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 300
+skip: false
+skip_reason: null
+notes: System keyring access library. Uses setuptools-scm for versioning. Tests that
+  require actual keyring backends will skip if unavailable.
+enriched: true
+clone_depth: 50
+import_name: null

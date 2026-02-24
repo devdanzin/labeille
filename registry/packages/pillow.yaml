@@ -1,0 +1,22 @@
+package: pillow
+repo: https://github.com/python-pillow/Pillow
+pypi_url: https://pypi.org/project/pillow/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest Tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 1200
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': C extension editable build fails on 3.15 debug build.
+notes: Image processing library (PIL fork). Uses setuptools build backend. C extensions
+  for image format support. Tests in Tests/ directory (capital T). Requires system
+  libraries (libjpeg, zlib, etc.) for full format support. Timeout 20min for large
+  test suite.
+enriched: true
+clone_depth: null
+import_name: PIL

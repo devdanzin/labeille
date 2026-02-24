@@ -1,0 +1,18 @@
+package: pynacl
+repo: https://github.com/pyca/pynacl
+pypi_url: https://pypi.org/project/pynacl/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest hypothesis
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Python binding for libsodium (NaCl crypto). Uses cffi to wrap C library. Requires
+  libsodium-dev system package. Tests use hypothesis for property testing.
+enriched: true
+clone_depth: null
+import_name: nacl

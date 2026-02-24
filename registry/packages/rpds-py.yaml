@@ -1,0 +1,20 @@
+package: rpds-py
+repo: https://github.com/crate-py/rpds
+pypi_url: https://pypi.org/project/rpds-py/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': Requires PyO3/maturin for source builds. Not buildable until PyO3 supports
+    3.15.
+notes: Rust persistent data structures.
+enriched: true
+clone_depth: null
+import_name: null

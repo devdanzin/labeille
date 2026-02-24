@@ -1,0 +1,17 @@
+package: webencodings
+repo: https://github.com/SimonSapin/python-webencodings
+pypi_url: https://pypi.org/project/webencodings/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Web character encoding (WHATWG spec). Small pure Python library. Uses setuptools.
+enriched: true
+clone_depth: null
+import_name: null

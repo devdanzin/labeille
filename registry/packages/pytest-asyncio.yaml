@@ -1,0 +1,17 @@
+package: pytest-asyncio
+repo: https://github.com/pytest-dev/pytest-asyncio
+pypi_url: https://pypi.org/project/pytest-asyncio/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest hypothesis
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Pytest plugin for asyncio test support. Uses setuptools-scm.
+enriched: true
+clone_depth: 50
+import_name: pytest_asyncio

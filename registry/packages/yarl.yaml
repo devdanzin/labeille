@@ -1,0 +1,17 @@
+package: yarl
+repo: https://github.com/aio-libs/yarl
+pypi_url: https://pypi.org/project/yarl/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-cov covdefaults pytest-xdist hypothesis
+test_command: python -m pytest tests/ -p no:cov -p no:xdist -o "addopts="
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: URL parsing with C extension speedups. Part of aiohttp ecosystem.
+enriched: true
+clone_depth: null
+import_name: null

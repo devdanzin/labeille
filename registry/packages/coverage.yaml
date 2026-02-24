@@ -1,0 +1,18 @@
+package: coverage
+repo: https://github.com/coveragepy/coveragepy
+pypi_url: https://pypi.org/project/coverage/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest hypothesis flaky unittest-mixins pytest-xdist
+test_command: python -m pytest tests/ -p no:xdist -o "addopts=" -o "markers=xdist_group:group for xdist"
+test_framework: pytest
+uses_xdist: false
+timeout: 1200
+skip: false
+skip_reason: null
+notes: Code coverage measurement. Has C extensions that should build on 3.15. Large
+  test suite.
+enriched: true
+clone_depth: null
+import_name: coverage

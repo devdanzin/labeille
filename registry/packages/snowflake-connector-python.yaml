@@ -1,0 +1,17 @@
+package: snowflake-connector-python
+repo: https://github.com/snowflakedb/snowflake-connector-python
+pypi_url: https://pypi.org/project/snowflake-connector-python/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Requires C extensions (pyarrow, cryptography) and Snowflake for tests.
+notes: Snowflake database connector.
+enriched: true
+clone_depth: null
+import_name: null

@@ -1,0 +1,17 @@
+package: python-multipart
+repo: https://github.com/Kludex/python-multipart
+pypi_url: https://pypi.org/project/python-multipart/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-timeout pyyaml
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 120
+skip: false
+skip_reason: null
+notes: Streaming multipart parser. Pure Python. Uses hatchling build backend.
+enriched: true
+clone_depth: null
+import_name: multipart

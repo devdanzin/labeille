@@ -1,0 +1,18 @@
+package: markdown-it-py
+repo: https://github.com/executablebooks/markdown-it-py
+pypi_url: https://pypi.org/project/markdown-it-py/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-regressions
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Markdown parser (JS port). Uses flit_core. Tests need pytest-regressions for
+  snapshot testing.
+enriched: true
+clone_depth: null
+import_name: markdown_it

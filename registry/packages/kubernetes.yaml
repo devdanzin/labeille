@@ -1,0 +1,20 @@
+package: kubernetes
+repo: https://github.com/kubernetes-client/python
+pypi_url: https://pypi.org/project/kubernetes/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-asyncio
+test_command: python -m pytest kubernetes/e2e_test/ --ignore=kubernetes/e2e_test/test_client.py
+  -k 'not test_' || python -m pytest kubernetes/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: true
+skip_reason: Tests require a running Kubernetes cluster or extensive mocking. Unit
+  tests are minimal, most tests are e2e.
+notes: Kubernetes Python client. Auto-generated from OpenAPI spec. Most tests are
+  e2e requiring a cluster.
+enriched: true
+clone_depth: null
+import_name: kubernetes

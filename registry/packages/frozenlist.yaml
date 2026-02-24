@@ -1,0 +1,17 @@
+package: frozenlist
+repo: https://github.com/aio-libs/frozenlist
+pypi_url: https://pypi.org/project/frozenlist/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-cov
+test_command: python -m pytest tests/ -p no:cov
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Frozen list implementation with C extension. Part of aiohttp ecosystem.
+enriched: true
+clone_depth: null
+import_name: null

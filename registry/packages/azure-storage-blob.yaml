@@ -1,0 +1,18 @@
+package: azure-storage-blob
+repo: https://github.com/Azure/azure-sdk-for-python/tree/main/sdk/storage/azure-storage-blob
+pypi_url: https://pypi.org/project/azure-storage-blob/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Monorepo package in azure-sdk-for-python. Complex to test standalone.
+notes: Azure Blob Storage client. Lives in Azure/azure-sdk-for-python monorepo under
+  sdk/storage/azure-storage-blob/.
+enriched: true
+clone_depth: null
+import_name: azure.storage.blob

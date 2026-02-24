@@ -1,0 +1,18 @@
+package: jsonpath-ng
+repo: https://github.com/h2non/jsonpath-ng
+pypi_url: https://pypi.org/project/jsonpath-ng/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest ply hypothesis
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: JSONPath implementation. Uses setuptools build backend. Depends on ply for
+  parser generation. Pure Python.
+enriched: true
+clone_depth: null
+import_name: jsonpath_ng

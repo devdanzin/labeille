@@ -1,0 +1,18 @@
+package: pytest-cov
+repo: https://github.com/pytest-dev/pytest-cov
+pypi_url: https://pypi.org/project/pytest-cov/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install process-tests
+test_command: python -m pytest tests -p no:xdist
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: Pytest coverage plugin.
+enriched: true
+clone_depth: null
+import_name: pytest_cov

@@ -1,0 +1,18 @@
+package: typing-inspect
+repo: https://github.com/ilevkivskyi/typing_inspect
+pypi_url: https://pypi.org/project/typing-inspect/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest mypy-extensions typing-extensions
+test_command: python -m pytest test_typing_inspect.py
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Runtime typing introspection. Uses setuptools build backend. Test file is test_typing_inspect.py
+  in root. Depends on mypy-extensions and typing-extensions.
+enriched: true
+clone_depth: null
+import_name: typing_inspect

@@ -1,0 +1,18 @@
+package: sqlalchemy
+repo: https://github.com/sqlalchemy/sqlalchemy
+pypi_url: https://pypi.org/project/sqlalchemy/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest typing-extensions
+test_command: python -m pytest test -p no:xdist --tb native -q
+test_framework: pytest
+uses_xdist: false
+timeout: 3600
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: SQL toolkit and ORM. Tests use in-memory SQLite. Very large test suite (exceeds 60min).
+enriched: true
+clone_depth: null
+import_name: null

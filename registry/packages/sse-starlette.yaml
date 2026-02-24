@@ -1,0 +1,17 @@
+package: sse-starlette
+repo: https://github.com/sysid/sse-starlette
+pypi_url: https://pypi.org/project/sse-starlette/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-asyncio httpx starlette uvicorn anyio asgi-lifespan
+test_command: python -m pytest tests/ --ignore=tests/experimentation --ignore=tests/integration
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Server-Sent Events for Starlette/FastAPI. Depends on starlette and anyio.
+enriched: true
+clone_depth: null
+import_name: sse_starlette

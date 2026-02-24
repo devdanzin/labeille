@@ -1,0 +1,18 @@
+package: google-crc32c
+repo: https://github.com/googleapis/python-crc32c
+pypi_url: https://pypi.org/project/google-crc32c/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-cov
+test_command: python -m pytest tests/ -p no:xdist
+test_framework: pytest
+uses_xdist: false
+timeout: 120
+skip: true
+skip_reason: Requires libcrc32c C library headers not available in build environment.
+notes: 'CRC32C implementation with C extension. Falls back to pure Python if C extension
+  fails to build. Repo: googleapis/python-crc32c.'
+enriched: true
+clone_depth: null
+import_name: google_crc32c

@@ -1,0 +1,17 @@
+package: scikit-learn
+repo: https://github.com/scikit-learn/scikit-learn
+pypi_url: https://pypi.org/project/scikit-learn/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Requires Cython and OpenMP. Complex meson build.
+notes: Machine learning library.
+enriched: true
+clone_depth: null
+import_name: null

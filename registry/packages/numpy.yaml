@@ -1,0 +1,21 @@
+package: numpy
+repo: https://github.com/numpy/numpy
+pypi_url: https://pypi.org/project/numpy/
+extension_type: extensions
+python_versions:
+- '3.15'
+- '3.14'
+install_method: pip
+install_command: pip install meson-python meson cython ninja && pip install -e ".[test]"
+  --no-build-isolation
+test_command: python -m pytest --pyargs numpy -p no:xdist --durations=10
+test_framework: pytest
+uses_xdist: true
+timeout: 1800
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': Meson build system broken on 3.15 alpha (pip/meson-python requirement parsing error).
+notes: Build deps (meson-python, meson, cython, ninja) installed explicitly for --no-build-isolation.
+  Very large test suite. May fail to build on early 3.15 alphas.
+enriched: true

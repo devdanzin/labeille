@@ -1,0 +1,17 @@
+package: hyperframe
+repo: https://github.com/python-hyper/hyperframe/
+pypi_url: https://pypi.org/project/hyperframe/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: HTTP/2 framing layer. Pure Python. Tests in test/ dir.
+enriched: true
+clone_depth: null
+import_name: null

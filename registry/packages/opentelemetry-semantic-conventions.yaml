@@ -1,0 +1,17 @@
+package: opentelemetry-semantic-conventions
+repo: https://github.com/open-telemetry/opentelemetry-python
+pypi_url: https://pypi.org/project/opentelemetry-semantic-conventions/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Monorepo package. Requires complex build from opentelemetry-python monorepo.
+notes: OpenTelemetry semantic conventions. Part of opentelemetry-python monorepo.
+enriched: true
+clone_depth: null
+import_name: null

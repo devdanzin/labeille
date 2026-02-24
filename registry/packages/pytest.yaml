@@ -1,0 +1,18 @@
+package: pytest
+repo: https://github.com/pytest-dev/pytest
+pypi_url: https://pypi.org/project/pytest/
+extension_type: pure
+python_versions:
+- '3.15'
+- '3.14'
+install_method: pip
+install_command: git fetch --tags --depth 1 && pip install -e .
+test_command: python -m pytest testing/
+test_framework: pytest
+uses_xdist: false
+timeout: 1800
+skip: false
+skip_reason: null
+notes: Self-testing framework. Large test suite (41k+ lines of test code). Tests in
+  testing/ directory (not tests/). Requires Python 3.10+.
+enriched: true

@@ -1,0 +1,18 @@
+package: flask
+repo: https://github.com/pallets/flask/
+pypi_url: https://pypi.org/project/flask/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest asgiref
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Pallets web framework. Uses flit_core build backend. Depends on werkzeug, jinja2,
+  click, itsdangerous, blinker. asgiref needed for async view tests.
+enriched: true
+clone_depth: null
+import_name: null

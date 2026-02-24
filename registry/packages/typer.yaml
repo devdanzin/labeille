@@ -1,0 +1,19 @@
+package: typer
+repo: https://github.com/fastapi/typer
+pypi_url: https://pypi.org/project/typer/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-xdist pytest-sugar
+  coverage shellingham rich click
+test_command: python -m pytest tests/ -p no:xdist
+test_framework: pytest
+uses_xdist: true
+timeout: null
+skip: false
+skip_reason: null
+notes: CLI library built on Click by FastAPI author. Uses pdm-backend. Tests use xdist
+  by default, disabled for JIT. Depends on click, rich, shellingham at runtime.
+enriched: true
+clone_depth: null
+import_name: null

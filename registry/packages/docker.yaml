@@ -1,0 +1,20 @@
+package: docker
+repo: https://github.com/docker/docker-py
+pypi_url: https://pypi.org/project/docker/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-cov pytest-timeout
+test_command: python -m pytest tests/unit/
+test_framework: pytest
+uses_xdist: false
+timeout: 300
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': JIT crash (_PyOptimizer_Optimize abort) during pip install.
+notes: Docker SDK for Python. Only run unit tests (tests/unit/) to avoid requiring
+  a running Docker daemon. Uses setuptools build backend.
+enriched: true
+clone_depth: null
+import_name: docker

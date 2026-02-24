@@ -1,0 +1,18 @@
+package: pymysql
+repo: https://github.com/PyMySQL/PyMySQL
+pypi_url: https://pypi.org/project/pymysql/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Tests require running MySQL server on localhost:3306.
+skip_versions: {}
+notes: Pure Python MySQL client. Tests need live database.
+enriched: true
+clone_depth: null
+import_name: pymysql

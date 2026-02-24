@@ -1,0 +1,17 @@
+package: gcsfs
+repo: https://github.com/fsspec/gcsfs
+pypi_url: https://pypi.org/project/gcsfs/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Google Cloud Storage filesystem. Tests require GCS credentials.
+notes: Google Cloud Storage filesystem via fsspec.
+enriched: true
+clone_depth: null
+import_name: null

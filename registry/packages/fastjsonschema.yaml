@@ -1,0 +1,18 @@
+package: fastjsonschema
+repo: https://github.com/horejsek/python-fastjsonschema
+pypi_url: https://pypi.org/project/fastjsonschema/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest tests/ --ignore=tests/benchmarks
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Fast JSON Schema validator using code generation. Pure Python. Uses setuptools
+  build backend. Tests are self-contained.
+enriched: true
+clone_depth: null
+import_name: fastjsonschema

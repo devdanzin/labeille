@@ -1,0 +1,19 @@
+package: uvicorn
+repo: https://github.com/encode/uvicorn
+pypi_url: https://pypi.org/project/uvicorn/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-asyncio pytest-mock httpx a2wsgi wsproto websockets trustme cryptography pytest-xdist pyyaml httptools
+test_command: python -m pytest tests/ -p no:xdist -o "addopts=-rxXs --strict-config --strict-markers" --ignore=tests/supervisors
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: ASGI server. Uses hatchling build backend. Tests require httpx for HTTP client,
+  wsproto/websockets for WS tests, trustme for SSL cert generation, a2wsgi for WSGI
+  adapter tests.
+enriched: true
+clone_depth: null
+import_name: null

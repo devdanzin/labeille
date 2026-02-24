@@ -1,0 +1,21 @@
+package: fonttools
+repo: https://github.com/fonttools/fonttools
+pypi_url: https://pypi.org/project/fonttools/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: git fetch --tags --depth 1 && pip install -e . && pip install pytest
+  pytest-xdist fs brotli
+test_command: python -m pytest Tests/ -p no:xdist
+test_framework: pytest
+uses_xdist: true
+timeout: 1200
+skip: false
+skip_reason: null
+notes: Font manipulation library. Uses setuptools_scm build backend. Tests in Tests/
+  directory (capital T). Has optional C extensions (cu2qu). Tests use xdist, disabled
+  for JIT. lxml and brotli needed for some tests. fs needed for filesystem tests.
+  Timeout 20min.
+enriched: true
+clone_depth: 50
+import_name: fontTools

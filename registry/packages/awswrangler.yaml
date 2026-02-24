@@ -1,0 +1,18 @@
+package: awswrangler
+repo: https://github.com/aws/aws-sdk-pandas
+pypi_url: https://pypi.org/project/awswrangler/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: AWS data wrangling. Requires AWS credentials and heavy deps (pyarrow,
+  pandas).
+notes: AWS data wrangling library.
+enriched: true
+clone_depth: null
+import_name: null

@@ -1,0 +1,20 @@
+package: multiprocess
+repo: https://github.com/uqfoundation/multiprocess
+pypi_url: https://pypi.org/project/multiprocess/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest multiprocess/tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': Version-specific directory structure (py3.15/), tests use __main__.py runner
+    not pytest.
+notes: Fork of multiprocessing using dill. Has C extensions. Tests may spawn subprocesses.
+enriched: true
+clone_depth: null
+import_name: multiprocess

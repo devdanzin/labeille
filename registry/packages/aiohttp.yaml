@@ -1,0 +1,23 @@
+package: aiohttp
+repo: https://github.com/aio-libs/aiohttp
+pypi_url: https://pypi.org/project/aiohttp/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: git submodule update --init && pip install cython && pip install
+  -e . && pip install pytest pytest-asyncio pytest-mock trustme proxy.py brotli
+test_command: python -m pytest tests/ -k 'not test_client_functional and not test_web_functional
+  and not test_proxy_functional'
+test_framework: pytest
+uses_xdist: false
+timeout: 1800
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': C extension source files not generated (Cython build step fails on editable
+    install for 3.15).
+notes: aiohttp async HTTP framework. C extensions via Cython. Functional tests excluded
+  (need running server). 30min timeout.
+enriched: true
+clone_depth: null
+import_name: null

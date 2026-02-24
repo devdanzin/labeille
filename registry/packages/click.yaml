@@ -1,0 +1,18 @@
+package: click
+repo: https://github.com/pallets/click/
+pypi_url: https://pypi.org/project/click/
+extension_type: pure
+python_versions:
+- '3.15'
+- '3.14'
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Click CLI framework by Pallets. Uses flit_core build backend. Requires Python
+  3.10+.
+enriched: true

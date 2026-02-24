@@ -1,0 +1,18 @@
+package: setuptools-scm
+repo: https://github.com/pypa/setuptools-scm/
+pypi_url: https://pypi.org/project/setuptools-scm/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: git fetch --tags --depth 1 && pip install -e . && pip install pytest setuptools tomli typing-extensions build
+test_command: python -m pytest testing/ -o "strict_config=false"
+test_framework: pytest
+uses_xdist: false
+timeout: 180
+skip: false
+skip_reason: null
+notes: SCM-based version management. Uses setuptools build backend. Needs git tags
+  for version detection (git fetch --tags). Tests in testing/ directory.
+enriched: true
+clone_depth: 50
+import_name: setuptools_scm

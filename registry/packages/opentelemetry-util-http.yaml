@@ -1,0 +1,17 @@
+package: opentelemetry-util-http
+repo: https://github.com/open-telemetry/opentelemetry-python-contrib
+pypi_url: https://pypi.org/project/opentelemetry-util-http/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Monorepo package. Part of opentelemetry-python-contrib monorepo.
+notes: OpenTelemetry HTTP utilities. Part of opentelemetry-python-contrib.
+enriched: true
+clone_depth: null
+import_name: null

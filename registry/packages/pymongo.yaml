@@ -1,0 +1,20 @@
+package: pymongo
+repo: https://github.com/mongodb/mongo-python-driver
+pypi_url: https://pypi.org/project/pymongo/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest mockupdb pytest-asyncio
+test_command: python -m pytest test/test_uri_parser.py test/test_common.py test/test_read_preferences.py
+  test/test_collation.py
+test_framework: pytest
+uses_xdist: false
+timeout: 300
+skip: false
+skip_reason: null
+notes: MongoDB driver with C extensions. Builds in pure-Python fallback mode if C
+  compiler fails. Most tests require a running MongoDB instance; run only unit-style
+  tests that parse URIs and configs without a server.
+enriched: true
+clone_depth: null
+import_name: pymongo

@@ -1,0 +1,19 @@
+package: pydantic-settings
+repo: https://github.com/pydantic/pydantic-settings
+pypi_url: https://pypi.org/project/pydantic-settings/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': Depends on pydantic which requires pydantic-core (PyO3).
+notes: Settings management for Pydantic. Requires pydantic at runtime.
+enriched: true
+clone_depth: null
+import_name: pydantic_settings

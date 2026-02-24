@@ -1,0 +1,19 @@
+package: dataclasses-json
+repo: https://github.com/lidatong/dataclasses-json
+pypi_url: https://pypi.org/project/dataclasses-json/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest hypothesis marshmallow
+test_command: python -m pytest tests/ --ignore=tests/test_annotations.py
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: JSON serialization for dataclasses. Uses poetry-core build backend. Depends
+  on marshmallow and typing-inspect at runtime. Tests use hypothesis for property-based
+  testing.
+enriched: true
+clone_depth: null
+import_name: dataclasses_json

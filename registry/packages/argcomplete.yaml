@@ -1,0 +1,18 @@
+package: argcomplete
+repo: https://github.com/kislyuk/argcomplete
+pypi_url: https://pypi.org/project/argcomplete/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pexpect
+test_command: python -m pytest test/ --ignore=test/test_package -k "not TestShellBase"
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Bash tab completion for argparse. Uses setuptools_scm build backend. Tests
+  in test/ directory. pexpect needed for interactive completion tests.
+enriched: true
+clone_depth: 50
+import_name: null

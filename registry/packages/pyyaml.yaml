@@ -1,0 +1,20 @@
+package: pyyaml
+repo: https://github.com/yaml/pyyaml
+pypi_url: https://pypi.org/project/pyyaml/
+extension_type: extensions
+python_versions:
+- '3.15'
+- '3.14'
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Has optional C extensions (libyaml bindings). Falls back to pure Python if
+  libyaml-dev not installed.
+enriched: true
+clone_depth: null
+import_name: yaml

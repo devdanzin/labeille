@@ -1,0 +1,18 @@
+package: google-genai
+repo: https://github.com/googleapis/python-genai
+pypi_url: https://pypi.org/project/google-genai/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Tests require Google GenAI API keys.
+notes: 'Google GenAI SDK (Gemini). Tests require GOOGLE_API_KEY or GOOGLE_GENAI_API_KEY
+  environment variable. Repo: googleapis/python-genai.'
+enriched: true
+clone_depth: null
+import_name: null

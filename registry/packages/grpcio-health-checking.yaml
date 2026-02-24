@@ -1,0 +1,17 @@
+package: grpcio-health-checking
+repo: null
+pypi_url: https://pypi.org/project/grpcio-health-checking/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Depends on grpcio C extension build.
+notes: gRPC health checking.
+enriched: true
+clone_depth: null
+import_name: null

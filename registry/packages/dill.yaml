@@ -1,0 +1,17 @@
+package: dill
+repo: https://github.com/uqfoundation/dill
+pypi_url: https://pypi.org/project/dill/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest dill/tests/ --ignore=dill/tests/test_module.py
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Extended pickle module. Uses setuptools build backend. Tests in tests/ directory.
+enriched: true
+clone_depth: null
+import_name: null

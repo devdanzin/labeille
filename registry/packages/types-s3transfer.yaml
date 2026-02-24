@@ -1,0 +1,17 @@
+package: types-s3transfer
+repo: https://github.com/youtype/types-s3transfer
+pypi_url: https://pypi.org/project/types-s3transfer/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Type stub package with no meaningful test suite.
+notes: Type stubs for s3transfer.
+enriched: true
+clone_depth: null
+import_name: null

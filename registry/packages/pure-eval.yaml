@@ -1,0 +1,18 @@
+package: pure-eval
+repo: https://github.com/alexmojaki/pure_eval
+pypi_url: https://pypi.org/project/pure-eval/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: git fetch --tags --depth 1 && pip install -e . && pip install pytest
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 120
+skip: false
+skip_reason: null
+notes: Safely evaluate AST nodes without side effects. Small package. Uses setuptools-scm
+  for versioning.
+enriched: true
+clone_depth: 50
+import_name: pure_eval

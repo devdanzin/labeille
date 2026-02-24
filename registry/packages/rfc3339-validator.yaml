@@ -1,0 +1,17 @@
+package: rfc3339-validator
+repo: https://github.com/naimetti/rfc3339-validator
+pypi_url: https://pypi.org/project/rfc3339-validator/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest strict-rfc3339 hypothesis
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: RFC 3339 datetime string validator. Depends on six. Small test suite.
+enriched: true
+clone_depth: null
+import_name: rfc3339_validator

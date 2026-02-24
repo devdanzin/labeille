@@ -1,0 +1,19 @@
+package: redis
+repo: https://github.com/redis/redis-py
+pypi_url: https://pypi.org/project/redis/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-cov pytest-asyncio
+  async-timeout
+test_command: python -m pytest tests/test_utils.py tests/test_retry.py
+test_framework: pytest
+uses_xdist: false
+timeout: 300
+skip: false
+skip_reason: null
+notes: Redis client. Most tests require a running Redis server. Run only unit-style
+  tests that can work without a server or gracefully skip. Uses hatchling build.
+enriched: true
+clone_depth: null
+import_name: redis

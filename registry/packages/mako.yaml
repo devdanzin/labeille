@@ -1,0 +1,18 @@
+package: mako
+repo: https://github.com/sqlalchemy/mako
+pypi_url: https://pypi.org/project/mako/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest test/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Template library by SQLAlchemy project. Repo is sqlalchemy/mako on GitHub.
+  Uses setuptools build backend. Pure Python. Tests in test/ directory.
+enriched: true
+clone_depth: null
+import_name: mako

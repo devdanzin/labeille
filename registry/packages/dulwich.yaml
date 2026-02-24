@@ -1,0 +1,19 @@
+package: dulwich
+repo: https://github.com/jelmer/dulwich
+pypi_url: https://pypi.org/project/dulwich/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-cov
+test_command: python -m pytest tests/ --ignore=tests/contrib/test_swift_smoke.py
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+notes: Pure-Python Git implementation with optional C extensions for speed. C extensions
+  may fail to build on 3.15 but pure Python fallback works. Uses setuptools-rust for
+  optional extensions, setuptools for base.
+enriched: true
+clone_depth: null
+import_name: null

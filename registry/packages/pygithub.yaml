@@ -1,0 +1,19 @@
+package: pygithub
+repo: https://github.com/pygithub/pygithub
+pypi_url: https://pypi.org/project/pygithub/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-cov httpretty cryptography
+  responses
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+notes: GitHub API v3 wrapper. Tests use httpretty to replay recorded API responses,
+  no GitHub API key needed. Uses setuptools-scm build backend.
+enriched: true
+clone_depth: 50
+import_name: github

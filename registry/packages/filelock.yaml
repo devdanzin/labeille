@@ -1,0 +1,17 @@
+package: filelock
+repo: https://github.com/tox-dev/py-filelock
+pypi_url: https://pypi.org/project/filelock/
+extension_type: pure
+python_versions:
+- '3.15'
+- '3.14'
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-asyncio pytest-mock pytest-timeout pytest-cov virtualenv covdefaults diff-cover
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Has async tests. Per-test timeout of 20s configured via pytest-timeout.
+enriched: true

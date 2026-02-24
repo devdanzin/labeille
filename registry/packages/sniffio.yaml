@@ -1,0 +1,17 @@
+package: sniffio
+repo: https://github.com/python-trio/sniffio
+pypi_url: https://pypi.org/project/sniffio/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Detects which async library is running. Tiny package with minimal test deps.
+enriched: true
+clone_depth: null
+import_name: null

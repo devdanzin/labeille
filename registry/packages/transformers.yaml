@@ -1,0 +1,17 @@
+package: transformers
+repo: https://github.com/huggingface/transformers
+pypi_url: https://pypi.org/project/transformers/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: HuggingFace ML framework. Massive dependency tree including torch.
+notes: HuggingFace transformers.
+enriched: true
+clone_depth: null
+import_name: null

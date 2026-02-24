@@ -1,0 +1,20 @@
+package: alembic
+repo: https://github.com/sqlalchemy/alembic/
+pypi_url: https://pypi.org/project/alembic/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-xdist sqlalchemy mako
+test_command: python -m pytest tests/ -p no:xdist -W ignore::DeprecationWarning
+test_framework: pytest
+uses_xdist: true
+timeout: 600
+skip: false
+skip_reason: null
+notes: Database migration tool for SQLAlchemy. Uses setuptools build backend. Depends
+  on sqlalchemy and mako at runtime. Tests use xdist by default, disabled for JIT.
+  Tests use SQLite by default (no external DB needed). Timeout 10min for migration
+  tests.
+enriched: true
+clone_depth: null
+import_name: null

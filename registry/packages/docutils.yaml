@@ -1,0 +1,18 @@
+package: docutils
+repo: https://sourceforge.net/p/docutils/code/
+pypi_url: https://pypi.org/project/docutils/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: unittest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Repository on SourceForge, not GitHub. Cannot clone via standard git
+  URL.
+notes: reStructuredText parser. Hosted on SourceForge SVN, not GitHub.
+enriched: true
+clone_depth: null
+import_name: docutils

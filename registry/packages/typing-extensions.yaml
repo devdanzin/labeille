@@ -1,0 +1,18 @@
+package: typing-extensions
+repo: https://github.com/python/typing_extensions
+pypi_url: https://pypi.org/project/typing-extensions/
+extension_type: pure
+python_versions:
+- '3.15'
+- '3.14'
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest src/test_typing_extensions.py
+test_framework: unittest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Tests use unittest. Test file at src/test_typing_extensions.py, run via pytest.
+  Uses flit_core build backend.
+enriched: true

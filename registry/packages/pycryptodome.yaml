@@ -1,0 +1,19 @@
+package: pycryptodome
+repo: https://github.com/Legrandin/pycryptodome/
+pypi_url: https://pypi.org/project/pycryptodome/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest lib/Crypto/SelfTest/
+test_framework: pytest
+uses_xdist: false
+timeout: 1200
+skip: false
+skip_reason: null
+notes: Cryptographic library with C extensions. Uses setuptools build backend. Self-test
+  suite in lib/Crypto/SelfTest/. C extensions should build on 3.15. Large test suite
+  covering all crypto primitives. Timeout 20min.
+enriched: true
+clone_depth: null
+import_name: Crypto

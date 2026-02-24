@@ -1,0 +1,17 @@
+package: scipy
+repo: https://github.com/scipy/scipy
+pypi_url: https://pypi.org/project/scipy/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Requires Fortran compiler and complex C/C++ build chain.
+notes: Scientific computing library.
+enriched: true
+clone_depth: null
+import_name: null

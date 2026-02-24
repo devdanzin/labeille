@@ -1,0 +1,18 @@
+package: pathspec
+repo: https://github.com/cpburnz/python-pathspec
+pypi_url: https://pypi.org/project/pathspec/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 60
+skip: false
+skip_reason: null
+notes: Gitignore-style path matching. Uses flit-core build backend. Pure Python with
+  no extra test deps.
+enriched: true
+clone_depth: null
+import_name: null

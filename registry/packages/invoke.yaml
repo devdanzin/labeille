@@ -1,0 +1,19 @@
+package: invoke
+repo: https://github.com/pyinvoke/invoke
+pypi_url: https://pypi.org/project/invoke/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-relaxed icecream
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Pythonic task execution tool. Uses setuptools build backend. Tests use pytest-relaxed
+  for spec-style test organization. Tests exercise subprocess management and shell
+  commands.
+enriched: true
+clone_depth: null
+import_name: null

@@ -1,0 +1,17 @@
+package: nest-asyncio
+repo: https://github.com/erdewit/nest_asyncio
+pypi_url: https://pypi.org/project/nest-asyncio/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Patches asyncio to allow nested event loops. Single-file package with tests.
+enriched: true
+clone_depth: null
+import_name: nest_asyncio

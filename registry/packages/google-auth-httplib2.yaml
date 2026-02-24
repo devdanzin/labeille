@@ -1,0 +1,21 @@
+package: google-auth-httplib2
+repo: https://github.com/GoogleCloudPlatform/google-auth-library-python-httplib2
+pypi_url: https://pypi.org/project/google-auth-httplib2/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-cov google-auth httplib2
+  mock
+test_command: python -m pytest tests/ -p no:xdist
+test_framework: pytest
+uses_xdist: false
+timeout: 120
+skip: true
+skip_reason: Source moved to googleapis/google-cloud-python monorepo and standalone
+  repo archived.
+skip_versions: {}
+notes: 'httplib2 transport adapter for google-auth. Small package with unit tests.
+  Repo: googleapis/google-auth-library-python-httplib2.'
+enriched: true
+clone_depth: null
+import_name: google_auth_httplib2

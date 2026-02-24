@@ -7,6 +7,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+- 350 enriched package configurations with full test commands, install commands, and metadata.
+- Applied `skip-to-skip-versions` migration on 36 packages (PyO3, maturin, Cython, JIT crashes).
+- Config fixes for python-dateutil, pyyaml, msgpack, hatchling, openai, numpy, pytz, sqlalchemy, and 3 archived google packages.
+- `registry/migrations.log` tracking applied migration history.
 - `labeille registry migrate` command with a migration framework for registry schema transformations.
 - `skip-to-skip-versions` migration to convert 3.15-specific `skip:true` entries to `skip_versions["3.15"]`.
 - Migration log (`migrations.log`) to track applied migrations and prevent re-application.

@@ -1,0 +1,17 @@
+package: aioitertools
+repo: https://github.com/omnilib/aioitertools
+pypi_url: https://pypi.org/project/aioitertools/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-asyncio
+test_command: python -m pytest aioitertools/tests/ -o "python_files=*.py"
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Async itertools. Tests inside package directory. Uses flit_core build backend.
+enriched: true
+clone_depth: null
+import_name: null

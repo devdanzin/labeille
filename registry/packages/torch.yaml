@@ -1,0 +1,17 @@
+package: torch
+repo: https://github.com/pytorch/pytorch
+pypi_url: https://pypi.org/project/torch/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Massive ML framework. Not practical for pip-based testing.
+notes: PyTorch ML framework.
+enriched: true
+clone_depth: null
+import_name: null

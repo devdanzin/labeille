@@ -1,0 +1,17 @@
+package: ruamel-yaml-clib
+repo: https://sourceforge.net/p/ruamel-yaml-clib/code/ci/default/tree/
+pypi_url: https://pypi.org/project/ruamel-yaml-clib/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: C extension companion to ruamel-yaml. No separate test suite.
+notes: C extension for ruamel.yaml performance. No independent tests.
+enriched: true
+clone_depth: null
+import_name: null

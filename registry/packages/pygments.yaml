@@ -1,0 +1,18 @@
+package: pygments
+repo: https://github.com/pygments/pygments
+pypi_url: https://pypi.org/project/pygments/
+extension_type: pure
+python_versions:
+- '3.15'
+- '3.14'
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-randomly pytest-cov wcag-contrast-ratio
+test_command: python -m pytest
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Large test suite with snippet/example files for lexer testing. Uses hatchling
+  build backend.
+enriched: true

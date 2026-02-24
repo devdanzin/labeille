@@ -1,0 +1,19 @@
+package: jaraco-context
+repo: https://github.com/jaraco/jaraco.context
+pypi_url: https://pypi.org/project/jaraco-context/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: git fetch --tags --depth 1 && pip install -e . && pip install pytest
+  portend
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 120
+skip: false
+skip_reason: null
+notes: Context managers for the jaraco namespace. Uses setuptools-scm. Small test
+  suite.
+enriched: true
+clone_depth: 50
+import_name: jaraco.context

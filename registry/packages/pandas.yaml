@@ -1,0 +1,24 @@
+package: pandas
+repo: https://github.com/pandas-dev/pandas
+pypi_url: https://pypi.org/project/pandas/
+extension_type: extensions
+python_versions:
+- '3.15'
+- '3.14'
+install_method: pip
+install_command: pip install -e ".[test]" --no-build-isolation
+test_command: python -m pytest pandas/tests/ -m "not clipboard and not single_cpu
+  and not slow and not network and not db" -p no:xdist
+test_framework: pytest
+uses_xdist: true
+timeout: 1800
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': Requires numpy (C extension) as build dep, which may not build on Python
+    3.15 alpha
+notes: Requires meson, cython, numpy for building C extensions. Cannot build until
+  numpy builds on 3.15. Massive test suite.
+enriched: true
+clone_depth: null
+import_name: null

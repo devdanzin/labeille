@@ -1,0 +1,17 @@
+package: asn1crypto
+repo: https://github.com/wbond/asn1crypto
+pypi_url: https://pypi.org/project/asn1crypto/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: ASN.1 parsing library. Pure Python.
+enriched: true
+clone_depth: null
+import_name: null

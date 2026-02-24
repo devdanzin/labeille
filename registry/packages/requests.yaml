@@ -1,0 +1,18 @@
+package: requests
+repo: https://github.com/psf/requests
+pypi_url: https://pypi.org/project/requests/
+extension_type: pure
+python_versions:
+- '3.15'
+- '3.14'
+install_method: pip
+install_command: pip install -e ".[socks]" && pip install "jsonschema<4.18" && pip install pytest "pytest-httpbin==2.1.0" trustme pytest-cov pytest-mock
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Uses pytest-httpbin for HTTP mocking and trustme for SSL. Pre-installs jsonschema<4.18
+  to avoid rpds-py (needs PyO3 3.15 support).
+enriched: true

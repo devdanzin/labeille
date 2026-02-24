@@ -1,0 +1,18 @@
+package: nodeenv
+repo: https://github.com/ekalinin/nodeenv
+pypi_url: https://pypi.org/project/nodeenv/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest coverage
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 120
+skip: false
+skip_reason: null
+notes: Node.js virtual environment builder. Uses setuptools build backend. Tests may
+  download Node.js.
+enriched: true
+clone_depth: null
+import_name: null

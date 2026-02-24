@@ -1,0 +1,19 @@
+package: ipython
+repo: https://github.com/ipython/ipython
+pypi_url: https://pypi.org/project/ipython/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-asyncio testpath matplotlib-inline
+  pickleshare
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 1800
+skip: false
+skip_reason: null
+notes: Enhanced interactive Python shell. Large test suite. Tests are in IPython/tests/.
+  Some tests spawn subprocesses and can be slow. Uses setuptools build backend.
+enriched: true
+clone_depth: null
+import_name: IPython

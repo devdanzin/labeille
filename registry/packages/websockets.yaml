@@ -1,0 +1,18 @@
+package: websockets
+repo: https://github.com/python-websockets/websockets
+pypi_url: https://pypi.org/project/websockets/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest trio
+test_command: python -m pytest tests/ --ignore=tests/legacy
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+notes: WebSocket library with C speedup extensions. Tests cover both asyncio and threading
+  APIs.
+enriched: true
+clone_depth: null
+import_name: null

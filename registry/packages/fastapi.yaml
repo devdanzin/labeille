@@ -1,0 +1,21 @@
+package: fastapi
+repo: https://github.com/fastapi/fastapi
+pypi_url: https://pypi.org/project/fastapi/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: 1800
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': Hard depends on pydantic v2 which requires pydantic-core (PyO3/Rust), not
+    buildable on Python 3.15 alpha
+notes: Web framework built on Starlette and Pydantic. Uses pdm-backend. Blocked by
+  pydantic-core PyO3 dependency chain.
+enriched: true
+clone_depth: null
+import_name: null

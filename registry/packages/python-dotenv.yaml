@@ -1,0 +1,18 @@
+package: python-dotenv
+repo: https://github.com/theskumar/python-dotenv
+pypi_url: https://pypi.org/project/python-dotenv/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest mock sh click
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 120
+skip: false
+skip_reason: null
+notes: Read .env files. Pure Python. Tests use sh for CLI testing. Uses setuptools
+  build backend.
+enriched: true
+clone_depth: null
+import_name: dotenv

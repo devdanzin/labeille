@@ -1,0 +1,20 @@
+package: jsonschema-specifications
+repo: https://github.com/python-jsonschema/jsonschema-specifications
+pypi_url: https://pypi.org/project/jsonschema-specifications/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': Depends on referencing which depends on rpds-py (PyO3).
+notes: JSON Schema meta-schemas and vocabularies. Depends on referencing, which depends
+  on rpds-py (PyO3). Cannot build on Python 3.15.
+enriched: true
+clone_depth: null
+import_name: null

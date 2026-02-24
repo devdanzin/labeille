@@ -6,10 +6,11 @@ python_versions:
 - '3.15'
 - '3.14'
 install_method: pip
-install_command: pip install -e ".[socks,h2]" && pip install pytest trustme cryptography
-  pytest-socket pytest-timeout
-test_command: python -m pytest -x -q --disable-socket --allow-unix-socket -k "not
-  integration and not emscripten and not requires_network" test/
+install_command: pip install -e ".[socks,h2,dev]" && pip install pytest trustme cryptography
+  pytest-socket pytest-timeout trio quart quart_trio anyio[trio] build coverage h2 httpx
+  hypercorn idna pyopenssl towncrier
+test_command: python -m pytest -q --disable-socket --allow-unix-socket --allow-hosts=localhost,127.0.0.1,::1
+  -k "not integration and not emscripten and not requires_network" test/
 test_framework: pytest
 uses_xdist: false
 timeout: null

@@ -1,0 +1,18 @@
+package: toml
+repo: https://github.com/uiri/toml
+pypi_url: https://pypi.org/project/toml/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest tests/ --rootdir . --ignore=tests/encoding_test.py
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Legacy TOML library (uiri/toml). Uses setuptools build backend. Largely unmaintained
+  but has a basic test suite. Pure Python.
+enriched: true
+clone_depth: null
+import_name: null

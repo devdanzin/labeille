@@ -1,0 +1,18 @@
+package: langchain
+repo: https://github.com/langchain-ai/langchain
+pypi_url: https://pypi.org/project/langchain/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Monorepo package in langchain-ai/langchain. Complex dependency management
+  with internal cross-references. Package lives in libs/langchain/ subdirectory.
+notes: LangChain framework. Part of langchain monorepo.
+enriched: true
+clone_depth: null
+import_name: null

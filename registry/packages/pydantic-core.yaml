@@ -1,0 +1,22 @@
+package: pydantic-core
+repo: https://github.com/pydantic/pydantic-core
+pypi_url: https://pypi.org/project/pydantic-core/
+extension_type: extensions
+python_versions:
+- '3.15'
+- '3.14'
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': Requires Rust toolchain and maturin for source builds. Not practical for
+    pip-based testing.
+notes: ''
+enriched: true
+clone_depth: null
+import_name: null

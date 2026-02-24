@@ -1,0 +1,18 @@
+package: prometheus-client
+repo: https://github.com/prometheus/client_python
+pypi_url: https://pypi.org/project/prometheus-client/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest asgiref
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 300
+skip: false
+skip_reason: null
+notes: Prometheus instrumentation client. Pure Python. All tests are offline. Uses
+  setuptools build backend.
+enriched: true
+clone_depth: null
+import_name: prometheus_client

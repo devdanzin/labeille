@@ -1,0 +1,17 @@
+package: distro
+repo: https://github.com/python-distro/distro
+pypi_url: https://pypi.org/project/distro/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Linux OS distribution info detection. Uses setuptools build backend.
+enriched: true
+clone_depth: null
+import_name: null

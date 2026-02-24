@@ -1,0 +1,17 @@
+package: asgiref
+repo: https://github.com/django/asgiref/
+pypi_url: https://pypi.org/project/asgiref/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-asyncio
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: ASGI reference implementation by Django project. Uses flit_core build backend.
+enriched: true
+clone_depth: null
+import_name: null

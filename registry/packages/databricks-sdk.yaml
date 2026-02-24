@@ -1,0 +1,18 @@
+package: databricks-sdk
+repo: https://github.com/databricks/databricks-sdk-py
+pypi_url: https://pypi.org/project/databricks-sdk/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-mock pyfakefs requests-mock
+test_command: python -m pytest tests/ --ignore=tests/integration -p no:xdist
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: Databricks SDK. Integration tests skipped (require Databricks backend).
+enriched: true
+clone_depth: null
+import_name: databricks

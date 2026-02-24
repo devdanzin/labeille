@@ -1,0 +1,17 @@
+package: grpcio
+repo: https://github.com/grpc/grpc
+pypi_url: https://pypi.org/project/grpcio/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Complex C extension build. Requires protobuf compiler.
+notes: gRPC Python bindings.
+enriched: true
+clone_depth: null
+import_name: null

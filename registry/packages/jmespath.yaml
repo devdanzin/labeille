@@ -1,0 +1,17 @@
+package: jmespath
+repo: https://github.com/jmespath/jmespath.py
+pypi_url: https://pypi.org/project/jmespath/
+extension_type: pure
+python_versions:
+- '3.15'
+- '3.14'
+install_method: pip
+install_command: pip install . && pip install pytest
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Tests use unittest.TestCase run by pytest. Includes JSON compliance test fixtures.
+enriched: true

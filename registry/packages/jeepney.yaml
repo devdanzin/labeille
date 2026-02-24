@@ -1,0 +1,19 @@
+package: jeepney
+repo: https://gitlab.com/takluyver/jeepney
+pypi_url: https://pypi.org/project/jeepney/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-trio pytest-asyncio trio testpath
+test_command: python -m pytest jeepney/tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 300
+skip: false
+skip_reason: null
+notes: Pure Python D-Bus protocol implementation. Some integration tests require D-Bus
+  and will skip if unavailable. Unit tests for message parsing work without D-Bus.
+  Uses flit_core build backend.
+enriched: true
+clone_depth: null
+import_name: null

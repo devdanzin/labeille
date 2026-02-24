@@ -1,0 +1,19 @@
+package: opensearch-py
+repo: https://github.com/opensearch-project/opensearch-py
+pypi_url: https://pypi.org/project/opensearch-py/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-cov pytest-mock requests
+test_command: python -m pytest test_opensearchpy/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Tests require running OpenSearch server (conftest.py tries to connect).
+notes: OpenSearch Python client. Uses setuptools build backend. Only unit tests can
+  run without an OpenSearch cluster. Running specific test files that don't need a
+  running server. addopts may include --cov so pytest-cov included.
+enriched: true
+clone_depth: null
+import_name: opensearchpy

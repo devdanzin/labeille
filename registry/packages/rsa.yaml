@@ -1,0 +1,17 @@
+package: rsa
+repo: https://github.com/sybrenstuvel/python-rsa
+pypi_url: https://pypi.org/project/rsa/
+extension_type: pure
+python_versions:
+- '3.15'
+- '3.14'
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-cov
+test_command: python -m pytest tests/ --ignore=tests/test_mypy.py
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+notes: Pure Python RSA implementation. Tests include doctests. Uses Poetry for build.
+enriched: true

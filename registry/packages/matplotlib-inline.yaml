@@ -1,0 +1,17 @@
+package: matplotlib-inline
+repo: https://github.com/ipython/matplotlib-inline
+pypi_url: https://pypi.org/project/matplotlib-inline/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest ipython matplotlib
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Requires matplotlib (complex C extension build) for meaningful tests.
+notes: IPython inline matplotlib backend. Depends on matplotlib for testing.
+enriched: true
+clone_depth: null
+import_name: matplotlib_inline

@@ -1,0 +1,19 @@
+package: tornado
+repo: https://github.com/tornadoweb/tornado
+pypi_url: https://pypi.org/project/tornado/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest tornado/test/
+test_framework: pytest
+uses_xdist: false
+timeout: 900
+skip: false
+skip_reason: null
+notes: Async web framework and networking library. Has optional C extensions for speedups
+  (fall back to pure Python if unavailable). Tests are in tornado/test/. Large test
+  suite covering HTTP, websockets, async I/O.
+enriched: true
+clone_depth: null
+import_name: null

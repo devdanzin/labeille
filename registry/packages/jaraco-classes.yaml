@@ -1,0 +1,17 @@
+package: jaraco-classes
+repo: https://github.com/jaraco/jaraco.classes
+pypi_url: https://pypi.org/project/jaraco-classes/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: git fetch --tags --depth 1 && pip install -e . && pip install pytest
+test_command: python -m pytest
+test_framework: pytest
+uses_xdist: false
+timeout: 120
+skip: false
+skip_reason: null
+notes: Utility classes for the jaraco namespace. Uses setuptools-scm. Small test suite.
+enriched: true
+clone_depth: 50
+import_name: jaraco.classes

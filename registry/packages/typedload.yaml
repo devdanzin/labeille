@@ -1,0 +1,18 @@
+package: typedload
+repo: https://codeberg.org/ltworf/typedload
+pypi_url: https://pypi.org/project/typedload/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: python gensetup.py --setup.py && pip install . && pip install attrs
+test_command: python -m tests
+test_framework: unittest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: Type-safe data loading. Uses unittest, not pytest.
+enriched: true
+clone_depth: null
+import_name: null

@@ -1,0 +1,18 @@
+package: msal-extensions
+repo: https://github.com/AzureAD/microsoft-authentication-extensions-for-python
+pypi_url: https://pypi.org/project/msal-extensions/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest tests -p no:xdist
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: MSAL token cache extensions. Some tests skip without D-Bus/keyring.
+enriched: true
+clone_depth: null
+import_name: msal_extensions

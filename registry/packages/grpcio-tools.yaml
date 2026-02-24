@@ -1,0 +1,17 @@
+package: grpcio-tools
+repo: https://github.com/grpc/grpc/tree/master/tools/distrib/python/grpcio_tools
+pypi_url: https://pypi.org/project/grpcio-tools/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Depends on grpcio C extension build.
+notes: gRPC protocol buffer compiler plugin.
+enriched: true
+clone_depth: null
+import_name: null

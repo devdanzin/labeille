@@ -1,0 +1,18 @@
+package: pytz
+repo: https://github.com/stub42/pytz
+pypi_url: https://pypi.org/project/pytz/
+extension_type: pure
+python_versions:
+- '3.15'
+- '3.14'
+install_method: pip
+install_command: pip install src/
+test_command: python -m unittest discover -s src/pytz/tests
+test_framework: unittest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Requires make to build IANA timezone data before install (broken zoneinfo symlink in repo).
+notes: Source code in src/ subdirectory. Non-editable install (editable fails). Requires
+  zoneinfo data built from IANA timezone database.
+enriched: true

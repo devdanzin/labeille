@@ -1,0 +1,19 @@
+package: attrs
+repo: https://github.com/python-attrs/attrs
+pypi_url: https://pypi.org/project/attrs/
+extension_type: pure
+python_versions:
+- '3.15'
+- '3.14'
+install_method: pip
+install_command: git fetch --tags --depth 1 && pip install -e . && pip install pytest
+  hypothesis pytest-xdist
+test_command: python -m pytest -p no:xdist
+test_framework: pytest
+uses_xdist: true
+timeout: null
+skip: false
+skip_reason: null
+notes: Uses xdist (-n auto) by default, disabled for JIT testing. Uses hypothesis
+  for property-based testing. Hatchling build backend.
+enriched: true

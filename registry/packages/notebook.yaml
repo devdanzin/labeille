@@ -1,0 +1,19 @@
+package: notebook
+repo: https://github.com/jupyter/notebook
+pypi_url: https://pypi.org/project/notebook/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Complex Jupyter application with JS frontend build requirements. Needs
+  Node.js, yarn, and full Jupyter server infrastructure for tests.
+notes: Jupyter Notebook web application. Requires Node.js build step and running server
+  infrastructure for integration tests.
+enriched: true
+clone_depth: null
+import_name: null

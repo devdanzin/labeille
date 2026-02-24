@@ -1,0 +1,18 @@
+package: openpyxl
+repo: https://foss.heptapod.net/openpyxl/openpyxl
+pypi_url: https://pypi.org/project/openpyxl/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-cov lxml pillow
+test_command: python -m pytest openpyxl/tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: true
+skip_reason: Repo is on Heptapod (foss.heptapod.net) which is unreachable via git clone.
+notes: Excel .xlsx file reader/writer. Repo is on Heptapod (Mercurial), not GitHub.
+  Tests are inside openpyxl/tests/. Uses setuptools build backend.
+enriched: true
+clone_depth: null
+import_name: null

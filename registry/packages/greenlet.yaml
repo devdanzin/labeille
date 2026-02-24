@@ -1,0 +1,19 @@
+package: greenlet
+repo: https://github.com/python-greenlet/greenlet
+pypi_url: https://pypi.org/project/greenlet/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest psutil objgraph objgraph
+test_command: python -m pytest src/greenlet/tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+notes: Lightweight coroutines as C extension. Uses setuptools build backend. Tests
+  in src/greenlet/tests/. C extension should build on 3.15. Timeout 10min for concurrency
+  tests.
+enriched: true
+clone_depth: null
+import_name: null

@@ -1,0 +1,18 @@
+package: proto-plus
+repo: https://github.com/googleapis/proto-plus-python
+pypi_url: https://pypi.org/project/proto-plus/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-cov protobuf pytz
+test_command: python -m pytest tests/ -p no:xdist
+test_framework: pytest
+uses_xdist: false
+timeout: 180
+skip: false
+skip_reason: null
+notes: 'Pythonic protobuf wrapper. Has unit tests that exercise proto message wrapping
+  without live services. Repo: googleapis/proto-plus-python.'
+enriched: true
+clone_depth: null
+import_name: proto

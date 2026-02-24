@@ -1,0 +1,18 @@
+package: editables
+repo: https://github.com/pfmoore/editables
+pypi_url: https://pypi.org/project/editables/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 60
+skip: false
+skip_reason: null
+notes: Editable installs backend. Uses flit-core build backend. Small package with
+  minimal test deps.
+enriched: true
+clone_depth: null
+import_name: null

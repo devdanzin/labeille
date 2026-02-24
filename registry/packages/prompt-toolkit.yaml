@@ -1,0 +1,18 @@
+package: prompt-toolkit
+repo: https://github.com/prompt-toolkit/python-prompt-toolkit
+pypi_url: https://pypi.org/project/prompt-toolkit/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+notes: CLI toolkit for building interactive command-line applications. Pure Python.
+  Uses setuptools build backend.
+enriched: true
+clone_depth: null
+import_name: prompt_toolkit
