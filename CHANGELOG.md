@@ -14,6 +14,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Fixed timeout documentation (300s → 600s) in `doc/enrichment.md`.
 - `_quote_yaml_scalar` now quotes all numeric strings (integers, scientific notation, octal-like), tilde, and additional YAML special characters.
 - `find_field_extent` no longer consumes trailing blank lines after scalar fields, fixing `insert_field_after` placement near blank lines.
+- Rewrote `batch_set_field` to use line-level manipulation instead of PyYAML round-trip, preserving YAML formatting.
+- Added `set_field_value` to `yaml_lines.py` for in-place field value replacement.
+- `format_yaml_value` and `parse_default_value` now handle `None`/`null` values.
 
 ### Added
 - 350 enriched package configurations with full test commands, install commands, and metadata.

@@ -17,8 +17,6 @@ import yaml
 from labeille.logging import get_logger
 from labeille.registry import (
     IndexEntry,
-    _dict_to_package,
-    _package_to_dict,
     load_index,
     load_package,
     save_index,
@@ -32,6 +30,7 @@ from labeille.yaml_lines import (
     parse_default_value,
     remove_field as remove_field_lines,
     rename_field as rename_field_lines,
+    set_field_value,
 )
 
 log = get_logger("registry_ops")
@@ -458,8 +457,9 @@ def batch_set_field(
 ) -> OpResult | DryRunPreview:
     """Set a field value on matching packages.
 
-    Uses the parse-dump path (PyYAML round-trip via the registry module)
-    to evaluate filters and set values.
+    Uses line-level manipulation to preserve YAML formatting.  PyYAML is
+    used only for parsing (filter matching and type detection), never for
+    serialisation.
 
     Args:
         registry_dir: Path to the registry directory.
@@ -484,7 +484,9 @@ def batch_set_field(
     sample_diffs: list[tuple[str, str, str]] = []
 
     for f in files:
-        raw = yaml.safe_load(f.read_text(encoding="utf-8"))
+        lines = _read_lines(f)
+        # Parse for filtering and type detection only.
+        raw = yaml.safe_load("".join(lines))
         if not isinstance(raw, dict):
             errors.append(f"{f.name}: invalid YAML")
             continue
@@ -496,7 +498,7 @@ def batch_set_field(
             errors.append(f"{f.name}: field '{field_name}' not found (use add-field first)")
             continue
 
-        # Determine type from existing value or explicit --type
+        # Determine type from existing value or explicit --type.
         if field_type is None:
             existing = raw[field_name]
             if isinstance(existing, bool):
@@ -516,21 +518,22 @@ def batch_set_field(
 
         old_value = raw[field_name]
         if old_value == parsed_value:
-            continue  # No change needed
+            continue  # No change needed.
 
-        # Use parse-dump path via registry module for consistent output
-        before_text = f.read_text(encoding="utf-8")
-        entry = _dict_to_package(raw)
-        setattr(entry, field_name, parsed_value)
-        data = _package_to_dict(entry)
-        after_text = yaml.dump(data, default_flow_style=False, sort_keys=False, allow_unicode=True)
+        formatted = format_yaml_value(parsed_value, field_type_resolved)
+
+        try:
+            new_lines = set_field_value(lines, field_name, formatted)
+        except ValueError as e:
+            errors.append(f"{f.name}: {e}")
+            continue
 
         if dry_run:
             if len(sample_diffs) < 5:
-                sample_diffs.append((f.name, before_text, after_text))
+                sample_diffs.append((f.name, "".join(lines), "".join(new_lines)))
             modified.append(f.name)
         else:
-            _atomic_write(f, [after_text])
+            _atomic_write(f, new_lines)
             modified.append(f.name)
 
     if dry_run:
