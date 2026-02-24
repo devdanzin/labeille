@@ -554,6 +554,71 @@ class TestValidateRegistry(unittest.TestCase):
         errors = [i for i in issues if i.level == "error"]
         self.assertTrue(any("unknown field" in e.message for e in errors))
 
+    def test_validate_uses_xdist_without_no_xdist(self) -> None:
+        """uses_xdist: true without -p no:xdist in test_command → warning."""
+        _write_package(
+            self.registry,
+            "xdistpkg",
+            extra_fields={
+                "uses_xdist": True,
+                "test_command": "python -m pytest tests/",
+            },
+        )
+        issues = validate_registry(self.registry)
+        warnings = [i for i in issues if i.level == "warning"]
+        xdist_warnings = [w for w in warnings if "uses_xdist" in w.message]
+        self.assertTrue(
+            any("does not include" in w.message for w in xdist_warnings),
+            f"Expected uses_xdist warning, got: {xdist_warnings}",
+        )
+
+    def test_validate_no_xdist_flag_without_uses_xdist(self) -> None:
+        """-p no:xdist in test_command but uses_xdist: false → warning."""
+        _write_package(
+            self.registry,
+            "noxdistpkg",
+            extra_fields={
+                "uses_xdist": False,
+                "test_command": "python -m pytest -p no:xdist tests/",
+            },
+        )
+        issues = validate_registry(self.registry)
+        warnings = [i for i in issues if i.level == "warning"]
+        xdist_warnings = [w for w in warnings if "no:xdist" in w.message]
+        self.assertTrue(
+            any("uses_xdist is false" in w.message for w in xdist_warnings),
+            f"Expected reverse xdist warning, got: {xdist_warnings}",
+        )
+
+    def test_validate_uses_xdist_with_no_xdist(self) -> None:
+        """uses_xdist: true with -p no:xdist → no warning."""
+        _write_package(
+            self.registry,
+            "goodpkg",
+            extra_fields={
+                "uses_xdist": True,
+                "test_command": "python -m pytest -p no:xdist tests/",
+            },
+        )
+        issues = validate_registry(self.registry)
+        xdist_issues = [i for i in issues if "xdist" in i.message.lower()]
+        self.assertEqual(len(xdist_issues), 0)
+
+    def test_validate_skipped_package_no_xdist_check(self) -> None:
+        """Skipped packages don't trigger xdist validation."""
+        _write_package(
+            self.registry,
+            "skippkg",
+            extra_fields={
+                "skip": True,
+                "uses_xdist": True,
+                "test_command": "python -m pytest tests/",
+            },
+        )
+        issues = validate_registry(self.registry)
+        xdist_issues = [i for i in issues if "xdist" in i.message.lower()]
+        self.assertEqual(len(xdist_issues), 0)
+
 
 class TestFilterExactMatch(unittest.TestCase):
     def setUp(self) -> None:

@@ -8,12 +8,14 @@ from labeille.registry import (
     Index,
     IndexEntry,
     PackageEntry,
+    _dict_to_package,
     load_index,
     load_package,
     package_exists,
     save_index,
     save_package,
     sort_index,
+    update_index_from_packages,
 )
 
 
@@ -263,6 +265,110 @@ class TestIndexSorting(unittest.TestCase):
         sort_index(index)
         self.assertEqual(index.packages[0].name, "alpha")
         self.assertEqual(index.packages[1].name, "zebra")
+
+
+class TestIndexSkipVersionsKeys(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmpdir = tempfile.TemporaryDirectory()
+        self.registry = Path(self.tmpdir.name)
+        self.registry.mkdir(parents=True, exist_ok=True)
+        (self.registry / "packages").mkdir(parents=True)
+
+    def tearDown(self) -> None:
+        self.tmpdir.cleanup()
+
+    def test_index_entry_skip_versions_keys_roundtrip(self) -> None:
+        """IndexEntry with skip_versions_keys survives save/load round-trip."""
+        index = Index(
+            packages=[
+                IndexEntry(
+                    name="mypkg",
+                    download_count=100,
+                    skip_versions_keys=["3.14", "3.15"],
+                ),
+            ]
+        )
+        save_index(index, self.registry)
+        loaded = load_index(self.registry)
+        self.assertEqual(loaded.packages[0].skip_versions_keys, ["3.14", "3.15"])
+
+    def test_update_index_from_packages_syncs_skip_versions(self) -> None:
+        """update_index_from_packages copies skip_versions keys to index."""
+        pkg = PackageEntry(
+            package="verpkg",
+            skip_versions={"3.15": "PyO3 not supported", "3.14": "build broken"},
+        )
+        save_package(pkg, self.registry)
+        index = Index(packages=[IndexEntry(name="verpkg", download_count=100)])
+        update_index_from_packages(index, self.registry)
+        self.assertEqual(index.packages[0].skip_versions_keys, ["3.14", "3.15"])
+
+    def test_load_index_tolerates_missing_skip_versions_keys(self) -> None:
+        """Index YAML without skip_versions_keys loads with default []."""
+        import yaml
+
+        data = {
+            "last_updated": "2026-02-24T00:00:00",
+            "packages": [
+                {"name": "oldpkg", "download_count": 50, "enriched": True, "skip": False}
+            ],
+        }
+        (self.registry / "index.yaml").write_text(
+            yaml.dump(data, default_flow_style=False), encoding="utf-8"
+        )
+        loaded = load_index(self.registry)
+        self.assertEqual(loaded.packages[0].skip_versions_keys, [])
+
+    def test_index_entry_default_empty_list(self) -> None:
+        """IndexEntry defaults to empty skip_versions_keys."""
+        entry = IndexEntry(name="pkg")
+        self.assertEqual(entry.skip_versions_keys, [])
+
+
+class TestDictToPackageCoercion(unittest.TestCase):
+    def test_coerces_null_notes(self) -> None:
+        """notes: null in YAML → empty string."""
+        data = {"package": "nullnotes", "notes": None, "enriched": False}
+        pkg = _dict_to_package(data)
+        self.assertEqual(pkg.notes, "")
+        self.assertIsInstance(pkg.notes, str)
+
+    def test_empty_notes_preserved(self) -> None:
+        """notes: '' stays as empty string."""
+        data = {"package": "emptynotes", "notes": "", "enriched": False}
+        pkg = _dict_to_package(data)
+        self.assertEqual(pkg.notes, "")
+
+    def test_notes_string_preserved(self) -> None:
+        """notes with actual content stays unchanged."""
+        data = {"package": "pkg", "notes": "some note", "enriched": False}
+        pkg = _dict_to_package(data)
+        self.assertEqual(pkg.notes, "some note")
+
+    def test_unknown_keys_logged(self) -> None:
+        """Unknown fields produce debug log messages."""
+        data = {
+            "package": "badpkg",
+            "enriched": False,
+            "skip_reaason": "typo field",
+            "experimental": True,
+        }
+        with self.assertLogs("labeille.registry", level="DEBUG") as cm:
+            pkg = _dict_to_package(data)
+        self.assertEqual(pkg.package, "badpkg")
+        log_output = "\n".join(cm.output)
+        self.assertIn("unknown fields", log_output)
+        self.assertIn("skip_reaason", log_output)
+        self.assertIn("experimental", log_output)
+
+    def test_no_log_for_known_keys(self) -> None:
+        """No debug log when all keys are known."""
+        import logging
+
+        data = {"package": "goodpkg", "enriched": True, "notes": "ok"}
+        logger = logging.getLogger("labeille.registry")
+        with self.assertNoLogs(logger, level="DEBUG"):
+            _dict_to_package(data)
 
 
 if __name__ == "__main__":

@@ -60,6 +60,7 @@ class IndexEntry:
     extension_type: str = "unknown"
     enriched: bool = False
     skip: bool = False
+    skip_versions_keys: list[str] = field(default_factory=list)
 
 
 @dataclass
@@ -96,13 +97,26 @@ def _dict_to_package(data: dict[str, Any]) -> PackageEntry:
 
     Coerces ``skip_versions`` keys to strings — PyYAML parses bare ``3.15``
     as a float, but we need string keys like ``"3.15"``.
+    Coerces ``notes: null`` to empty string for type safety.
+    Logs unknown keys at debug level.
     """
     known = {f.name for f in fields(PackageEntry)}
     filtered = {k: v for k, v in data.items() if k in known}
+    unknown = set(data.keys()) - known
+    if unknown:
+        pkg_name = data.get("package", "unknown")
+        log.debug(
+            "Package %s has unknown fields (ignored): %s",
+            pkg_name,
+            ", ".join(sorted(unknown)),
+        )
     # Coerce skip_versions keys from float/int to str.
     sv = filtered.get("skip_versions")
     if isinstance(sv, dict):
         filtered["skip_versions"] = {str(k): str(v) for k, v in sv.items()}
+    # Coerce null notes to empty string.
+    if filtered.get("notes") is None:
+        filtered["notes"] = ""
     return PackageEntry(**filtered)
 
 
@@ -243,3 +257,4 @@ def update_index_from_packages(index: Index, registry_path: Path) -> None:
             entry.extension_type = pkg.extension_type
             entry.enriched = pkg.enriched
             entry.skip = pkg.skip
+            entry.skip_versions_keys = sorted(pkg.skip_versions.keys())

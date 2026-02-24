@@ -19,6 +19,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - `format_yaml_value` and `parse_default_value` now handle `None`/`null` values.
 - `_is_version_specific_skip` now uses word-boundary regex patterns to prevent false positives (e.g. "trust" no longer matches the "rust" pattern).
 - `scan-deps` now warns about namespace packages (`google`, `azure`, `zope`, etc.) where pip resolution is uncertain, and tries full import paths before falling back to top-level modules.
+- `IndexEntry` now tracks `skip_versions_keys` for fast version-skip filtering without loading full YAML files.
+- `filter_packages` uses index-level `skip_versions_keys` to skip packages before loading YAML.
+- `_dict_to_package` coerces `notes: null` to empty string for type safety.
+- `_dict_to_package` logs unknown YAML keys at debug level to surface typos.
+- `validate_registry` checks `uses_xdist`/`-p no:xdist` consistency in both directions.
 
 ### Added
 - 350 enriched package configurations with full test commands, install commands, and metadata.

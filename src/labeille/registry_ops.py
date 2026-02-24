@@ -680,6 +680,28 @@ def validate_registry(
                         )
                     )
 
+        # Check uses_xdist consistency.
+        if not raw.get("skip", False):
+            test_cmd = raw.get("test_command", "")
+            if raw.get("uses_xdist", False):
+                if test_cmd and "-p no:xdist" not in test_cmd:
+                    issues.append(
+                        ValidationIssue(
+                            f.name,
+                            "warning",
+                            "uses_xdist is true but test_command does not include '-p no:xdist'",
+                        )
+                    )
+            else:
+                if test_cmd and "-p no:xdist" in test_cmd:
+                    issues.append(
+                        ValidationIssue(
+                            f.name,
+                            "warning",
+                            "test_command includes '-p no:xdist' but uses_xdist is false",
+                        )
+                    )
+
     return issues
 
 
@@ -719,6 +741,7 @@ def rebuild_index(registry_dir: Path) -> int:
                         extension_type=pkg.extension_type,
                         enriched=pkg.enriched,
                         skip=pkg.skip,
+                        skip_versions_keys=sorted(pkg.skip_versions.keys()),
                     )
                 )
 
