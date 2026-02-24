@@ -5,6 +5,7 @@ from __future__ import annotations
 import unittest
 
 from labeille.yaml_lines import (
+    _quote_yaml_scalar,
     find_field_extent,
     find_field_line,
     format_yaml_value,
@@ -56,6 +57,25 @@ python_versions:
 - "3.13"
 extension_type: pure
 enriched: true
+"""
+
+
+SAMPLE_WITH_BLANK_LINES = """\
+package: blankpkg
+skip_reason: null
+
+skip_versions: {}
+notes: ""
+enriched: true
+"""
+
+SAMPLE_BLOCK_WITH_INTERNAL_BLANK = """\
+package: blockblank
+skip_versions:
+  "3.15": "PyO3 not supported"
+
+  "3.14": "broken build"
+notes: ""
 """
 
 
@@ -272,6 +292,99 @@ class TestParseDefaultValue(unittest.TestCase):
     def test_json_list(self) -> None:
         result = parse_default_value('["3.15", "3.14"]', "list")
         self.assertEqual(result, ["3.15", "3.14"])
+
+
+class TestQuoteYamlScalar(unittest.TestCase):
+    def test_quote_bare_integer(self) -> None:
+        self.assertEqual(_quote_yaml_scalar("42"), '"42"')
+
+    def test_quote_bare_negative(self) -> None:
+        self.assertEqual(_quote_yaml_scalar("-1"), '"-1"')
+
+    def test_quote_float_with_dot(self) -> None:
+        self.assertEqual(_quote_yaml_scalar("3.15"), '"3.15"')
+
+    def test_quote_scientific(self) -> None:
+        self.assertEqual(_quote_yaml_scalar("1e10"), '"1e10"')
+
+    def test_quote_octal_like(self) -> None:
+        self.assertEqual(_quote_yaml_scalar("0123"), '"0123"')
+
+    def test_quote_tilde(self) -> None:
+        self.assertEqual(_quote_yaml_scalar("~"), '"~"')
+
+    def test_quote_boolean_yes(self) -> None:
+        self.assertEqual(_quote_yaml_scalar("yes"), '"yes"')
+
+    def test_quote_normal_string(self) -> None:
+        self.assertEqual(_quote_yaml_scalar("hello"), "hello")
+
+    def test_quote_empty(self) -> None:
+        self.assertEqual(_quote_yaml_scalar(""), '""')
+
+    def test_quote_special_chars(self) -> None:
+        self.assertEqual(_quote_yaml_scalar("key: value"), '"key: value"')
+
+
+class TestFindFieldExtentDetailed(unittest.TestCase):
+    def test_extent_scalar_no_trailing_blank(self) -> None:
+        lines = SAMPLE_YAML.splitlines(True)
+        idx = find_field_line(lines, "skip")
+        self.assertIsNotNone(idx)
+        start, end = find_field_extent(lines, idx)
+        self.assertEqual(end - start, 1)
+
+    def test_extent_scalar_with_trailing_blank(self) -> None:
+        lines = SAMPLE_WITH_BLANK_LINES.splitlines(True)
+        idx = find_field_line(lines, "skip_reason")
+        self.assertIsNotNone(idx)
+        start, end = find_field_extent(lines, idx)
+        # Extent should be just the one line, NOT including the blank line.
+        self.assertEqual(end - start, 1)
+
+    def test_extent_block_dict(self) -> None:
+        lines = SAMPLE_WITH_DICT.splitlines(True)
+        idx = find_field_line(lines, "skip_versions")
+        self.assertIsNotNone(idx)
+        start, end = find_field_extent(lines, idx)
+        self.assertEqual(end - start, 3)
+
+    def test_extent_block_dict_with_internal_blank(self) -> None:
+        lines = SAMPLE_BLOCK_WITH_INTERNAL_BLANK.splitlines(True)
+        idx = find_field_line(lines, "skip_versions")
+        self.assertIsNotNone(idx)
+        start, end = find_field_extent(lines, idx)
+        # skip_versions: + "3.15" line + blank + "3.14" line = 4 lines
+        self.assertEqual(end - start, 4)
+
+    def test_extent_block_dict_trailing_blank(self) -> None:
+        yaml_text = 'skip_versions:\n  "3.15": broken\n\nnotes: ""\n'
+        lines = yaml_text.splitlines(True)
+        start, end = find_field_extent(lines, 0)
+        # Extent should be skip_versions: + one entry = 2 lines.
+        # The trailing blank line is NOT included.
+        self.assertEqual(end - start, 2)
+
+    def test_extent_block_list(self) -> None:
+        lines = SAMPLE_WITH_LIST.splitlines(True)
+        idx = find_field_line(lines, "python_versions")
+        self.assertIsNotNone(idx)
+        start, end = find_field_extent(lines, idx)
+        self.assertEqual(end - start, 4)
+
+
+class TestInsertAfterBlankLine(unittest.TestCase):
+    def test_insert_after_scalar_before_blank_line(self) -> None:
+        lines = SAMPLE_WITH_BLANK_LINES.splitlines(True)
+        result = insert_field_after(lines, "skip_reason", "new_field", '"value"')
+        text = "".join(result)
+        # new_field should be between skip_reason and the blank line.
+        result_lines = text.splitlines(True)
+        sr_idx = next(i for i, ln in enumerate(result_lines) if ln.startswith("skip_reason:"))
+        nf_idx = next(i for i, ln in enumerate(result_lines) if ln.startswith("new_field:"))
+        self.assertEqual(nf_idx, sr_idx + 1)
+        # The blank line should still be present after new_field.
+        self.assertEqual(result_lines[nf_idx + 1].strip(), "")
 
 
 if __name__ == "__main__":

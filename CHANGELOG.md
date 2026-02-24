@@ -12,6 +12,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Made `_extract_minor_version` public as `extract_minor_version` in `analyze.py`.
 - Removed redundant zero-check in `compare_runs` duration percentage calculation.
 - Fixed timeout documentation (300s → 600s) in `doc/enrichment.md`.
+- `_quote_yaml_scalar` now quotes all numeric strings (integers, scientific notation, octal-like), tilde, and additional YAML special characters.
+- `find_field_extent` no longer consumes trailing blank lines after scalar fields, fixing `insert_field_after` placement near blank lines.
 
 ### Added
 - 350 enriched package configurations with full test commands, install commands, and metadata.
