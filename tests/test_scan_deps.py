@@ -734,6 +734,55 @@ class TestScanDepsCLI(unittest.TestCase):
 # ===========================================================================
 
 
+class TestNamespacePackages(unittest.TestCase):
+    def test_resolve_namespace_package_note(self) -> None:
+        imports = [ImportInfo("google", "google.cloud", "test.py", 1, False)]
+        resolved, _ = resolve_imports(imports)
+        self.assertEqual(len(resolved), 1)
+        self.assertEqual(resolved[0].pip_package, "google-cloud-core")
+        self.assertIn("namespace package", resolved[0].note)
+        self.assertIn("google.cloud", resolved[0].note)
+
+    def test_resolve_namespace_full_path(self) -> None:
+        imports = [ImportInfo("google", "google.cloud.storage", "test.py", 1, False)]
+        resolved, _ = resolve_imports(imports)
+        self.assertEqual(len(resolved), 1)
+        self.assertEqual(resolved[0].pip_package, "google-cloud-storage")
+
+    def test_resolve_non_namespace_no_note(self) -> None:
+        imports = [ImportInfo("pytest", "pytest", "test.py", 1, False)]
+        resolved, _ = resolve_imports(imports, import_map={"pytest": "pytest"})
+        self.assertEqual(len(resolved), 1)
+        self.assertEqual(resolved[0].note, "")
+
+    def test_resolved_dep_note_field(self) -> None:
+        dep = ResolvedDep(
+            import_name="google",
+            pip_package="google-cloud-core",
+            source="mapping",
+            import_files=["test.py"],
+            is_conditional=False,
+            note="namespace package warning",
+        )
+        self.assertEqual(dep.note, "namespace package warning")
+
+    def test_namespace_identity_gets_note(self) -> None:
+        # A namespace package not in import map falls to identity mapping.
+        imports = [ImportInfo("jaraco", "jaraco.functools", "test.py", 1, False)]
+        resolved, _ = resolve_imports(imports, import_map={})
+        self.assertEqual(len(resolved), 1)
+        self.assertEqual(resolved[0].source, "identity")
+        self.assertIn("namespace package", resolved[0].note)
+
+    def test_namespace_full_path_no_match_falls_to_toplevel(self) -> None:
+        # google.cloud.unknown isn't in the map, falls to top-level google.
+        imports = [ImportInfo("google", "google.cloud.unknown", "test.py", 1, False)]
+        resolved, _ = resolve_imports(imports)
+        self.assertEqual(len(resolved), 1)
+        self.assertEqual(resolved[0].pip_package, "google-cloud-core")
+        self.assertIn("namespace package", resolved[0].note)
+
+
 def _make_dep(
     import_name: str,
     pip_package: str,

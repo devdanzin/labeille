@@ -77,6 +77,11 @@ IMPORT_TO_PIP: dict[str, str] = {
     "blinker": "blinker",
     # --- Cloud / Infrastructure ---
     "google": "google-cloud-core",
+    "google.cloud.storage": "google-cloud-storage",
+    "google.cloud.bigquery": "google-cloud-bigquery",
+    "google.cloud.pubsub": "google-cloud-pubsub",
+    "google.cloud.firestore": "google-cloud-firestore",
+    "google.cloud.logging": "google-cloud-logging",
     "boto3": "boto3",
     "botocore": "botocore",
     "azure": "azure-core",

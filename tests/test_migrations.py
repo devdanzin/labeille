@@ -371,7 +371,15 @@ class TestIsVersionSpecificSkip(unittest.TestCase):
         self.assertTrue(_is_version_specific_skip("JIT crash (_PyOptimizer_Optimize abort)"))
 
     def test_cython_fails(self) -> None:
-        self.assertTrue(_is_version_specific_skip("Cython build step fails"))
+        self.assertTrue(_is_version_specific_skip("Cython build step fails on 3.15"))
+
+    def test_cython_editable_build_fails(self) -> None:
+        self.assertTrue(
+            _is_version_specific_skip(
+                "C extension source files not generated "
+                "(Cython build step fails on editable install for 3.15)."
+            )
+        )
 
     def test_rust_binary_no_tests(self) -> None:
         self.assertFalse(_is_version_specific_skip("Rust binary with no Python test suite"))
@@ -395,6 +403,45 @@ class TestIsVersionSpecificSkip(unittest.TestCase):
 
     def test_no_repo_url(self) -> None:
         self.assertFalse(_is_version_specific_skip("No repository URL found."))
+
+    # --- False positive prevention tests ---
+
+    def test_trust_store_not_matched(self) -> None:
+        self.assertFalse(_is_version_specific_skip("Trust store configuration issues"))
+
+    def test_robust_not_matched(self) -> None:
+        self.assertFalse(_is_version_specific_skip("Robust error handling required"))
+
+    def test_frustrated_not_matched(self) -> None:
+        self.assertFalse(_is_version_specific_skip("Package author frustrated with CI failures"))
+
+    def test_version_mention_not_matched(self) -> None:
+        self.assertFalse(_is_version_specific_skip("Only tested on 3.15 and later"))
+
+    # --- Regression tests with actual skip reasons from registry ---
+
+    def test_real_reason_aiobotocore(self) -> None:
+        self.assertTrue(
+            _is_version_specific_skip(
+                "moto requires pydantic-core (Rust/PyO3) which doesn't support Python 3.15 yet"
+            )
+        )
+
+    def test_real_reason_aiohttp(self) -> None:
+        self.assertTrue(
+            _is_version_specific_skip(
+                "C extension source files not generated "
+                "(Cython build step fails on editable install for 3.15)."
+            )
+        )
+
+    def test_real_reason_ruff(self) -> None:
+        self.assertFalse(_is_version_specific_skip("Rust binary with no Python test suite"))
+
+    def test_real_reason_stub(self) -> None:
+        self.assertFalse(
+            _is_version_specific_skip("Type stub package with no meaningful test suite")
+        )
 
 
 # ===========================================================================

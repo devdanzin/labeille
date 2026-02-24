@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import tempfile
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -276,8 +277,48 @@ def execute_migration(
 # ---------------------------------------------------------------------------
 
 
+# Compiled patterns for version-specific skip detection.
+# Each is a (pattern, description) tuple for auditability.
+_VERSION_SPECIFIC_PATTERNS: list[tuple[re.Pattern[str], str]] = [
+    # Direct PyO3/maturin references.
+    (re.compile(r"\bpyo3\b", re.IGNORECASE), "PyO3"),
+    (re.compile(r"\bmaturin\b", re.IGNORECASE), "maturin"),
+    # "Rust" only when it appears as a standalone word.
+    # Matches: "Rust extension", "Rust/PyO3", "Rust binding"
+    # Does NOT match: "trust", "frustrated", "robust"
+    (re.compile(r"\brust\b", re.IGNORECASE), "Rust"),
+    # Specific PyO3 packages.
+    (re.compile(r"\bpydantic[_-]core\b", re.IGNORECASE), "pydantic-core"),
+    (re.compile(r"\brpds[_-]?py\b", re.IGNORECASE), "rpds-py"),
+    (re.compile(r"\brpds\b", re.IGNORECASE), "rpds"),
+    # Version-specific phrases.
+    (re.compile(r"doesn't support.*3\.15", re.IGNORECASE), "no 3.15 support"),
+    (re.compile(r"not support.*3\.15", re.IGNORECASE), "no 3.15 support"),
+    (re.compile(r"no 3\.15\b", re.IGNORECASE), "no 3.15"),
+    (re.compile(r"\b3\.15\b.*not.*support", re.IGNORECASE), "3.15 not supported"),
+    # Cython build failures.
+    (re.compile(r"cython.*build.*fail", re.IGNORECASE), "Cython build failure"),
+    # JIT crashes during install.
+    (re.compile(r"jit crash", re.IGNORECASE), "JIT crash"),
+]
+
+_STRUCTURAL_PATTERNS: list[tuple[re.Pattern[str], str]] = [
+    (
+        re.compile(
+            r"no (test suite|meaningful test|python test|separate test|source test)",
+            re.IGNORECASE,
+        ),
+        "no test suite",
+    ),
+    (re.compile(r"binary with no", re.IGNORECASE), "binary package"),
+]
+
+
 def _is_version_specific_skip(reason: str) -> bool:
     """Determine if a skip reason is specific to Python 3.15.
+
+    Uses word-boundary-aware regex patterns to avoid false positives
+    (e.g. "trust" matching a bare "rust" substring).
 
     Returns True for reasons related to:
     - PyO3 / maturin / Rust not supporting 3.15
@@ -288,46 +329,22 @@ def _is_version_specific_skip(reason: str) -> bool:
 
     Returns False for structural reasons:
     - No test suite / stub package
-    - Cloud credentials required
-    - Monorepo / complex build
-    - No repo URL
-    - Deprecated / obsolete packages
+    - Binary package with no tests
     """
-    r = reason.lower()
-
-    # Structural reasons — don't convert even if they mention Rust/PyO3.
-    structural_keywords = [
-        "no test suite",
-        "no meaningful test",
-        "no python test suite",
-        "no separate test suite",
-        "no source test",
-        "binary with no",
-    ]
-    if any(kw in r for kw in structural_keywords):
+    if not reason:
         return False
 
-    # Version-specific keywords.
-    version_specific_keywords = [
-        "pyo3",
-        "maturin",
-        "rust",
-        "pydantic-core",
-        "rpds-py",
-        "rpds",
-        "doesn't support python 3.15",
-        "doesn't support 3.15",
-        "not support 3.15",
-        "no 3.15 support",
-        "no 3.15",
-        "3.15",
-        "cython build step fails",
-        "cython build fails",
-        "cython) editable build fails",
-        "jit crash",
-    ]
+    # Structural patterns take priority.
+    for pattern, _ in _STRUCTURAL_PATTERNS:
+        if pattern.search(reason):
+            return False
 
-    return any(kw in r for kw in version_specific_keywords)
+    # Check version-specific patterns.
+    for pattern, _ in _VERSION_SPECIFIC_PATTERNS:
+        if pattern.search(reason):
+            return True
+
+    return False
 
 
 @register_migration(

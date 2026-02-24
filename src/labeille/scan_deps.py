@@ -82,6 +82,7 @@ class ResolvedDep:
     source: str  # how resolved: 'identity', 'mapping', 'registry', 'unresolved'
     import_files: list[str]  # which files import it
     is_conditional: bool  # True if ALL occurrences are conditional
+    note: str = ""  # warning for namespace packages or uncertain resolution
 
 
 @dataclass
@@ -414,6 +415,20 @@ def filter_imports(
 # ---------------------------------------------------------------------------
 
 
+# Top-level import names that are namespace packages — the actual pip
+# package depends on which sub-package is imported.  Resolution for
+# these is uncertain; users should verify the specific package needed.
+_NAMESPACE_PACKAGES: set[str] = {
+    "google",
+    "azure",
+    "zope",
+    "jaraco",
+    "sphinxcontrib",
+    "backports",
+    "repoze",
+}
+
+
 def _is_plausible_pip_name(name: str) -> bool:
     """Check if a name looks like a plausible pip package for identity mapping.
 
@@ -481,9 +496,31 @@ def resolve_imports(
         import_files = sorted(set(imp.source_file for imp in module_imports))
         all_conditional = all(imp.is_conditional for imp in module_imports)
 
-        # 1. Static mapping table.
-        pip_name = import_map.get(module_name) or import_map.get(normalized)
+        # Collect unique full import paths (for namespace package sub-path lookup).
+        full_names = sorted(set(imp.full_name for imp in module_imports))
+
+        # 1a. Try full import paths in the static mapping (namespace sub-packages).
+        pip_name: str | None = None
+        for fn in full_names:
+            pip_name = import_map.get(fn) or import_map.get(fn.replace("-", "_"))
+            if pip_name:
+                break
+
+        # 1b. Fall back to top-level in static mapping.
+        if not pip_name:
+            pip_name = import_map.get(module_name) or import_map.get(normalized)
+
         if pip_name:
+            note = ""
+            if module_name in _NAMESPACE_PACKAGES:
+                sub_pkgs = sorted(
+                    set(imp.full_name for imp in module_imports if "." in imp.full_name)
+                )
+                if sub_pkgs:
+                    note = (
+                        f"namespace package \u2014 verify correct pip package "
+                        f"(imports: {', '.join(sub_pkgs[:5])})"
+                    )
             resolved.append(
                 ResolvedDep(
                     import_name=module_name,
@@ -491,6 +528,7 @@ def resolve_imports(
                     source="mapping",
                     import_files=import_files,
                     is_conditional=all_conditional,
+                    note=note,
                 )
             )
             continue
@@ -511,6 +549,15 @@ def resolve_imports(
 
         # 3. Identity mapping (with validation).
         if _is_plausible_pip_name(module_name):
+            note = ""
+            if module_name in _NAMESPACE_PACKAGES:
+                sub_pkgs = sorted(
+                    set(imp.full_name for imp in module_imports if "." in imp.full_name)
+                )
+                note = (
+                    f"namespace package \u2014 cannot determine pip package "
+                    f"from top-level import (imports: {', '.join(sub_pkgs[:5])})"
+                )
             resolved.append(
                 ResolvedDep(
                     import_name=module_name,
@@ -518,6 +565,7 @@ def resolve_imports(
                     source="identity",
                     import_files=import_files,
                     is_conditional=all_conditional,
+                    note=note,
                 )
             )
             continue
