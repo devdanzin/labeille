@@ -869,13 +869,22 @@ def filter_packages(
     py_ver = config.target_python_version
 
     for entry in entries:
+        # Fast skip checks from index (no YAML load needed).
         if not config.force_run and entry.skip:
             log.debug("Skipping %s (marked skip in index)", entry.name)
             continue
+        if not config.force_run and py_ver and py_ver in entry.skip_versions_keys:
+            log.debug("Skipping %s (skip_versions[%s] in index)", entry.name, py_ver)
+            version_skipped += 1
+            continue
+
+        # Now load the full YAML (only for non-skipped packages).
         if not package_exists(entry.name, registry_dir):
             log.debug("Skipping %s (no package YAML)", entry.name)
             continue
         pkg = load_package(entry.name, registry_dir)
+
+        # Double-check against the full package data (in case index is stale).
         if not config.force_run and pkg.skip:
             log.debug("Skipping %s (marked skip in package)", pkg.package)
             continue
@@ -885,6 +894,7 @@ def filter_packages(
                 log.debug("Skipping %s (skip_versions[%s]: %s)", pkg.package, py_ver, reason)
                 version_skipped += 1
                 continue
+
         if config.skip_extensions and pkg.extension_type == "extensions":
             log.debug("Skipping %s (extension package)", pkg.package)
             continue

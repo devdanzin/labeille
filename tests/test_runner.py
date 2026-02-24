@@ -6,6 +6,7 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 from labeille.registry import (
@@ -340,6 +341,53 @@ class TestFilterPackages(unittest.TestCase):
         index = Index(
             packages=[
                 IndexEntry(name="verpkg", download_count=900),
+            ]
+        )
+        result, ver_skipped = filter_packages(index, self.config.registry_dir, self.config)
+        names = [p.package for p in result]
+        self.assertIn("verpkg", names)
+        self.assertEqual(ver_skipped, 0)
+
+    @patch("labeille.runner.load_package")
+    def test_filter_uses_index_skip_versions_keys(self, mock_load: Any) -> None:
+        """Index skip_versions_keys allows skipping without loading YAML."""
+        self.config.target_python_version = "3.15"
+        # pkg1 has no version skip → should be loaded.
+        # indexpkg has skip_versions_keys=["3.15"] → should be skipped via index.
+        pkg1 = _make_package(name="pkg1")
+        mock_load.return_value = pkg1
+        index = Index(
+            packages=[
+                IndexEntry(name="pkg1", download_count=1000),
+                IndexEntry(
+                    name="indexpkg",
+                    download_count=900,
+                    skip_versions_keys=["3.15"],
+                ),
+            ]
+        )
+        result, ver_skipped = filter_packages(index, self.config.registry_dir, self.config)
+        # indexpkg should be skipped at the index level.
+        names = [p.package for p in result]
+        self.assertNotIn("indexpkg", names)
+        self.assertEqual(ver_skipped, 1)
+        # load_package should NOT be called for indexpkg.
+        loaded_names = [call.args[0] for call in mock_load.call_args_list]
+        self.assertNotIn("indexpkg", loaded_names)
+
+    def test_force_run_overrides_index_skip_versions(self) -> None:
+        """--force-run bypasses index-level skip_versions_keys filtering."""
+        self.config.force_run = True
+        self.config.target_python_version = "3.15"
+        ver_pkg = _make_package(name="verpkg", skip_versions={"3.15": "broken"})
+        save_package(ver_pkg, self.config.registry_dir)
+        index = Index(
+            packages=[
+                IndexEntry(
+                    name="verpkg",
+                    download_count=900,
+                    skip_versions_keys=["3.15"],
+                ),
             ]
         )
         result, ver_skipped = filter_packages(index, self.config.registry_dir, self.config)
