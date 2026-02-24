@@ -14,6 +14,7 @@ from labeille.yaml_lines import (
     parse_default_value,
     remove_field,
     rename_field,
+    set_field_value,
 )
 
 # A realistic package YAML for testing.
@@ -385,6 +386,127 @@ class TestInsertAfterBlankLine(unittest.TestCase):
         self.assertEqual(nf_idx, sr_idx + 1)
         # The blank line should still be present after new_field.
         self.assertEqual(result_lines[nf_idx + 1].strip(), "")
+
+
+class TestSetFieldValue(unittest.TestCase):
+    def test_set_field_simple_scalar(self) -> None:
+        lines = SAMPLE_YAML.splitlines(True)
+        result = set_field_value(lines, "skip", "true")
+        text = "".join(result)
+        self.assertIn("skip: true\n", text)
+        # skip_reason should still have its original value.
+        self.assertIn("skip_reason: null\n", text)
+
+    def test_set_field_null_to_string(self) -> None:
+        lines = SAMPLE_YAML.splitlines(True)
+        result = set_field_value(lines, "skip_reason", '"new reason"')
+        text = "".join(result)
+        self.assertIn('skip_reason: "new reason"\n', text)
+
+    def test_set_field_string_to_null(self) -> None:
+        yaml_text = 'package: pkg\nskip_reason: "old reason"\nenriched: true\n'
+        lines = yaml_text.splitlines(True)
+        result = set_field_value(lines, "skip_reason", "null")
+        text = "".join(result)
+        self.assertIn("skip_reason: null\n", text)
+
+    def test_set_field_quoted_string(self) -> None:
+        lines = SAMPLE_YAML.splitlines(True)
+        result = set_field_value(lines, "notes", '"updated notes"')
+        text = "".join(result)
+        self.assertIn('notes: "updated notes"\n', text)
+        # Other quoted fields should be preserved exactly.
+        self.assertIn('repo: "https://github.com/user/testpkg"\n', text)
+
+    def test_set_field_integer(self) -> None:
+        yaml_text = "package: pkg\ntimeout: 300\nenriched: true\n"
+        lines = yaml_text.splitlines(True)
+        result = set_field_value(lines, "timeout", "600")
+        text = "".join(result)
+        self.assertIn("timeout: 600\n", text)
+
+    def test_set_field_boolean(self) -> None:
+        lines = SAMPLE_YAML.splitlines(True)
+        result = set_field_value(lines, "uses_xdist", "true")
+        text = "".join(result)
+        self.assertIn("uses_xdist: true\n", text)
+
+    def test_set_field_block_dict_to_empty(self) -> None:
+        lines = SAMPLE_WITH_DICT.splitlines(True)
+        result = set_field_value(lines, "skip_versions", "{}")
+        text = "".join(result)
+        self.assertIn("skip_versions: {}\n", text)
+        self.assertNotIn("PyO3 not supported", text)
+        self.assertNotIn("broken build", text)
+        # notes: should still be there.
+        self.assertIn("notes:", text)
+
+    def test_set_field_empty_dict_to_block(self) -> None:
+        lines = SAMPLE_YAML.splitlines(True)
+        new_val = '\n  "3.15": "reason here"'
+        result = set_field_value(lines, "skip_versions", new_val)
+        text = "".join(result)
+        self.assertIn("skip_versions:\n", text)
+        self.assertIn('  "3.15": "reason here"\n', text)
+        # notes should still follow.
+        self.assertIn("notes:", text)
+
+    def test_set_field_block_list(self) -> None:
+        lines = SAMPLE_WITH_LIST.splitlines(True)
+        new_val = '\n- "3.16"\n- "3.15"'
+        result = set_field_value(lines, "python_versions", new_val)
+        text = "".join(result)
+        self.assertIn("python_versions:\n", text)
+        self.assertIn('- "3.16"\n', text)
+        self.assertIn('- "3.15"\n', text)
+        self.assertNotIn('- "3.14"\n', text)
+        self.assertNotIn('- "3.13"\n', text)
+
+    def test_set_field_preserves_other_fields(self) -> None:
+        lines = SAMPLE_YAML.splitlines(True)
+        original_text = "".join(lines)
+        result = set_field_value(lines, "skip", "true")
+        result_text = "".join(result)
+        # Everything before "skip:" should be identical.
+        before_skip = original_text.split("skip:")[0]
+        self.assertTrue(result_text.startswith(before_skip))
+        # Everything after "skip_reason:" should be identical.
+        after_sr_orig = original_text.split("skip_reason:")[1]
+        after_sr_new = result_text.split("skip_reason:")[1]
+        self.assertEqual(after_sr_orig, after_sr_new)
+
+    def test_set_field_not_found(self) -> None:
+        lines = SAMPLE_YAML.splitlines(True)
+        with self.assertRaises(ValueError):
+            set_field_value(lines, "nonexistent", "value")
+
+    def test_set_field_multiline_notes(self) -> None:
+        lines = SAMPLE_YAML.splitlines(True)
+        result = set_field_value(lines, "notes", '"long notes about this package"')
+        text = "".join(result)
+        self.assertIn('notes: "long notes about this package"\n', text)
+
+
+class TestFormatYamlValueNull(unittest.TestCase):
+    def test_none_returns_null(self) -> None:
+        self.assertEqual(format_yaml_value(None, "str"), "null")
+
+    def test_none_bool(self) -> None:
+        self.assertEqual(format_yaml_value(None, "bool"), "null")
+
+    def test_none_int(self) -> None:
+        self.assertEqual(format_yaml_value(None, "int"), "null")
+
+
+class TestParseDefaultValueNull(unittest.TestCase):
+    def test_null_string_returns_none(self) -> None:
+        self.assertIsNone(parse_default_value("null", "str"))
+
+    def test_null_case_insensitive(self) -> None:
+        self.assertIsNone(parse_default_value("NULL", "int"))
+
+    def test_null_for_bool(self) -> None:
+        self.assertIsNone(parse_default_value("Null", "bool"))
 
 
 if __name__ == "__main__":

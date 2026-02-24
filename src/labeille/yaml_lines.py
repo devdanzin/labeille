@@ -148,10 +148,52 @@ def rename_field(lines: list[str], old_name: str, new_name: str) -> list[str]:
     return result
 
 
+def set_field_value(lines: list[str], field_name: str, new_value: str) -> list[str]:
+    """Replace the value of an existing top-level YAML field.
+
+    Handles scalar fields (``skip: true`` → ``skip: false``), null fields,
+    quoted strings, and block-style fields (dicts/lists with indented
+    continuation lines).
+
+    Args:
+        lines: The file lines.
+        field_name: The field to modify.
+        new_value: The new value, already formatted via :func:`format_yaml_value`.
+            For block-style values (dicts/lists), this should include
+            leading newlines for sub-items.
+
+    Returns:
+        Modified lines with the field value replaced.
+
+    Raises:
+        ValueError: If the field is not found.
+    """
+    idx = find_field_line(lines, field_name)
+    if idx is None:
+        raise ValueError(f"Field '{field_name}' not found")
+
+    start, end = find_field_extent(lines, idx)
+
+    # Build replacement lines.
+    if new_value.startswith("\n"):
+        # Block-style value (dict/list with indented sub-items).
+        # Split into key line + continuation lines.
+        parts = new_value.split("\n")
+        # parts[0] is "" (before leading \n), rest are the sub-items.
+        replacement = [f"{field_name}:\n"]
+        for part in parts[1:]:
+            replacement.append(f"{part}\n")
+    else:
+        replacement = [f"{field_name}: {new_value}\n"]
+
+    return lines[:start] + replacement + lines[end:]
+
+
 def format_yaml_value(value: Any, field_type: str) -> str:
     """Format a Python value as a YAML string for inline insertion.
 
-    Handles: str, int, bool, list (``[]`` or block), dict (``{}`` or block).
+    Handles: ``None``, str, int, bool, list (``[]`` or block),
+    dict (``{}`` or block).
 
     Args:
         value: The Python value to format.
@@ -160,6 +202,8 @@ def format_yaml_value(value: Any, field_type: str) -> str:
     Returns:
         The YAML text representation.
     """
+    if value is None:
+        return "null"
     if field_type == "bool":
         return "true" if value else "false"
     if field_type == "int":
@@ -273,6 +317,10 @@ def parse_default_value(default_str: str | None, field_type: str) -> Any:
             "dict": {},
         }
         return defaults.get(field_type, "")
+
+    # Allow setting a field to null explicitly.
+    if default_str.lower() == "null":
+        return None
 
     if field_type == "bool":
         return default_str.lower() in ("true", "1", "yes")

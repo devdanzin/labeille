@@ -404,6 +404,105 @@ class TestBatchSetField(unittest.TestCase):
         self.assertEqual(len(result.modified), 3)
 
 
+HAND_CRAFTED_YAML = """\
+package: handcrafted
+repo: "https://github.com/user/handcrafted"
+pypi_url: "https://pypi.org/project/handcrafted/"
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: "pip install -e '.[dev]'"
+test_command: "python -m pytest tests/"
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: ""
+enriched: true
+clone_depth: null
+import_name: null
+"""
+
+
+def _write_handcrafted(registry_dir: Path, name: str, content: str) -> Path:
+    """Write a hand-crafted YAML file directly (no yaml.dump)."""
+    pkg_dir = registry_dir / "packages"
+    pkg_dir.mkdir(parents=True, exist_ok=True)
+    p = pkg_dir / f"{name}.yaml"
+    p.write_text(content, encoding="utf-8")
+    return p
+
+
+class TestBatchSetFieldFormatting(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmpdir = tempfile.TemporaryDirectory()
+        self.registry = Path(self.tmpdir.name)
+
+    def tearDown(self) -> None:
+        self.tmpdir.cleanup()
+
+    def test_set_field_preserves_formatting(self) -> None:
+        _write_handcrafted(self.registry, "handcrafted", HAND_CRAFTED_YAML)
+        result = batch_set_field(
+            self.registry,
+            "timeout",
+            "600",
+            field_type="int",
+            require_all=True,
+            dry_run=False,
+        )
+        self.assertIsInstance(result, OpResult)
+        self.assertEqual(len(result.modified), 1)
+        p = self.registry / "packages" / "handcrafted.yaml"
+        after = p.read_text(encoding="utf-8")
+        # The timeout line should be updated.
+        self.assertIn("timeout: 600\n", after)
+        # All other lines should be byte-identical.
+        before_lines = HAND_CRAFTED_YAML.splitlines(True)
+        after_lines = after.splitlines(True)
+        for i, (bl, al) in enumerate(zip(before_lines, after_lines)):
+            if bl.startswith("timeout:"):
+                continue
+            self.assertEqual(bl, al, f"Line {i} differs: {bl!r} vs {al!r}")
+
+    def test_set_field_null_value(self) -> None:
+        content = HAND_CRAFTED_YAML.replace("timeout: null", "timeout: 300")
+        _write_handcrafted(self.registry, "pkg", content)
+        result = batch_set_field(
+            self.registry,
+            "timeout",
+            "null",
+            field_type="int",
+            require_all=True,
+            dry_run=False,
+        )
+        self.assertIsInstance(result, OpResult)
+        self.assertEqual(len(result.modified), 1)
+        p = self.registry / "packages" / "pkg.yaml"
+        after = p.read_text(encoding="utf-8")
+        self.assertIn("timeout: null\n", after)
+
+    def test_set_field_preserves_quoted_strings(self) -> None:
+        _write_handcrafted(self.registry, "quoted", HAND_CRAFTED_YAML)
+        result = batch_set_field(
+            self.registry,
+            "skip",
+            "true",
+            field_type="bool",
+            require_all=True,
+            dry_run=False,
+        )
+        self.assertIsInstance(result, OpResult)
+        p = self.registry / "packages" / "quoted.yaml"
+        after = p.read_text(encoding="utf-8")
+        self.assertIn("skip: true\n", after)
+        # Quoted strings in other fields should be preserved.
+        self.assertIn('repo: "https://github.com/user/handcrafted"\n', after)
+        self.assertIn("install_command: \"pip install -e '.[dev]'\"\n", after)
+
+
 class TestValidateRegistry(unittest.TestCase):
     def setUp(self) -> None:
         self.tmpdir = tempfile.TemporaryDirectory()
