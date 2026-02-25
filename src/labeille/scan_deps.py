@@ -589,6 +589,28 @@ def resolve_imports(
 # ---------------------------------------------------------------------------
 
 
+def _normalize_pip_command(cmd: str) -> str | None:
+    """Extract the part after ``pip install`` from various pip invocations.
+
+    Handles ``pip install``, ``pip3 install``, ``python -m pip install``,
+    ``python3 -m pip install``, and path-qualified pip (e.g.
+    ``/tmp/venv/bin/pip install``).
+
+    Returns the arguments string (everything after ``pip install``), or
+    ``None`` if this isn't a pip install command.
+    """
+    for prefix in (
+        "python -m pip install",
+        "python3 -m pip install",
+        "pip3 install",
+        "pip install",
+    ):
+        if prefix in cmd:
+            idx = cmd.index(prefix) + len(prefix)
+            return cmd[idx:]
+    return None
+
+
 def _parse_install_packages(install_command: str) -> tuple[list[str], list[str]]:
     """Parse package names from an install command string.
 
@@ -603,10 +625,11 @@ def _parse_install_packages(install_command: str) -> tuple[list[str], list[str]]
     # Split on && to handle chained commands.
     for cmd in install_command.split("&&"):
         cmd = cmd.strip()
-        if not cmd.startswith("pip install") and not cmd.startswith("pip3 install"):
+        args = _normalize_pip_command(cmd)
+        if args is None:
             continue
 
-        parts = cmd.split()
+        parts = ["pip", "install"] + args.split()
         skip_next = False
         for i, part in enumerate(parts):
             if skip_next:

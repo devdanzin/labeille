@@ -9,6 +9,7 @@ from labeille.registry import (
     IndexEntry,
     PackageEntry,
     _dict_to_package,
+    _package_to_dict,
     load_index,
     load_package,
     package_exists,
@@ -369,6 +370,62 @@ class TestDictToPackageCoercion(unittest.TestCase):
         logger = logging.getLogger("labeille.registry")
         with self.assertNoLogs(logger, level="DEBUG"):
             _dict_to_package(data)
+
+
+class TestPackageToDictOmitDefaults(unittest.TestCase):
+    def test_omit_defaults_removes_default_fields(self) -> None:
+        """omit_defaults=True removes fields matching PackageEntry defaults."""
+        entry = PackageEntry(
+            package="mypkg",
+            repo="https://github.com/user/mypkg",
+            enriched=True,
+            timeout=300,
+        )
+        data = _package_to_dict(entry, omit_defaults=True)
+        # Non-default fields should be present.
+        self.assertEqual(data["package"], "mypkg")
+        self.assertEqual(data["repo"], "https://github.com/user/mypkg")
+        self.assertTrue(data["enriched"])
+        self.assertEqual(data["timeout"], 300)
+        # Default fields should be absent.
+        self.assertNotIn("notes", data)
+        self.assertNotIn("clone_depth", data)
+        self.assertNotIn("import_name", data)
+        self.assertNotIn("uses_xdist", data)
+
+    def test_omit_defaults_false_includes_all(self) -> None:
+        """omit_defaults=False (default) includes all fields."""
+        entry = PackageEntry(package="mypkg")
+        data = _package_to_dict(entry, omit_defaults=False)
+        self.assertIn("notes", data)
+        self.assertIn("clone_depth", data)
+        self.assertIn("timeout", data)
+        self.assertIn("uses_xdist", data)
+
+    def test_omit_defaults_always_includes_package(self) -> None:
+        """package field is always included even with omit_defaults."""
+        entry = PackageEntry(package="mypkg")
+        data = _package_to_dict(entry, omit_defaults=True)
+        self.assertIn("package", data)
+        self.assertEqual(data["package"], "mypkg")
+
+    def test_default_parameter_is_false(self) -> None:
+        """Default call without omit_defaults includes everything."""
+        entry = PackageEntry(package="mypkg")
+        data = _package_to_dict(entry)
+        self.assertIn("notes", data)
+        self.assertIn("clone_depth", data)
+
+    def test_skip_versions_keys_coerced_with_omit_defaults(self) -> None:
+        """skip_versions keys are coerced to strings even with omit_defaults."""
+        entry = PackageEntry(
+            package="mypkg",
+            skip_versions={"3.15": "broken"},
+        )
+        data = _package_to_dict(entry, omit_defaults=True)
+        self.assertIn("skip_versions", data)
+        self.assertIn("3.15", data["skip_versions"])
+        self.assertIsInstance(list(data["skip_versions"].keys())[0], str)
 
 
 if __name__ == "__main__":

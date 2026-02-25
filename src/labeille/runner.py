@@ -234,21 +234,29 @@ def validate_target_python(python_path: Path) -> str:
 
 
 def check_jit_enabled(python_path: Path) -> bool:
-    """Check if the JIT is enabled in the target Python build."""
+    """Check if the target Python build has JIT support.
+
+    Checks for ``sys.flags.jit`` (CPython 3.15+ with ``--enable-experimental-jit``).
+    Sets ``PYTHON_JIT=1`` so the JIT is active during the check.
+    """
+    script = (
+        "import sys\n"
+        "jit_available = False\n"
+        "try:\n"
+        "    jit_available = bool(getattr(sys.flags, 'jit', False))\n"
+        "except (AttributeError, TypeError):\n"
+        "    pass\n"
+        "print(jit_available)\n"
+    )
     try:
         proc = subprocess.run(
-            [
-                str(python_path),
-                "-c",
-                "import sys; print(hasattr(sys, '_jit') or hasattr(sys, 'flags') "
-                "and getattr(getattr(sys, 'flags', None), 'jit', False))",
-            ],
+            [str(python_path), "-c", script],
             capture_output=True,
             text=True,
             timeout=30,
             env={**os.environ, "PYTHON_JIT": "1", "ASAN_OPTIONS": "detect_leaks=0"},
         )
-        return "True" in proc.stdout
+        return proc.stdout.strip() == "True"
     except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
         return False
 
