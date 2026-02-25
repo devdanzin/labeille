@@ -269,6 +269,15 @@ def run_cmd(
         if venvs_dir is None:
             venvs_dir = work_dir / "venvs"
 
+    # Warn when only one of --repos-dir / --venvs-dir is set: the other
+    # directory will use a temporary path and be cleaned up after the run.
+    if (repos_dir is None) != (venvs_dir is None):
+        missing = "--venvs-dir" if venvs_dir is None else "--repos-dir"
+        click.echo(
+            f"Warning: {missing} is not set; those directories will be temporary.",
+            err=True,
+        )
+
     config = RunnerConfig(
         target_python=target_python,
         registry_dir=registry_dir,

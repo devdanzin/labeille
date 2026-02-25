@@ -220,7 +220,7 @@ def validate_target_python(python_path: Path) -> str:
             capture_output=True,
             text=True,
             timeout=30,
-            env={**os.environ, "ASAN_OPTIONS": "detect_leaks=0"},
+            env=_clean_env(ASAN_OPTIONS="detect_leaks=0"),
         )
     except FileNotFoundError:
         raise RuntimeError(f"Python interpreter not found: {python_path}") from None
@@ -254,7 +254,7 @@ def check_jit_enabled(python_path: Path) -> bool:
             capture_output=True,
             text=True,
             timeout=30,
-            env={**os.environ, "PYTHON_JIT": "1", "ASAN_OPTIONS": "detect_leaks=0"},
+            env=_clean_env(PYTHON_JIT="1", ASAN_OPTIONS="detect_leaks=0"),
         )
         return proc.stdout.strip() == "True"
     except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
@@ -266,9 +266,22 @@ def check_jit_enabled(python_path: Path) -> bool:
 # ---------------------------------------------------------------------------
 
 
+def _clean_env(**overrides: str) -> dict[str, str]:
+    """Build a clean environment dict, stripping Python-specific pollution.
+
+    Removes ``PYTHONHOME`` and ``PYTHONPATH`` which would corrupt the target
+    Python's module resolution if inherited from a conda or custom environment.
+    """
+    env = {**os.environ}
+    env.pop("PYTHONHOME", None)
+    env.pop("PYTHONPATH", None)
+    env.update(overrides)
+    return env
+
+
 def build_env(config: RunnerConfig) -> dict[str, str]:
     """Build the environment dict for test subprocesses."""
-    env = {**os.environ}
+    env = _clean_env()
     env["PYTHON_JIT"] = "1"
     env["PYTHONFAULTHANDLER"] = "1"
     env["PYTHONDONTWRITEBYTECODE"] = "1"
@@ -387,7 +400,7 @@ def create_venv(python_path: Path, venv_dir: Path) -> None:
         text=True,
         timeout=120,
         check=True,
-        env={**os.environ, "ASAN_OPTIONS": "detect_leaks=0"},
+        env=_clean_env(ASAN_OPTIONS="detect_leaks=0"),
     )
     # Ensure pip is available.
     venv_python = venv_dir / "bin" / "python"
@@ -398,7 +411,7 @@ def create_venv(python_path: Path, venv_dir: Path) -> None:
         text=True,
         timeout=120,
         check=False,  # ensurepip may fail on some builds; pip might already exist
-        env={**os.environ, "ASAN_OPTIONS": "detect_leaks=0"},
+        env=_clean_env(ASAN_OPTIONS="detect_leaks=0"),
     )
     if ensurepip_proc.returncode != 0:
         log.debug("ensurepip exited %d (non-fatal)", ensurepip_proc.returncode)
