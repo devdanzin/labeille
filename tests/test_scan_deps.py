@@ -15,6 +15,8 @@ from labeille.registry import PackageEntry
 from labeille.scan_deps import (
     ImportInfo,
     ResolvedDep,
+    _normalize_pip_command,
+    _parse_install_packages,
     build_scan_result,
     compare_with_install_command,
     extract_imports,
@@ -797,6 +799,78 @@ def _make_dep(
         import_files=files or ["test.py"],
         is_conditional=conditional,
     )
+
+
+class TestNormalizePipCommand(unittest.TestCase):
+    def test_pip_install(self) -> None:
+        result = _normalize_pip_command("pip install foo bar")
+        self.assertEqual(result, " foo bar")
+
+    def test_pip3_install(self) -> None:
+        result = _normalize_pip_command("pip3 install foo")
+        self.assertEqual(result, " foo")
+
+    def test_python_m_pip_install(self) -> None:
+        result = _normalize_pip_command("python -m pip install foo bar")
+        self.assertEqual(result, " foo bar")
+
+    def test_python3_m_pip_install(self) -> None:
+        result = _normalize_pip_command("python3 -m pip install baz")
+        self.assertEqual(result, " baz")
+
+    def test_venv_pip_install(self) -> None:
+        result = _normalize_pip_command("/tmp/venv/bin/pip install foo")
+        self.assertEqual(result, " foo")
+
+    def test_non_pip_command(self) -> None:
+        result = _normalize_pip_command("make install")
+        self.assertIsNone(result)
+
+    def test_git_fetch_not_matched(self) -> None:
+        result = _normalize_pip_command("git fetch --tags")
+        self.assertIsNone(result)
+
+
+class TestParseInstallPackages(unittest.TestCase):
+    def test_basic_pip_install(self) -> None:
+        pkgs, extras = _parse_install_packages("pip install foo bar")
+        self.assertEqual(pkgs, ["foo", "bar"])
+        self.assertEqual(extras, [])
+
+    def test_python_m_pip(self) -> None:
+        pkgs, extras = _parse_install_packages("python -m pip install foo bar")
+        self.assertEqual(pkgs, ["foo", "bar"])
+
+    def test_python3_m_pip(self) -> None:
+        pkgs, extras = _parse_install_packages("python3 -m pip install baz")
+        self.assertEqual(pkgs, ["baz"])
+
+    def test_venv_pip(self) -> None:
+        pkgs, extras = _parse_install_packages("/tmp/venv/bin/pip install foo")
+        self.assertEqual(pkgs, ["foo"])
+
+    def test_pip3_install(self) -> None:
+        pkgs, extras = _parse_install_packages("pip3 install foo")
+        self.assertEqual(pkgs, ["foo"])
+
+    def test_chained_with_python_m(self) -> None:
+        cmd = "python -m pip install -e . && python -m pip install pytest mock"
+        pkgs, extras = _parse_install_packages(cmd)
+        self.assertIn("pytest", pkgs)
+        self.assertIn("mock", pkgs)
+
+    def test_non_pip_command_ignored(self) -> None:
+        pkgs, extras = _parse_install_packages("make install && pip install foo")
+        self.assertEqual(pkgs, ["foo"])
+
+    def test_editable_install_with_extras(self) -> None:
+        pkgs, extras = _parse_install_packages("pip install -e '.[test]'")
+        self.assertEqual(pkgs, [])
+        self.assertTrue(len(extras) > 0)
+
+    def test_version_specifiers(self) -> None:
+        pkgs, extras = _parse_install_packages("pip install foo>=1.0 bar==2.0")
+        self.assertEqual(pkgs, ["foo", "bar"])
 
 
 if __name__ == "__main__":

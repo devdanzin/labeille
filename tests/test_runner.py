@@ -22,6 +22,7 @@ from labeille.runner import (
     _resolve_dirs,
     append_result,
     build_env,
+    check_jit_enabled,
     create_run_dir,
     extract_python_minor_version,
     filter_packages,
@@ -118,6 +119,39 @@ class TestBuildEnv(unittest.TestCase):
         )
         env = build_env(config)
         self.assertEqual(env["PYTHON_JIT_VERBOSE"], "1")
+
+
+class TestCheckJitEnabled(unittest.TestCase):
+    @patch("labeille.runner.subprocess.run")
+    def test_returns_true_when_jit_available(self, mock_run: Any) -> None:
+        mock_run.return_value = MagicMock(stdout="True\n")
+        self.assertTrue(check_jit_enabled(Path("/usr/bin/python3")))
+
+    @patch("labeille.runner.subprocess.run")
+    def test_returns_false_when_no_jit(self, mock_run: Any) -> None:
+        mock_run.return_value = MagicMock(stdout="False\n")
+        self.assertFalse(check_jit_enabled(Path("/usr/bin/python3")))
+
+    @patch("labeille.runner.subprocess.run")
+    def test_returns_false_on_timeout(self, mock_run: Any) -> None:
+        mock_run.side_effect = subprocess.TimeoutExpired("python", 30)
+        self.assertFalse(check_jit_enabled(Path("/usr/bin/python3")))
+
+    @patch("labeille.runner.subprocess.run")
+    def test_returns_false_on_file_not_found(self, mock_run: Any) -> None:
+        mock_run.side_effect = FileNotFoundError()
+        self.assertFalse(check_jit_enabled(Path("/nonexistent/python")))
+
+    @patch("labeille.runner.subprocess.run")
+    def test_exact_match_not_substring(self, mock_run: Any) -> None:
+        """'TrueColor' in stdout should not trigger a True result."""
+        mock_run.return_value = MagicMock(stdout="TrueColor\n")
+        self.assertFalse(check_jit_enabled(Path("/usr/bin/python3")))
+
+    @patch("labeille.runner.subprocess.run")
+    def test_returns_false_on_empty_stdout(self, mock_run: Any) -> None:
+        mock_run.return_value = MagicMock(stdout="")
+        self.assertFalse(check_jit_enabled(Path("/usr/bin/python3")))
 
 
 class TestRunDirManagement(unittest.TestCase):

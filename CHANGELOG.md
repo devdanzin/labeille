@@ -24,6 +24,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - `_dict_to_package` coerces `notes: null` to empty string for type safety.
 - `_dict_to_package` logs unknown YAML keys at debug level to surface typos.
 - `validate_registry` checks `uses_xdist`/`-p no:xdist` consistency in both directions.
+- `check_jit_enabled` now uses explicit `sys.flags.jit` check instead of nonexistent `sys._jit`, with exact stdout comparison.
+- `_parse_install_packages` now handles `python -m pip install`, `python3 -m pip install`, and path-qualified pip invocations.
+- `_package_to_dict` accepts `omit_defaults` parameter to exclude default-valued fields from output.
 
 ### Added
 - 350 enriched package configurations with full test commands, install commands, and metadata.

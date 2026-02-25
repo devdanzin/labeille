@@ -79,16 +79,31 @@ class Index:
 # ---------------------------------------------------------------------------
 
 
-def _package_to_dict(entry: PackageEntry) -> dict[str, Any]:
+def _package_to_dict(
+    entry: PackageEntry,
+    *,
+    omit_defaults: bool = False,
+) -> dict[str, Any]:
     """Convert a PackageEntry to an ordered dict suitable for YAML output.
 
     Ensures ``skip_versions`` keys are strings so that YAML round-trips
     correctly (prevents PyYAML from emitting bare floats like ``3.15``).
+
+    Args:
+        entry: The package entry to convert.
+        omit_defaults: If True, omit fields whose values match the defaults
+            for a freshly-created ``PackageEntry(package=...)``.  The
+            ``package`` field is always included.
     """
     data = asdict(entry)
     sv = data.get("skip_versions")
     if isinstance(sv, dict):
         data["skip_versions"] = {str(k): str(v) for k, v in sv.items()}
+
+    if omit_defaults:
+        default_dict = asdict(PackageEntry(package=entry.package))
+        data = {k: v for k, v in data.items() if k == "package" or v != default_dict.get(k)}
+
     return data
 
 
