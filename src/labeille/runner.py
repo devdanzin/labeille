@@ -404,6 +404,64 @@ def create_venv(python_path: Path, venv_dir: Path) -> None:
         log.debug("ensurepip exited %d (non-fatal)", ensurepip_proc.returncode)
 
 
+def _run_in_process_group(
+    cmd: str,
+    *,
+    cwd: str,
+    env: dict[str, str],
+    timeout: int,
+) -> subprocess.CompletedProcess[str]:
+    """Run a command in its own process group.
+
+    On timeout, kills the entire process group (not just the immediate
+    child) to prevent orphaned grandchild processes from accumulating.
+
+    Args:
+        cmd: The shell command to run.
+        cwd: Working directory.
+        env: Environment variables.
+        timeout: Timeout in seconds.
+
+    Returns:
+        A :class:`~subprocess.CompletedProcess` with stdout, stderr, and returncode.
+
+    Raises:
+        subprocess.TimeoutExpired: If the command exceeds the timeout.
+            The exception's ``stdout`` and ``stderr`` attributes contain any
+            partial output captured before the timeout.
+    """
+    import signal as signal_module
+
+    proc = subprocess.Popen(
+        cmd,
+        shell=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        cwd=cwd,
+        env=env,
+        start_new_session=True,
+    )
+    try:
+        stdout, stderr = proc.communicate(timeout=timeout)
+        return subprocess.CompletedProcess(proc.args, proc.returncode, stdout, stderr)
+    except subprocess.TimeoutExpired:
+        # Kill the entire process group.
+        try:
+            pgid = os.getpgid(proc.pid)
+            os.killpg(pgid, signal_module.SIGKILL)
+        except (ProcessLookupError, PermissionError, OSError):
+            # Process already exited or we can't kill it.
+            pass
+        # Wait for the process to actually terminate and collect output.
+        try:
+            stdout, stderr = proc.communicate(timeout=5)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            stdout, stderr = proc.communicate()
+        raise subprocess.TimeoutExpired(cmd, timeout, output=stdout, stderr=stderr)
+
+
 def install_package(
     venv_python: Path,
     install_command: str,
@@ -414,7 +472,8 @@ def install_package(
     """Install a package in the venv.
 
     The *install_command* is interpreted as a shell command with ``pip`` and
-    ``python`` replaced by the venv paths.
+    ``python`` replaced by the venv paths.  Runs in its own process group
+    so the entire process tree is killed on timeout.
 
     Returns:
         The completed process.
@@ -431,15 +490,7 @@ def install_package(
         cmd = f"{venv_pip} {cmd[4:]}"
 
     log.debug("Install command (resolved): %s", cmd)
-    return subprocess.run(
-        cmd,
-        shell=True,
-        capture_output=True,
-        text=True,
-        cwd=str(cwd),
-        timeout=timeout,
-        env=env,
-    )
+    return _run_in_process_group(cmd, cwd=str(cwd), env=env, timeout=timeout)
 
 
 def run_test_command(
@@ -450,6 +501,9 @@ def run_test_command(
     timeout: int,
 ) -> subprocess.CompletedProcess[str]:
     """Run a test command in the venv.
+
+    Runs in its own process group so the entire process tree is killed
+    on timeout.
 
     Returns:
         The completed process.
@@ -466,15 +520,7 @@ def run_test_command(
     run_env = {**env, "PATH": f"{venv_bin}:{env.get('PATH', '')}"}
 
     log.debug("Test command (resolved): %s", cmd)
-    return subprocess.run(
-        cmd,
-        shell=True,
-        capture_output=True,
-        text=True,
-        cwd=str(cwd),
-        timeout=timeout,
-        env=run_env,
-    )
+    return _run_in_process_group(cmd, cwd=str(cwd), env=run_env, timeout=timeout)
 
 
 def get_installed_packages(venv_python: Path, env: dict[str, str]) -> dict[str, str]:
