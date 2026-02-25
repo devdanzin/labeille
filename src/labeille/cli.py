@@ -191,6 +191,21 @@ def resolve(
     help="Base directory for repos and venvs (sets --repos-dir and --venvs-dir).",
 )
 @click.option(
+    "--clone-depth",
+    type=int,
+    default=None,
+    help=(
+        "Git clone depth (overrides per-package clone_depth). "
+        "Use 0 or --no-shallow for full clones."
+    ),
+)
+@click.option(
+    "--no-shallow",
+    is_flag=True,
+    default=False,
+    help="Disable shallow clones (equivalent to --clone-depth=0).",
+)
+@click.option(
     "--workers",
     type=int,
     default=1,
@@ -220,6 +235,8 @@ def run_cmd(
     refresh_venvs: bool,
     repos_dir: Path | None,
     venvs_dir: Path | None,
+    clone_depth: int | None,
+    no_shallow: bool,
     work_dir: Path | None,
     workers: int,
 ) -> None:
@@ -254,10 +271,22 @@ def run_cmd(
         key, _, value = pair.partition("=")
         env_overrides[key] = value
 
-    # Parse packages filter.
+    # Parse packages filter (supports name@revision syntax).
     packages_filter: list[str] | None = None
+    revision_overrides: dict[str, str] = {}
     if packages_csv:
-        packages_filter = [p.strip() for p in packages_csv.split(",") if p.strip()]
+        from labeille.runner import parse_package_specs
+
+        packages_filter, revision_overrides = parse_package_specs(packages_csv)
+        if not packages_filter:
+            packages_filter = None
+
+    # Resolve clone depth: --no-shallow wins, then --clone-depth.
+    effective_clone_depth: int | None = None
+    if no_shallow:
+        effective_clone_depth = 0
+    elif clone_depth is not None:
+        effective_clone_depth = clone_depth
 
     # Generate run ID.
     if run_id is None:
@@ -302,6 +331,8 @@ def run_cmd(
         repos_dir=repos_dir,
         venvs_dir=venvs_dir,
         cli_args=sys.argv[1:],
+        clone_depth_override=effective_clone_depth,
+        revision_overrides=revision_overrides,
     )
 
     click.echo(f"Run ID: {run_id}")

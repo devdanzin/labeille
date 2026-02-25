@@ -77,7 +77,30 @@ labeille run --target-python /path/to/jit-python --stop-after-crash 1
 
 # Run tests in parallel (4 workers)
 labeille run --target-python /path/to/jit-python --workers 4
+
+# Test a specific package at a specific git revision
+labeille run --target-python /path/to/jit-python \
+    --packages=requests@abc1234 --no-shallow
 ```
+
+### Testing specific revisions
+
+To test a package at a specific git revision (useful for reproducing
+crashes or bisecting regressions):
+
+```bash
+labeille run --target-python /path/to/python \
+    --packages=requests@abc1234 --no-shallow
+```
+
+The `@revision` accepts any git ref: commit hashes, branch names,
+tags, or relative refs like `HEAD~10`. Use `--no-shallow` (or
+`--clone-depth=0`) when the target revision may be beyond the default
+shallow clone depth.
+
+Revision overrides are ephemeral — they apply to the current run only
+and are not written back to the registry. The exact CLI invocation is
+recorded in `run_meta.json` for reproducibility.
 
 ## How It Works
 

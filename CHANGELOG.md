@@ -42,6 +42,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - `pull_repo` uses `git fetch` + `reset --hard FETCH_HEAD` + `clean -fdx` instead of `git pull --ff-only`, handling dirty working trees left by test suites.
 
 ### Added
+- `--clone-depth` and `--no-shallow` CLI options to override per-package clone depth; `--clone-depth=0` or `--no-shallow` for full clones.
+- Per-package git revision support via `--packages=pkg@revision` syntax; accepts commit hashes, branches, tags, or relative refs like `HEAD~10`.
+- `checkout_revision` helper for checking out specific git refs after cloning.
+- `parse_package_specs` function for parsing `name@revision` package spec syntax.
+- `requested_revision` field in `PackageResult` to distinguish explicitly requested revisions from HEAD.
 - 350 enriched package configurations with full test commands, install commands, and metadata.
 - Applied `skip-to-skip-versions` migration on 36 packages (PyO3, maturin, Cython, JIT crashes).
 - Config fixes for python-dateutil, pyyaml, msgpack, hatchling, openai, numpy, pytz, sqlalchemy, and 3 archived google packages.

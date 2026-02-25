@@ -388,6 +388,106 @@ class TestRunIntegration(unittest.TestCase):
         self.assertIn("--target-python", stored)
         self.assertIn(target, stored)
 
+    def test_no_shallow_flag(self) -> None:
+        """--no-shallow sets clone_depth_override=0 in the config."""
+        save_index(Index(), self.registry_dir)
+
+        import sys
+
+        target = sys.executable
+
+        runner = CliRunner()
+        result = runner.invoke(
+            main,
+            [
+                "run",
+                "--dry-run",
+                "--target-python",
+                target,
+                "--registry-dir",
+                str(self.registry_dir),
+                "--results-dir",
+                str(self.results_dir),
+                "--run-id",
+                "test-noshallow",
+                "--no-shallow",
+                "--log-file",
+                str(self.base / "run.log"),
+            ],
+        )
+        self.assertEqual(result.exit_code, 0, msg=result.output)
+
+    def test_clone_depth_option(self) -> None:
+        """--clone-depth N is accepted."""
+        save_index(Index(), self.registry_dir)
+
+        import sys
+
+        target = sys.executable
+
+        runner = CliRunner()
+        result = runner.invoke(
+            main,
+            [
+                "run",
+                "--dry-run",
+                "--target-python",
+                target,
+                "--registry-dir",
+                str(self.registry_dir),
+                "--results-dir",
+                str(self.results_dir),
+                "--run-id",
+                "test-clonedepth",
+                "--clone-depth",
+                "10",
+                "--log-file",
+                str(self.base / "run.log"),
+            ],
+        )
+        self.assertEqual(result.exit_code, 0, msg=result.output)
+
+    def test_packages_with_revision_parsed(self) -> None:
+        """--packages=pkg@rev parses revision overrides."""
+        pkg = PackageEntry(
+            package="fakepkg",
+            repo="https://github.com/user/fakepkg",
+            extension_type="pure",
+            test_command="python -m pytest",
+            install_command="pip install -e .",
+        )
+        save_package(pkg, self.registry_dir)
+        index = Index(packages=[IndexEntry(name="fakepkg", download_count=1000)])
+        save_index(index, self.registry_dir)
+
+        import sys
+
+        target = sys.executable
+
+        runner = CliRunner()
+        result = runner.invoke(
+            main,
+            [
+                "run",
+                "--dry-run",
+                "--target-python",
+                target,
+                "--registry-dir",
+                str(self.registry_dir),
+                "--results-dir",
+                str(self.results_dir),
+                "--run-id",
+                "test-revision",
+                "--packages",
+                "fakepkg@abc123",
+                "--log-file",
+                str(self.base / "run.log"),
+            ],
+        )
+        self.assertEqual(result.exit_code, 0, msg=result.output)
+        # In dry-run mode the package should be listed as skipped.
+        self.assertIn("Skipped:", result.output)
+
 
 if __name__ == "__main__":
     unittest.main()

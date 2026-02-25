@@ -67,6 +67,8 @@ class RunnerConfig:
     target_python_version: str = ""
     workers: int = 1
     cli_args: list[str] = field(default_factory=list)
+    clone_depth_override: int | None = None
+    revision_overrides: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
@@ -88,6 +90,7 @@ class PackageResult:
     stderr_tail: str = ""
     installed_dependencies: dict[str, str] = field(default_factory=dict)
     error_message: str | None = None
+    requested_revision: str | None = None
     timestamp: str = ""
 
 
@@ -181,6 +184,7 @@ def append_result(run_dir: Path, result: PackageResult) -> None:
         "stderr_tail": result.stderr_tail,
         "installed_dependencies": result.installed_dependencies,
         "error_message": result.error_message,
+        "requested_revision": result.requested_revision,
         "timestamp": result.timestamp,
     }
     with open(run_dir / "results.jsonl", "a", encoding="utf-8") as f:
@@ -631,6 +635,89 @@ def check_import(
 
 
 # ---------------------------------------------------------------------------
+# Package spec parsing and revision checkout
+# ---------------------------------------------------------------------------
+
+
+def parse_package_specs(
+    raw: str,
+) -> tuple[list[str], dict[str, str]]:
+    """Parse a comma-separated package spec string.
+
+    Each spec is either ``name`` or ``name@revision``.
+
+    Returns:
+        A tuple of (package_names, revision_overrides) where
+        revision_overrides maps package name to revision string.
+
+    Examples::
+
+        "requests,click" → (["requests", "click"], {})
+        "requests@abc123,click" → (["requests", "click"], {"requests": "abc123"})
+        "numpy@HEAD~5" → (["numpy"], {"numpy": "HEAD~5"})
+    """
+    names: list[str] = []
+    revisions: dict[str, str] = {}
+    for spec in raw.split(","):
+        spec = spec.strip()
+        if not spec:
+            continue
+        if "@" in spec:
+            name, rev = spec.split("@", 1)
+            name = name.strip()
+            rev = rev.strip()
+            if name and rev:
+                names.append(name)
+                revisions[name] = rev
+            elif name:
+                names.append(name)
+        else:
+            names.append(spec)
+    return names, revisions
+
+
+def checkout_revision(repo_dir: Path, revision: str) -> str | None:
+    """Checkout a specific git revision and return the resulting HEAD hash.
+
+    Args:
+        repo_dir: Path to the git repository.
+        revision: Any git ref — commit hash, branch, tag, ``HEAD~N``.
+
+    Returns:
+        The full commit hash after checkout, or ``None`` on failure.
+    """
+    proc = subprocess.run(
+        ["git", "checkout", revision],
+        capture_output=True,
+        text=True,
+        cwd=str(repo_dir),
+        timeout=60,
+        check=False,
+    )
+    if proc.returncode != 0:
+        log.warning(
+            "git checkout %s failed in %s: %s. "
+            "If using a revision beyond the clone depth, try --no-shallow.",
+            revision,
+            repo_dir,
+            proc.stderr.strip(),
+        )
+        return None
+
+    # Get the resolved commit hash.
+    rev_proc = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        capture_output=True,
+        text=True,
+        cwd=str(repo_dir),
+        timeout=10,
+    )
+    if rev_proc.returncode == 0:
+        return rev_proc.stdout.strip()
+    return None
+
+
+# ---------------------------------------------------------------------------
 # Per-package runner
 # ---------------------------------------------------------------------------
 
@@ -747,6 +834,7 @@ def _run_package_inner(
     if repo_existed:
         log.info("Reusing repo for %s at %s (pulling)", pkg.package, repo_dir)
         try:
+            # Commit hash is captured from pull_repo return value.
             result.git_revision = pull_repo(repo_dir)
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as exc:
             log.warning("Pull failed for %s, re-cloning: %s", pkg.package, exc)
@@ -754,9 +842,16 @@ def _run_package_inner(
             repo_existed = False
 
     if not repo_existed:
+        # CLI override takes precedence over per-package YAML value.
+        depth = config.clone_depth_override
+        if depth is None:
+            depth = pkg.clone_depth  # from registry YAML
+        if depth == 0:
+            depth = None  # 0 means full clone (no --depth flag)
         log.info("Cloning %s from %s to %s", pkg.package, pkg.repo, repo_dir)
         try:
-            result.git_revision = clone_repo(pkg.repo, repo_dir, clone_depth=pkg.clone_depth)
+            # Commit hash is captured from clone_repo return value.
+            result.git_revision = clone_repo(pkg.repo, repo_dir, clone_depth=depth)
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as exc:
             result.status = "clone_error"
             result.error_message = f"Clone failed: {exc}"
@@ -765,6 +860,18 @@ def _run_package_inner(
 
     clone_dur = round(time.monotonic() - clone_start, 2)
     log.debug("Git revision for %s: %s (%.2fs)", pkg.package, result.git_revision, clone_dur)
+
+    # --- Checkout specific revision if requested ---
+    revision = config.revision_overrides.get(pkg.package)
+    if revision:
+        log.info("Checking out revision %s for %s", revision, pkg.package)
+        commit = checkout_revision(repo_dir, revision)
+        if commit is None:
+            result.status = "error"
+            result.error_message = f"Failed to checkout revision {revision}"
+            return result
+        result.git_revision = commit
+        result.requested_revision = revision
 
     # --- Create or reuse venv ---
     if _cancelled():

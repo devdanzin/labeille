@@ -25,11 +25,13 @@ from labeille.runner import (
     append_result,
     build_env,
     check_jit_enabled,
+    checkout_revision,
     create_run_dir,
     extract_python_minor_version,
     filter_packages,
     get_package_version,
     load_completed_packages,
+    parse_package_specs,
     pull_repo,
     run_all,
     run_package,
@@ -1809,6 +1811,352 @@ class TestPullRepo(unittest.TestCase):
         mock_run.side_effect = side_effect
         rev = pull_repo(Path("/tmp/repo"))
         self.assertEqual(rev, "ghi789")
+
+
+class TestParsePackageSpecs(unittest.TestCase):
+    def test_simple(self) -> None:
+        names, revs = parse_package_specs("requests,click")
+        self.assertEqual(names, ["requests", "click"])
+        self.assertEqual(revs, {})
+
+    def test_with_revision(self) -> None:
+        names, revs = parse_package_specs("requests@abc123,click")
+        self.assertEqual(names, ["requests", "click"])
+        self.assertEqual(revs, {"requests": "abc123"})
+
+    def test_head_tilde(self) -> None:
+        names, revs = parse_package_specs("numpy@HEAD~5")
+        self.assertEqual(names, ["numpy"])
+        self.assertEqual(revs, {"numpy": "HEAD~5"})
+
+    def test_all_with_revisions(self) -> None:
+        names, revs = parse_package_specs("a@rev1,b@rev2")
+        self.assertEqual(names, ["a", "b"])
+        self.assertEqual(revs, {"a": "rev1", "b": "rev2"})
+
+    def test_empty_revision_ignored(self) -> None:
+        """Empty revision after @ is ignored — name is still included."""
+        names, revs = parse_package_specs("a@,b")
+        self.assertEqual(names, ["a", "b"])
+        self.assertEqual(revs, {})
+
+    def test_empty_string(self) -> None:
+        names, revs = parse_package_specs("")
+        self.assertEqual(names, [])
+        self.assertEqual(revs, {})
+
+    def test_whitespace_handling(self) -> None:
+        names, revs = parse_package_specs(" a @ rev1 , b ")
+        self.assertEqual(names, ["a", "b"])
+        self.assertEqual(revs, {"a": "rev1"})
+
+
+class TestCheckoutRevision(unittest.TestCase):
+    @patch("labeille.runner.subprocess.run")
+    def test_success(self, mock_run: MagicMock) -> None:
+        """Successful checkout returns the resolved commit hash."""
+
+        def side_effect(*args: Any, **kwargs: Any) -> MagicMock:
+            cmd = args[0]
+            result = MagicMock()
+            result.returncode = 0
+            result.stdout = ""
+            result.stderr = ""
+            if cmd[0:2] == ["git", "checkout"]:
+                pass
+            elif cmd[0:3] == ["git", "rev-parse", "HEAD"]:
+                result.stdout = "abc123full\n"
+            return result
+
+        mock_run.side_effect = side_effect
+        commit = checkout_revision(Path("/tmp/repo"), "abc123")
+        self.assertEqual(commit, "abc123full")
+
+    @patch("labeille.runner.subprocess.run")
+    def test_failure(self, mock_run: MagicMock) -> None:
+        """Failed checkout returns None."""
+        result = MagicMock()
+        result.returncode = 128
+        result.stderr = "error: pathspec 'badref' did not match"
+        mock_run.return_value = result
+        commit = checkout_revision(Path("/tmp/repo"), "badref")
+        self.assertIsNone(commit)
+
+
+class TestCommitRecording(unittest.TestCase):
+    """Verify the git_revision field flows end-to-end through the pipeline."""
+
+    def setUp(self) -> None:
+        self.tmpdir = tempfile.TemporaryDirectory()
+        self.base = Path(self.tmpdir.name)
+        self.config = _make_config(self.base)
+        self.run_dir = create_run_dir(self.config.results_dir, self.config.run_id)
+        self.env = build_env(self.config)
+
+    def tearDown(self) -> None:
+        self.tmpdir.cleanup()
+
+    @patch("labeille.runner.run_test_command")
+    @patch("labeille.runner.get_installed_packages")
+    @patch("labeille.runner.check_import")
+    @patch("labeille.runner.install_package")
+    @patch("labeille.runner.create_venv")
+    @patch("labeille.runner.clone_repo")
+    def test_result_includes_commit_hash(
+        self,
+        mock_clone: MagicMock,
+        mock_venv: MagicMock,
+        mock_install: MagicMock,
+        mock_import: MagicMock,
+        mock_get_pkgs: MagicMock,
+        mock_test: MagicMock,
+    ) -> None:
+        """Commit hash from clone_repo flows into JSONL result."""
+        mock_clone.return_value = "abc1234deadbeef"
+        mock_install.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_import.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_get_pkgs.return_value = {}
+        mock_test.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="ok\n", stderr=""
+        )
+        pkg = _make_package()
+        result = run_package(pkg, self.config, self.run_dir, self.env)
+        self.assertEqual(result.git_revision, "abc1234deadbeef")
+
+        # Verify it's written to JSONL.
+        append_result(self.run_dir, result)
+        jsonl_file = self.run_dir / "results.jsonl"
+        data = json.loads(jsonl_file.read_text().strip())
+        self.assertEqual(data["git_revision"], "abc1234deadbeef")
+
+
+class TestCloneDepthOverride(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmpdir = tempfile.TemporaryDirectory()
+        self.base = Path(self.tmpdir.name)
+        self.config = _make_config(self.base)
+        self.config.repos_dir = self.base / "repos"
+        self.config.venvs_dir = self.base / "venvs"
+        self.run_dir = create_run_dir(self.config.results_dir, self.config.run_id)
+        self.env = build_env(self.config)
+
+    def tearDown(self) -> None:
+        self.tmpdir.cleanup()
+
+    @patch("labeille.runner.run_test_command")
+    @patch("labeille.runner.get_installed_packages")
+    @patch("labeille.runner.check_import")
+    @patch("labeille.runner.install_package")
+    @patch("labeille.runner.create_venv")
+    @patch("labeille.runner.clone_repo")
+    def test_clone_depth_override_takes_precedence(
+        self,
+        mock_clone: MagicMock,
+        mock_venv: MagicMock,
+        mock_install: MagicMock,
+        mock_import: MagicMock,
+        mock_get_pkgs: MagicMock,
+        mock_test: MagicMock,
+    ) -> None:
+        """CLI clone_depth_override takes precedence over package clone_depth."""
+        self.config.clone_depth_override = 5
+        mock_clone.return_value = "abc1234"
+        mock_install.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_import.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_get_pkgs.return_value = {}
+        mock_test.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="ok\n", stderr=""
+        )
+        pkg = _make_package(clone_depth=1)
+        run_package(pkg, self.config, self.run_dir, self.env)
+        _, kwargs = mock_clone.call_args
+        self.assertEqual(kwargs.get("clone_depth"), 5)
+
+    @patch("labeille.runner.run_test_command")
+    @patch("labeille.runner.get_installed_packages")
+    @patch("labeille.runner.check_import")
+    @patch("labeille.runner.install_package")
+    @patch("labeille.runner.create_venv")
+    @patch("labeille.runner.clone_repo")
+    def test_clone_depth_none_uses_package_value(
+        self,
+        mock_clone: MagicMock,
+        mock_venv: MagicMock,
+        mock_install: MagicMock,
+        mock_import: MagicMock,
+        mock_get_pkgs: MagicMock,
+        mock_test: MagicMock,
+    ) -> None:
+        """clone_depth_override=None falls back to package clone_depth."""
+        self.config.clone_depth_override = None
+        mock_clone.return_value = "abc1234"
+        mock_install.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_import.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_get_pkgs.return_value = {}
+        mock_test.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="ok\n", stderr=""
+        )
+        pkg = _make_package(clone_depth=3)
+        run_package(pkg, self.config, self.run_dir, self.env)
+        _, kwargs = mock_clone.call_args
+        self.assertEqual(kwargs.get("clone_depth"), 3)
+
+    @patch("labeille.runner.run_test_command")
+    @patch("labeille.runner.get_installed_packages")
+    @patch("labeille.runner.check_import")
+    @patch("labeille.runner.install_package")
+    @patch("labeille.runner.create_venv")
+    @patch("labeille.runner.clone_repo")
+    def test_clone_depth_zero_means_full_clone(
+        self,
+        mock_clone: MagicMock,
+        mock_venv: MagicMock,
+        mock_install: MagicMock,
+        mock_import: MagicMock,
+        mock_get_pkgs: MagicMock,
+        mock_test: MagicMock,
+    ) -> None:
+        """clone_depth_override=0 means full clone (no --depth flag)."""
+        self.config.clone_depth_override = 0
+        mock_clone.return_value = "abc1234"
+        mock_install.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_import.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_get_pkgs.return_value = {}
+        mock_test.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="ok\n", stderr=""
+        )
+        pkg = _make_package(clone_depth=10)
+        run_package(pkg, self.config, self.run_dir, self.env)
+        _, kwargs = mock_clone.call_args
+        # depth=0 is converted to None (full clone).
+        self.assertIsNone(kwargs.get("clone_depth"))
+
+
+class TestRevisionOverride(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmpdir = tempfile.TemporaryDirectory()
+        self.base = Path(self.tmpdir.name)
+        self.config = _make_config(self.base)
+        self.config.repos_dir = self.base / "repos"
+        self.config.venvs_dir = self.base / "venvs"
+        self.run_dir = create_run_dir(self.config.results_dir, self.config.run_id)
+        self.env = build_env(self.config)
+
+    def tearDown(self) -> None:
+        self.tmpdir.cleanup()
+
+    @patch("labeille.runner.checkout_revision")
+    @patch("labeille.runner.run_test_command")
+    @patch("labeille.runner.get_installed_packages")
+    @patch("labeille.runner.check_import")
+    @patch("labeille.runner.install_package")
+    @patch("labeille.runner.create_venv")
+    @patch("labeille.runner.clone_repo")
+    def test_run_single_package_with_revision(
+        self,
+        mock_clone: MagicMock,
+        mock_venv: MagicMock,
+        mock_install: MagicMock,
+        mock_import: MagicMock,
+        mock_get_pkgs: MagicMock,
+        mock_test: MagicMock,
+        mock_checkout: MagicMock,
+    ) -> None:
+        """Revision override triggers checkout and records requested_revision."""
+        self.config.revision_overrides = {"testpkg": "abc123"}
+        mock_clone.return_value = "original_head"
+        mock_checkout.return_value = "abc123fullhash"
+        mock_install.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_import.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_get_pkgs.return_value = {}
+        mock_test.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="ok\n", stderr=""
+        )
+        pkg = _make_package()
+        result = run_package(pkg, self.config, self.run_dir, self.env)
+        self.assertEqual(result.status, "pass")
+        self.assertEqual(result.git_revision, "abc123fullhash")
+        self.assertEqual(result.requested_revision, "abc123")
+        mock_checkout.assert_called_once()
+
+    @patch("labeille.runner.checkout_revision")
+    @patch("labeille.runner.run_test_command")
+    @patch("labeille.runner.get_installed_packages")
+    @patch("labeille.runner.check_import")
+    @patch("labeille.runner.install_package")
+    @patch("labeille.runner.create_venv")
+    @patch("labeille.runner.clone_repo")
+    def test_run_single_package_checkout_fails(
+        self,
+        mock_clone: MagicMock,
+        mock_venv: MagicMock,
+        mock_install: MagicMock,
+        mock_import: MagicMock,
+        mock_get_pkgs: MagicMock,
+        mock_test: MagicMock,
+        mock_checkout: MagicMock,
+    ) -> None:
+        """Failed checkout sets error status."""
+        self.config.revision_overrides = {"testpkg": "badref"}
+        mock_clone.return_value = "original_head"
+        mock_checkout.return_value = None
+        pkg = _make_package()
+        result = run_package(pkg, self.config, self.run_dir, self.env)
+        self.assertEqual(result.status, "error")
+        self.assertIn("Failed to checkout revision badref", result.error_message or "")
+        mock_test.assert_not_called()
+
+    @patch("labeille.runner.run_test_command")
+    @patch("labeille.runner.get_installed_packages")
+    @patch("labeille.runner.check_import")
+    @patch("labeille.runner.install_package")
+    @patch("labeille.runner.create_venv")
+    @patch("labeille.runner.clone_repo")
+    def test_no_revision_override_skips_checkout(
+        self,
+        mock_clone: MagicMock,
+        mock_venv: MagicMock,
+        mock_install: MagicMock,
+        mock_import: MagicMock,
+        mock_get_pkgs: MagicMock,
+        mock_test: MagicMock,
+    ) -> None:
+        """Without revision override, no checkout happens and requested_revision is None."""
+        mock_clone.return_value = "abc1234"
+        mock_install.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_import.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_get_pkgs.return_value = {}
+        mock_test.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="ok\n", stderr=""
+        )
+        pkg = _make_package()
+        result = run_package(pkg, self.config, self.run_dir, self.env)
+        self.assertEqual(result.status, "pass")
+        self.assertIsNone(result.requested_revision)
 
 
 if __name__ == "__main__":

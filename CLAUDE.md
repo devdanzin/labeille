@@ -117,5 +117,13 @@ Update index after editing package files: `load_index()` → `update_index_from_
 - Each migration runs once — re-application is blocked with the original date shown.
 - Add new migrations by decorating a function with `@register_migration(name, description)` in `migrations.py`.
 
+## Investigating a crash at a specific revision
+
+If a crash was found at commit abc123:
+1. Reproduce: `labeille run --packages=mypkg@abc123 --no-shallow ...`
+2. Check if HEAD still crashes: `labeille run --packages=mypkg ...`
+3. If HEAD doesn't crash, the package fixed the issue.
+4. If HEAD still crashes, the issue persists — file upstream or investigate the JIT side.
+
 ## Workflow
 - Use `/task-workflow <description>` for the full issue → branch → code → test → commit → PR → merge cycle
