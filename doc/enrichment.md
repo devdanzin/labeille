@@ -638,9 +638,10 @@ grep "enriched: false" registry/index.yaml
   For ASAN builds, `--workers 2-3` is the practical limit. For non-ASAN
   builds, `--workers 4-8` works well on most machines.
 
-- **Check for orphaned processes after killing labeille.** If you interrupt a
-  labeille run, pytest subprocesses may survive and consume significant memory.
-  Check with `ps aux | grep pytest` and clean up as needed.
+- **Check for orphaned processes after interrupting labeille.** Timeouts now
+  kill the entire process group automatically. However, if you interrupt
+  labeille itself (Ctrl+C), pytest subprocesses may survive and consume
+  significant memory. Check with `ps aux | grep pytest` and clean up as needed.
 
 - **Verify YAML after every edit.** One broken YAML file blocks all packages.
   A quick `python -c "import yaml; yaml.safe_load(open('file.yaml'))"` saves

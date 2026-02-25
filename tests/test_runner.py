@@ -20,6 +20,7 @@ from labeille.runner import (
     PackageResult,
     RunnerConfig,
     _resolve_dirs,
+    _run_in_process_group,
     append_result,
     build_env,
     check_jit_enabled,
@@ -152,6 +153,113 @@ class TestCheckJitEnabled(unittest.TestCase):
     def test_returns_false_on_empty_stdout(self, mock_run: Any) -> None:
         mock_run.return_value = MagicMock(stdout="")
         self.assertFalse(check_jit_enabled(Path("/usr/bin/python3")))
+
+
+class TestRunInProcessGroup(unittest.TestCase):
+    @patch("labeille.runner.subprocess.Popen")
+    def test_success_returns_completed_process(self, mock_popen: Any) -> None:
+        proc = MagicMock()
+        proc.communicate.return_value = ("stdout output", "stderr output")
+        proc.returncode = 0
+        proc.args = "echo hello"
+        mock_popen.return_value = proc
+
+        result = _run_in_process_group("echo hello", cwd="/tmp", env={}, timeout=30)
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, "stdout output")
+        self.assertEqual(result.stderr, "stderr output")
+        mock_popen.assert_called_once()
+        # Verify start_new_session=True is passed.
+        _, kwargs = mock_popen.call_args
+        self.assertTrue(kwargs["start_new_session"])
+
+    @patch("labeille.runner.os.killpg")
+    @patch("labeille.runner.os.getpgid")
+    @patch("labeille.runner.subprocess.Popen")
+    def test_timeout_kills_process_group(
+        self, mock_popen: Any, mock_getpgid: Any, mock_killpg: Any
+    ) -> None:
+        proc = MagicMock()
+        proc.pid = 12345
+        proc.communicate.side_effect = [
+            subprocess.TimeoutExpired("cmd", 30),
+            ("partial out", "partial err"),
+        ]
+        mock_popen.return_value = proc
+        mock_getpgid.return_value = 12345
+
+        with self.assertRaises(subprocess.TimeoutExpired) as cm:
+            _run_in_process_group("sleep 999", cwd="/tmp", env={}, timeout=30)
+
+        mock_getpgid.assert_called_once_with(12345)
+        mock_killpg.assert_called_once_with(12345, signal.SIGKILL)
+        exc = cm.exception
+        self.assertEqual(exc.output, "partial out")
+        self.assertEqual(exc.stderr, "partial err")
+
+    @patch("labeille.runner.os.killpg")
+    @patch("labeille.runner.os.getpgid")
+    @patch("labeille.runner.subprocess.Popen")
+    def test_timeout_process_already_exited(
+        self, mock_popen: Any, mock_getpgid: Any, mock_killpg: Any
+    ) -> None:
+        """ProcessLookupError from killpg is handled gracefully."""
+        proc = MagicMock()
+        proc.pid = 99999
+        proc.communicate.side_effect = [
+            subprocess.TimeoutExpired("cmd", 30),
+            ("", ""),
+        ]
+        mock_popen.return_value = proc
+        mock_getpgid.return_value = 99999
+        mock_killpg.side_effect = ProcessLookupError()
+
+        with self.assertRaises(subprocess.TimeoutExpired):
+            _run_in_process_group("cmd", cwd="/tmp", env={}, timeout=30)
+
+    @patch("labeille.runner.os.killpg")
+    @patch("labeille.runner.os.getpgid")
+    @patch("labeille.runner.subprocess.Popen")
+    def test_timeout_partial_output_in_exception(
+        self, mock_popen: Any, mock_getpgid: Any, mock_killpg: Any
+    ) -> None:
+        """TimeoutExpired exception carries partial stdout/stderr."""
+        proc = MagicMock()
+        proc.pid = 111
+        proc.communicate.side_effect = [
+            subprocess.TimeoutExpired("cmd", 10),
+            ("partial stdout", "partial stderr"),
+        ]
+        mock_popen.return_value = proc
+        mock_getpgid.return_value = 111
+
+        with self.assertRaises(subprocess.TimeoutExpired) as cm:
+            _run_in_process_group("cmd", cwd="/tmp", env={}, timeout=10)
+
+        self.assertEqual(cm.exception.output, "partial stdout")
+        self.assertEqual(cm.exception.stderr, "partial stderr")
+
+    @patch("labeille.runner.os.killpg")
+    @patch("labeille.runner.os.getpgid")
+    @patch("labeille.runner.subprocess.Popen")
+    def test_timeout_second_communicate_also_times_out(
+        self, mock_popen: Any, mock_getpgid: Any, mock_killpg: Any
+    ) -> None:
+        """If second communicate also times out, falls back to proc.kill()."""
+        proc = MagicMock()
+        proc.pid = 222
+        proc.communicate.side_effect = [
+            subprocess.TimeoutExpired("cmd", 30),
+            subprocess.TimeoutExpired("cmd", 5),
+            ("", "fallback stderr"),
+        ]
+        mock_popen.return_value = proc
+        mock_getpgid.return_value = 222
+
+        with self.assertRaises(subprocess.TimeoutExpired):
+            _run_in_process_group("cmd", cwd="/tmp", env={}, timeout=30)
+
+        proc.kill.assert_called_once()
 
 
 class TestRunDirManagement(unittest.TestCase):

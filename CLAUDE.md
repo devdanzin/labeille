@@ -95,6 +95,10 @@ Update index after editing package files: `load_index()` → `update_index_from_
 - For large batch runs (50+ packages), consider a non-ASAN JIT build: most JIT crashes (segfaults, aborts, assertion failures) reproduce identically without ASAN, and you can run --workers 4-8 comfortably
 - Specific crashes can be reproduced under ASAN afterward for detailed memory error analysis
 
+### Orphaned process cleanup
+- labeille kills the entire process group on timeout (`os.killpg`), which catches most grandchild processes
+- However, if you interrupt labeille itself (Ctrl+C), subprocesses may still survive — check with `ps aux | grep pytest` and clean up as needed
+
 ## Registry batch operations
 
 - Always dry-run first (omit --apply), review the preview, then re-run with --apply.

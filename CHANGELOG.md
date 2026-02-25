@@ -27,6 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - `check_jit_enabled` now uses explicit `sys.flags.jit` check instead of nonexistent `sys._jit`, with exact stdout comparison.
 - `_parse_install_packages` now handles `python -m pip install`, `python3 -m pip install`, and path-qualified pip invocations.
 - `_package_to_dict` accepts `omit_defaults` parameter to exclude default-valued fields from output.
+- `run_test_command` and `install_package` now kill the entire process tree on timeout via `os.killpg`, preventing orphaned grandchild processes from accumulating during batch runs.
 
 ### Added
 - 350 enriched package configurations with full test commands, install commands, and metadata.
