@@ -3,6 +3,13 @@
 This module handles cloning repositories, installing packages into a
 JIT-enabled Python environment, running their test suites, and capturing
 the results including any crashes (segfaults, aborts, assertion failures).
+
+.. warning::
+
+    This module installs PyPI packages and runs their test suites,
+    which means executing arbitrary third-party code.  Run in an
+    isolated environment (container, VM) whenever possible.  See the
+    README for detailed security guidance.
 """
 
 from __future__ import annotations

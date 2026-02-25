@@ -5,6 +5,7 @@ Provides the main CLI entry point with ``resolve``, ``run``, and ``scan-deps`` s
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import click
@@ -300,7 +301,7 @@ def run_cmd(
         workers=workers,
         repos_dir=repos_dir,
         venvs_dir=venvs_dir,
-        cli_args=list(ctx.params.keys()),
+        cli_args=sys.argv[1:],
     )
 
     click.echo(f"Run ID: {run_id}")

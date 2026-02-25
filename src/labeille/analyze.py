@@ -518,12 +518,14 @@ def build_reproduce_command(
     lines.append(f"cd /tmp/{pkg_name}-repro")
     lines.append(f"{python_path} -m venv .venv")
 
+    # Activate venv via PATH so pip, python, pytest, and all entry
+    # points resolve to the .venv automatically.
+    lines.append('export PATH="$PWD/.venv/bin:$PATH"')
+
     install_cmd = registry_entry.install_command or "pip install -e ."
-    install_cmd = install_cmd.replace("pip install", ".venv/bin/pip install")
     lines.append(install_cmd)
 
     test_cmd = result.test_command or registry_entry.test_command or "python -m pytest"
-    test_cmd = test_cmd.replace("python ", ".venv/bin/python ")
     lines.append(f"PYTHON_JIT=1 PYTHONFAULTHANDLER=1 {test_cmd}")
 
     return "\n".join(lines)

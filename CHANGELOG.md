@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Fixed
+- `run_meta.json` now stores actual CLI argument strings (`sys.argv[1:]`) instead of parameter names, making runs reproducible from metadata.
+- `build_reproduce_command` uses `export PATH` for venv activation instead of fragile `.venv/bin/` prefix string replacement.
 - Deduplicated `_signal_name` (3 copies → `format_signal_name` in `formatting.py`).
 - Deduplicated `_result_detail` (3 copies → public `result_detail` in `analyze.py`).
 - Made `_extract_minor_version` public as `extract_minor_version` in `analyze.py`.
@@ -76,6 +78,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Registry schema and data structures.
 
 ### Documentation
+- Added security warnings to README.md, runner.py module docstring, and CLAUDE.md.
+- Added Gemini acknowledgment to CREDITS.md.
 - Comprehensive enrichment guide with manual workflow, troubleshooting, and Claude Code prompts (doc/enrichment.md).
 - Updated README with enrichment overview and link to guide.
 - Parallel execution guidance, resource considerations, and ASAN vs non-ASAN trade-offs.

@@ -4,6 +4,9 @@
 labeille hunts CPython JIT bugs by running real-world PyPI package test suites against JIT-enabled builds.
 Companion to [lafleur](https://github.com/devdanzin/lafleur) (evolutionary JIT fuzzer).
 
+## Security note
+labeille installs and runs arbitrary third-party code from PyPI. Never run batch operations on a machine with sensitive credentials or data. Use containers, VMs, or disposable cloud instances for batch runs. See README.md for detailed guidance.
+
 ## Environment
 - The `.venv` was created with a JIT-enabled CPython build at `~/projects/jit_cpython/python`
 - This build has AddressSanitizer (ASAN) enabled — always set `ASAN_OPTIONS=detect_leaks=0`
