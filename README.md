@@ -27,6 +27,30 @@ them by extension type, and run their test suites against a JIT-enabled Python
 build. Crash detection, signature extraction, and JSONL result recording are
 functional. The registry format and CLI interface may change.
 
+## Security Considerations
+
+Labeille installs PyPI packages and runs their test suites, which means
+executing arbitrary third-party code on your machine. This is inherent to the
+task, not a bug — `setup.py`, build scripts, post-install hooks, and test code
+all run with your user's privileges.
+
+**Run labeille in a disposable, isolated environment**, especially when testing
+beyond the most popular, well-audited packages. Even for well-known packages,
+supply chain attacks (typosquatting, compromised maintainer accounts, malicious
+updates) are a real and growing threat.
+
+Recommended isolation strategies, from simplest to strongest:
+
+- **Docker or Podman container** — easiest to set up, good process isolation
+- **Dedicated VM** — stronger isolation from host filesystem and network
+- **Ephemeral cloud instance** torn down after each batch run — strongest
+  guarantee of a clean slate
+- At minimum, avoid running as root and use a dedicated user account
+
+When using `--repos-dir` or `--venvs-dir` for persistent directories, cached
+repos and venvs from previous runs persist on disk. A compromised package's
+artifacts survive across runs unless the directories are cleaned.
+
 ## Quick Start
 
 ```bash

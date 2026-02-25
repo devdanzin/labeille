@@ -13,6 +13,7 @@ Development of labeille depends heavily on AI for planning, architecture, and co
   writing.
 * **Claude Code:** Main agentic collaborator for implementation, testing, and code
   review.
+* **Gemini (Google):** Implementation review.
 
 [Anthropic](https://www.anthropic.com/) provided financial support that enabled access
 to advanced AI capabilities for labeille's development.

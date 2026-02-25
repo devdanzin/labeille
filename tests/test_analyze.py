@@ -477,6 +477,23 @@ class TestBuildReproduceCommand(unittest.TestCase):
         cmd = build_reproduce_command(result, entry, "/path/to/python")
         self.assertIn("--depth=50", cmd)
 
+    def test_uses_path_export(self) -> None:
+        """Reproduce script uses PATH export instead of string replacement."""
+        result = PackageResult(
+            package="mypkg",
+            repo="https://github.com/user/mypkg",
+            test_command="python -m pytest tests/",
+        )
+        entry = _make_pkg("mypkg", install_command="pip install -e .")
+        cmd = build_reproduce_command(result, entry, "/opt/python")
+        self.assertIn('export PATH="$PWD/.venv/bin:$PATH"', cmd)
+        # Install and test commands appear unmodified.
+        self.assertIn("pip install -e .", cmd)
+        self.assertIn("python -m pytest tests/", cmd)
+        # No .venv/bin/pip or .venv/bin/python string replacements.
+        self.assertNotIn(".venv/bin/pip", cmd)
+        self.assertNotIn(".venv/bin/python", cmd)
+
 
 class TestCategorizeInstallErrors(unittest.TestCase):
     def test_basic(self) -> None:

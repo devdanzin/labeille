@@ -350,6 +350,44 @@ class TestRunIntegration(unittest.TestCase):
         self.assertEqual(result.exit_code, 0, msg=result.output)
         self.assertIn("--repos-dir is not set", result.output)
 
+    def test_run_meta_stores_argv(self) -> None:
+        """cli_args in run_meta.json contains actual argument strings."""
+        save_index(Index(), self.registry_dir)
+
+        import sys
+
+        target = sys.executable
+        cli_args = [
+            "run",
+            "--dry-run",
+            "--target-python",
+            target,
+            "--registry-dir",
+            str(self.registry_dir),
+            "--results-dir",
+            str(self.results_dir),
+            "--run-id",
+            "test-meta",
+            "--log-file",
+            str(self.base / "run.log"),
+        ]
+
+        # Mock sys.argv so cli_args captures real argument values.
+        with patch("labeille.cli.sys") as mock_sys:
+            mock_sys.argv = ["labeille"] + cli_args
+            runner = CliRunner()
+            result = runner.invoke(main, cli_args)
+
+        self.assertEqual(result.exit_code, 0, msg=result.output)
+        meta_file = self.results_dir / "test-meta" / "run_meta.json"
+        self.assertTrue(meta_file.exists(), "run_meta.json not created")
+        meta = json.loads(meta_file.read_text())
+        stored = meta.get("cli_args", [])
+        # Should contain actual argument values, not just parameter names.
+        self.assertIn("--dry-run", stored)
+        self.assertIn("--target-python", stored)
+        self.assertIn(target, stored)
+
 
 if __name__ == "__main__":
     unittest.main()
