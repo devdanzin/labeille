@@ -79,6 +79,7 @@ class PackageResult:
     stderr_tail: str = ""
     installed_dependencies: dict[str, str] = field(default_factory=dict)
     error_message: str | None = None
+    requested_revision: str | None = None
     timestamp: str = ""
 
     @classmethod
@@ -100,6 +101,7 @@ class PackageResult:
             stderr_tail=data.get("stderr_tail", ""),
             installed_dependencies=data.get("installed_dependencies", {}),
             error_message=data.get("error_message"),
+            requested_revision=data.get("requested_revision"),
             timestamp=data.get("timestamp", ""),
         )
 
