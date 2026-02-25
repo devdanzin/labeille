@@ -488,6 +488,126 @@ class TestRunIntegration(unittest.TestCase):
         # In dry-run mode the package should be listed as skipped.
         self.assertIn("Skipped:", result.output)
 
+    def test_extra_deps_option(self) -> None:
+        """--extra-deps is accepted by the CLI."""
+        save_index(Index(), self.registry_dir)
+
+        import sys
+
+        target = sys.executable
+
+        runner = CliRunner()
+        result = runner.invoke(
+            main,
+            [
+                "run",
+                "--dry-run",
+                "--target-python",
+                target,
+                "--registry-dir",
+                str(self.registry_dir),
+                "--results-dir",
+                str(self.results_dir),
+                "--run-id",
+                "test-extradeps",
+                "--extra-deps",
+                "coverage,pytest-timeout",
+                "--log-file",
+                str(self.base / "run.log"),
+            ],
+        )
+        self.assertEqual(result.exit_code, 0, msg=result.output)
+
+    def test_test_command_override_option(self) -> None:
+        """--test-command-override is accepted by the CLI."""
+        save_index(Index(), self.registry_dir)
+
+        import sys
+
+        target = sys.executable
+
+        runner = CliRunner()
+        result = runner.invoke(
+            main,
+            [
+                "run",
+                "--dry-run",
+                "--target-python",
+                target,
+                "--registry-dir",
+                str(self.registry_dir),
+                "--results-dir",
+                str(self.results_dir),
+                "--run-id",
+                "test-cmdoverride",
+                "--test-command-override",
+                "python -m pytest -x",
+                "--log-file",
+                str(self.base / "run.log"),
+            ],
+        )
+        self.assertEqual(result.exit_code, 0, msg=result.output)
+
+    def test_test_command_suffix_option(self) -> None:
+        """--test-command-suffix is accepted by the CLI."""
+        save_index(Index(), self.registry_dir)
+
+        import sys
+
+        target = sys.executable
+
+        runner = CliRunner()
+        result = runner.invoke(
+            main,
+            [
+                "run",
+                "--dry-run",
+                "--target-python",
+                target,
+                "--registry-dir",
+                str(self.registry_dir),
+                "--results-dir",
+                str(self.results_dir),
+                "--run-id",
+                "test-cmdsuffix",
+                "--test-command-suffix",
+                "--tb=long -v",
+                "--log-file",
+                str(self.base / "run.log"),
+            ],
+        )
+        self.assertEqual(result.exit_code, 0, msg=result.output)
+
+    def test_repo_override_option(self) -> None:
+        """--repo-override is accepted by the CLI."""
+        save_index(Index(), self.registry_dir)
+
+        import sys
+
+        target = sys.executable
+
+        runner = CliRunner()
+        result = runner.invoke(
+            main,
+            [
+                "run",
+                "--dry-run",
+                "--target-python",
+                target,
+                "--registry-dir",
+                str(self.registry_dir),
+                "--results-dir",
+                str(self.results_dir),
+                "--run-id",
+                "test-repooverride",
+                "--repo-override",
+                "fakepkg=https://example.com/fork",
+                "--log-file",
+                str(self.base / "run.log"),
+            ],
+        )
+        self.assertEqual(result.exit_code, 0, msg=result.output)
+
 
 if __name__ == "__main__":
     unittest.main()

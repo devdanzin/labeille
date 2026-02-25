@@ -42,6 +42,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - `pull_repo` uses `git fetch` + `reset --hard FETCH_HEAD` + `clean -fdx` instead of `git pull --ff-only`, handling dirty working trees left by test suites.
 
 ### Added
+- `--extra-deps` option to inject additional packages into every venv after the package's own dependencies.
+- `--test-command-override` option to replace the test command for all packages in a run.
+- `--test-command-suffix` option to append flags to each package's existing test command.
+- `--repo-override PKG=URL` option (repeatable) to test forks or PR branches without modifying registry.
 - `--clone-depth` and `--no-shallow` CLI options to override per-package clone depth; `--clone-depth=0` or `--no-shallow` for full clones.
 - Per-package git revision support via `--packages=pkg@revision` syntax; accepts commit hashes, branches, tags, or relative refs like `HEAD~10`.
 - `checkout_revision` helper for checking out specific git refs after cloning.

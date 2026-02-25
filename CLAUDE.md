@@ -117,6 +117,16 @@ Update index after editing package files: `load_index()` → `update_index_from_
 - Each migration runs once — re-application is blocked with the original date shown.
 - Add new migrations by decorating a function with `@register_migration(name, description)` in `migrations.py`.
 
+## Quick investigation overrides
+
+These CLI options let you experiment without touching registry YAMLs:
+- `--extra-deps "pkg1,pkg2"` — inject deps into every venv
+- `--test-command-override "..."` — replace all test commands
+- `--test-command-suffix "..."` — append flags to test commands
+- `--repo-override "pkg=url"` — use a fork's repo (repeatable)
+- `--packages=pkg@revision` — test at a specific git revision
+- `--no-shallow` — full clone (needed for old revisions)
+
 ## Investigating a crash at a specific revision
 
 If a crash was found at commit abc123:

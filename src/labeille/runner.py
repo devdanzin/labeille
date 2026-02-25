@@ -69,6 +69,10 @@ class RunnerConfig:
     cli_args: list[str] = field(default_factory=list)
     clone_depth_override: int | None = None
     revision_overrides: dict[str, str] = field(default_factory=dict)
+    extra_deps: list[str] = field(default_factory=list)
+    test_command_override: str | None = None
+    test_command_suffix: str | None = None
+    repo_overrides: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
@@ -676,6 +680,30 @@ def parse_package_specs(
     return names, revisions
 
 
+def parse_repo_overrides(raw: tuple[str, ...]) -> dict[str, str]:
+    """Parse ``--repo-override`` arguments into a dict.
+
+    Each argument is ``package_name=repo_url``.
+
+    Raises:
+        ValueError: If an argument is malformed (no ``=``, or empty name/URL).
+    """
+    overrides: dict[str, str] = {}
+    for item in raw:
+        if "=" not in item:
+            raise ValueError(
+                f"Invalid --repo-override format: {item!r}. "
+                f"Expected PKG=URL (e.g., 'requests=https://...')"
+            )
+        name, url = item.split("=", 1)
+        name = name.strip()
+        url = url.strip()
+        if not name or not url:
+            raise ValueError("Invalid --repo-override: both package name and URL required.")
+        overrides[name] = url
+    return overrides
+
+
 def checkout_revision(repo_dir: Path, revision: str) -> str | None:
     """Checkout a specific git revision and return the resulting HEAD hash.
 
@@ -823,7 +851,14 @@ def _run_package_inner(
         result.error_message = "Run stopped (crash limit reached)"
         return result
 
-    if not pkg.repo:
+    # Apply repo URL override if specified.
+    repo_url = pkg.repo
+    if config.repo_overrides and pkg.package in config.repo_overrides:
+        repo_url = config.repo_overrides[pkg.package]
+        log.info("Using overridden repo for %s: %s", pkg.package, repo_url)
+        result.repo = repo_url
+
+    if not repo_url:
         result.status = "clone_error"
         result.error_message = "No repository URL"
         log.warning("Skipping %s: no repo URL", pkg.package)
@@ -848,10 +883,10 @@ def _run_package_inner(
             depth = pkg.clone_depth  # from registry YAML
         if depth == 0:
             depth = None  # 0 means full clone (no --depth flag)
-        log.info("Cloning %s from %s to %s", pkg.package, pkg.repo, repo_dir)
+        log.info("Cloning %s from %s to %s", pkg.package, repo_url, repo_dir)
         try:
             # Commit hash is captured from clone_repo return value.
-            result.git_revision = clone_repo(pkg.repo, repo_dir, clone_depth=depth)
+            result.git_revision = clone_repo(repo_url, repo_dir, clone_depth=depth)
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as exc:
             result.status = "clone_error"
             result.error_message = f"Clone failed: {exc}"
@@ -971,6 +1006,21 @@ def _run_package_inner(
         except OSError as exc:
             log.warning("Import check failed for %s: %s (continuing)", pkg.package, exc)
 
+    # --- Install extra dependencies if specified ---
+    if config.extra_deps and not venv_existed:
+        extra_cmd = f"pip install {' '.join(config.extra_deps)}"
+        log.info("Installing extra deps for %s: %s", pkg.package, extra_cmd)
+        try:
+            extra_proc = install_package(venv_python, extra_cmd, repo_dir, env, per_pkg_timeout)
+            if extra_proc.returncode != 0:
+                log.warning(
+                    "Extra deps install failed for %s (exit %d, non-fatal)",
+                    pkg.package,
+                    extra_proc.returncode,
+                )
+        except (subprocess.TimeoutExpired, OSError) as exc:
+            log.warning("Failed to install extra deps for %s: %s", pkg.package, exc)
+
     # --- Collect installed packages ---
     result.installed_dependencies = get_installed_packages(venv_python, env)
     result.package_version = get_package_version(pkg.package, result.installed_dependencies)
@@ -992,6 +1042,10 @@ def _run_package_inner(
         return result
 
     test_cmd = pkg.test_command or "python -m pytest"
+    if config.test_command_override:
+        test_cmd = config.test_command_override
+    elif config.test_command_suffix:
+        test_cmd = f"{test_cmd} {config.test_command_suffix}"
     result.test_command = test_cmd
     log.info("Running tests for %s: %s", pkg.package, test_cmd)
     log.debug("Test timeout: %ds", per_pkg_timeout)
