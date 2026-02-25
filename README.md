@@ -102,6 +102,28 @@ Revision overrides are ephemeral — they apply to the current run only
 and are not written back to the registry. The exact CLI invocation is
 recorded in `run_meta.json` for reproducibility.
 
+### Runtime customization
+
+Override test behavior without modifying the registry:
+
+```bash
+# Run with coverage
+labeille run --extra-deps coverage \
+    --test-command-override "coverage run -m pytest"
+
+# Add verbose output to all test commands
+labeille run --test-command-suffix "--tb=long -v"
+
+# Test a fork
+labeille run --packages=requests \
+    --repo-override "requests=https://github.com/fork/requests"
+
+# Combine: test a specific revision of a fork with extra deps
+labeille run --packages=requests@fix-branch \
+    --repo-override "requests=https://github.com/fork/requests" \
+    --extra-deps "coverage" --no-shallow
+```
+
 ## How It Works
 
 labeille operates in two phases:

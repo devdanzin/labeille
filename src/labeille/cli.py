@@ -191,6 +191,43 @@ def resolve(
     help="Base directory for repos and venvs (sets --repos-dir and --venvs-dir).",
 )
 @click.option(
+    "--extra-deps",
+    type=str,
+    default=None,
+    help=(
+        "Comma-separated list of additional packages to install in "
+        "each venv after the package's own dependencies. "
+        "Example: 'coverage,pytest-timeout'."
+    ),
+)
+@click.option(
+    "--test-command-override",
+    type=str,
+    default=None,
+    help=(
+        "Replace the test command for ALL packages in this run. "
+        "For appending flags to existing commands, use --test-command-suffix instead."
+    ),
+)
+@click.option(
+    "--test-command-suffix",
+    type=str,
+    default=None,
+    help=(
+        "Append flags to each package's test command. "
+        "Example: '--tb=long -v'. Ignored if --test-command-override is set."
+    ),
+)
+@click.option(
+    "--repo-override",
+    "repo_overrides_raw",
+    type=str,
+    multiple=True,
+    help=(
+        "Override the repo URL for a package. Format: PKG=URL. Can be specified multiple times."
+    ),
+)
+@click.option(
     "--clone-depth",
     type=int,
     default=None,
@@ -235,6 +272,10 @@ def run_cmd(
     refresh_venvs: bool,
     repos_dir: Path | None,
     venvs_dir: Path | None,
+    extra_deps: str | None,
+    test_command_override: str | None,
+    test_command_suffix: str | None,
+    repo_overrides_raw: tuple[str, ...],
     clone_depth: int | None,
     no_shallow: bool,
     work_dir: Path | None,
@@ -288,6 +329,21 @@ def run_cmd(
     elif clone_depth is not None:
         effective_clone_depth = clone_depth
 
+    # Warn if both test command override and suffix are set.
+    if test_command_override and test_command_suffix:
+        click.echo(
+            "Warning: --test-command-override is set, --test-command-suffix will be ignored.",
+            err=True,
+        )
+
+    # Parse repo overrides.
+    from labeille.runner import parse_repo_overrides
+
+    try:
+        repo_overrides = parse_repo_overrides(repo_overrides_raw)
+    except ValueError as exc:
+        raise click.UsageError(str(exc)) from exc
+
     # Generate run ID.
     if run_id is None:
         run_id = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%S")
@@ -333,6 +389,10 @@ def run_cmd(
         cli_args=sys.argv[1:],
         clone_depth_override=effective_clone_depth,
         revision_overrides=revision_overrides,
+        extra_deps=[d.strip() for d in extra_deps.split(",") if d.strip()] if extra_deps else [],
+        test_command_override=test_command_override,
+        test_command_suffix=test_command_suffix,
+        repo_overrides=repo_overrides,
     )
 
     click.echo(f"Run ID: {run_id}")

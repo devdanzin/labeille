@@ -32,6 +32,7 @@ from labeille.runner import (
     get_package_version,
     load_completed_packages,
     parse_package_specs,
+    parse_repo_overrides,
     pull_repo,
     run_all,
     run_package,
@@ -2157,6 +2158,543 @@ class TestRevisionOverride(unittest.TestCase):
         result = run_package(pkg, self.config, self.run_dir, self.env)
         self.assertEqual(result.status, "pass")
         self.assertIsNone(result.requested_revision)
+
+
+class TestParseRepoOverrides(unittest.TestCase):
+    def test_valid(self) -> None:
+        result = parse_repo_overrides(("requests=https://example.com/fork",))
+        self.assertEqual(result, {"requests": "https://example.com/fork"})
+
+    def test_multiple(self) -> None:
+        result = parse_repo_overrides(("a=url1", "b=url2"))
+        self.assertEqual(result, {"a": "url1", "b": "url2"})
+
+    def test_invalid_no_equals(self) -> None:
+        with self.assertRaises(ValueError):
+            parse_repo_overrides(("noequalssign",))
+
+    def test_invalid_empty_name(self) -> None:
+        with self.assertRaises(ValueError):
+            parse_repo_overrides(("=https://example.com",))
+
+    def test_invalid_empty_url(self) -> None:
+        with self.assertRaises(ValueError):
+            parse_repo_overrides(("requests=",))
+
+    def test_empty_tuple(self) -> None:
+        result = parse_repo_overrides(())
+        self.assertEqual(result, {})
+
+
+class TestExtraDeps(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmpdir = tempfile.TemporaryDirectory()
+        self.base = Path(self.tmpdir.name)
+        self.config = _make_config(self.base)
+        self.run_dir = create_run_dir(self.config.results_dir, self.config.run_id)
+        self.env = build_env(self.config)
+
+    def tearDown(self) -> None:
+        self.tmpdir.cleanup()
+
+    @patch("labeille.runner.run_test_command")
+    @patch("labeille.runner.get_installed_packages")
+    @patch("labeille.runner.check_import")
+    @patch("labeille.runner.install_package")
+    @patch("labeille.runner.create_venv")
+    @patch("labeille.runner.clone_repo")
+    def test_extra_deps_installed_after_package(
+        self,
+        mock_clone: MagicMock,
+        mock_venv: MagicMock,
+        mock_install: MagicMock,
+        mock_import: MagicMock,
+        mock_get_pkgs: MagicMock,
+        mock_test: MagicMock,
+    ) -> None:
+        """Extra deps are installed after the package's own deps."""
+        self.config.extra_deps = ["coverage"]
+        mock_clone.return_value = "abc1234"
+        mock_install.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_import.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_get_pkgs.return_value = {}
+        mock_test.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="ok\n", stderr=""
+        )
+        pkg = _make_package()
+        result = run_package(pkg, self.config, self.run_dir, self.env)
+        self.assertEqual(result.status, "pass")
+        # install_package called twice: package install + extra deps.
+        self.assertEqual(mock_install.call_count, 2)
+        # Second call should be for extra deps.
+        second_call_args = mock_install.call_args_list[1]
+        self.assertIn("pip install coverage", second_call_args[0][1])
+
+    @patch("labeille.runner.run_test_command")
+    @patch("labeille.runner.get_installed_packages")
+    @patch("labeille.runner.check_import")
+    @patch("labeille.runner.install_package")
+    @patch("labeille.runner.create_venv")
+    @patch("labeille.runner.clone_repo")
+    def test_extra_deps_empty(
+        self,
+        mock_clone: MagicMock,
+        mock_venv: MagicMock,
+        mock_install: MagicMock,
+        mock_import: MagicMock,
+        mock_get_pkgs: MagicMock,
+        mock_test: MagicMock,
+    ) -> None:
+        """Empty extra_deps does not trigger an extra install call."""
+        self.config.extra_deps = []
+        mock_clone.return_value = "abc1234"
+        mock_install.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_import.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_get_pkgs.return_value = {}
+        mock_test.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="ok\n", stderr=""
+        )
+        pkg = _make_package()
+        run_package(pkg, self.config, self.run_dir, self.env)
+        # Only the package's own install.
+        self.assertEqual(mock_install.call_count, 1)
+
+    @patch("labeille.runner.run_test_command")
+    @patch("labeille.runner.get_installed_packages")
+    @patch("labeille.runner.check_import")
+    @patch("labeille.runner.install_package")
+    @patch("labeille.runner.create_venv")
+    @patch("labeille.runner.clone_repo")
+    def test_extra_deps_failure_nonfatal(
+        self,
+        mock_clone: MagicMock,
+        mock_venv: MagicMock,
+        mock_install: MagicMock,
+        mock_import: MagicMock,
+        mock_get_pkgs: MagicMock,
+        mock_test: MagicMock,
+    ) -> None:
+        """Extra deps install failure is non-fatal; test still runs."""
+        self.config.extra_deps = ["badpkg"]
+        mock_clone.return_value = "abc1234"
+
+        def install_side_effect(
+            venv_python: Any, cmd: str, *args: Any, **kwargs: Any
+        ) -> subprocess.CompletedProcess[str]:
+            if "badpkg" in cmd:
+                return subprocess.CompletedProcess(
+                    args="", returncode=1, stdout="", stderr="error"
+                )
+            return subprocess.CompletedProcess(args="", returncode=0, stdout="", stderr="")
+
+        mock_install.side_effect = install_side_effect
+        mock_import.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_get_pkgs.return_value = {}
+        mock_test.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="ok\n", stderr=""
+        )
+        pkg = _make_package()
+        result = run_package(pkg, self.config, self.run_dir, self.env)
+        # Test still runs and passes despite extra deps failure.
+        self.assertEqual(result.status, "pass")
+        mock_test.assert_called_once()
+
+    @patch("labeille.runner.run_test_command")
+    @patch("labeille.runner.get_installed_packages")
+    @patch("labeille.runner.check_import")
+    @patch("labeille.runner.install_package")
+    @patch("labeille.runner.create_venv")
+    @patch("labeille.runner.clone_repo")
+    def test_extra_deps_multiple(
+        self,
+        mock_clone: MagicMock,
+        mock_venv: MagicMock,
+        mock_install: MagicMock,
+        mock_import: MagicMock,
+        mock_get_pkgs: MagicMock,
+        mock_test: MagicMock,
+    ) -> None:
+        """Multiple extra deps are installed in a single pip call."""
+        self.config.extra_deps = ["coverage", "pytest-timeout"]
+        mock_clone.return_value = "abc1234"
+        mock_install.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_import.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_get_pkgs.return_value = {}
+        mock_test.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="ok\n", stderr=""
+        )
+        pkg = _make_package()
+        run_package(pkg, self.config, self.run_dir, self.env)
+        second_call_args = mock_install.call_args_list[1]
+        self.assertEqual(second_call_args[0][1], "pip install coverage pytest-timeout")
+
+
+class TestTestCommandOverride(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmpdir = tempfile.TemporaryDirectory()
+        self.base = Path(self.tmpdir.name)
+        self.config = _make_config(self.base)
+        self.run_dir = create_run_dir(self.config.results_dir, self.config.run_id)
+        self.env = build_env(self.config)
+
+    def tearDown(self) -> None:
+        self.tmpdir.cleanup()
+
+    @patch("labeille.runner.run_test_command")
+    @patch("labeille.runner.get_installed_packages")
+    @patch("labeille.runner.check_import")
+    @patch("labeille.runner.install_package")
+    @patch("labeille.runner.create_venv")
+    @patch("labeille.runner.clone_repo")
+    def test_command_override_replaces_package_command(
+        self,
+        mock_clone: MagicMock,
+        mock_venv: MagicMock,
+        mock_install: MagicMock,
+        mock_import: MagicMock,
+        mock_get_pkgs: MagicMock,
+        mock_test: MagicMock,
+    ) -> None:
+        """test_command_override replaces the package's test command."""
+        self.config.test_command_override = "python -m pytest -x"
+        mock_clone.return_value = "abc1234"
+        mock_install.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_import.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_get_pkgs.return_value = {}
+        mock_test.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="ok\n", stderr=""
+        )
+        pkg = _make_package(test_command="python -m pytest tests/")
+        result = run_package(pkg, self.config, self.run_dir, self.env)
+        # run_test_command receives the overridden command.
+        call_args = mock_test.call_args[0]
+        self.assertEqual(call_args[1], "python -m pytest -x")
+        self.assertEqual(result.test_command, "python -m pytest -x")
+
+    @patch("labeille.runner.run_test_command")
+    @patch("labeille.runner.get_installed_packages")
+    @patch("labeille.runner.check_import")
+    @patch("labeille.runner.install_package")
+    @patch("labeille.runner.create_venv")
+    @patch("labeille.runner.clone_repo")
+    def test_command_override_none_uses_package(
+        self,
+        mock_clone: MagicMock,
+        mock_venv: MagicMock,
+        mock_install: MagicMock,
+        mock_import: MagicMock,
+        mock_get_pkgs: MagicMock,
+        mock_test: MagicMock,
+    ) -> None:
+        """test_command_override=None uses the package's test command."""
+        self.config.test_command_override = None
+        mock_clone.return_value = "abc1234"
+        mock_install.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_import.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_get_pkgs.return_value = {}
+        mock_test.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="ok\n", stderr=""
+        )
+        pkg = _make_package(test_command="python -m pytest tests/")
+        result = run_package(pkg, self.config, self.run_dir, self.env)
+        call_args = mock_test.call_args[0]
+        self.assertEqual(call_args[1], "python -m pytest tests/")
+        self.assertEqual(result.test_command, "python -m pytest tests/")
+
+    @patch("labeille.runner.run_test_command")
+    @patch("labeille.runner.get_installed_packages")
+    @patch("labeille.runner.check_import")
+    @patch("labeille.runner.install_package")
+    @patch("labeille.runner.create_venv")
+    @patch("labeille.runner.clone_repo")
+    def test_command_override_beats_suffix(
+        self,
+        mock_clone: MagicMock,
+        mock_venv: MagicMock,
+        mock_install: MagicMock,
+        mock_import: MagicMock,
+        mock_get_pkgs: MagicMock,
+        mock_test: MagicMock,
+    ) -> None:
+        """test_command_override takes precedence over suffix."""
+        self.config.test_command_override = "python -m pytest -x"
+        self.config.test_command_suffix = "--tb=long"
+        mock_clone.return_value = "abc1234"
+        mock_install.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_import.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_get_pkgs.return_value = {}
+        mock_test.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="ok\n", stderr=""
+        )
+        pkg = _make_package(test_command="python -m pytest tests/")
+        result = run_package(pkg, self.config, self.run_dir, self.env)
+        call_args = mock_test.call_args[0]
+        self.assertEqual(call_args[1], "python -m pytest -x")
+        self.assertEqual(result.test_command, "python -m pytest -x")
+
+
+class TestTestCommandSuffix(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmpdir = tempfile.TemporaryDirectory()
+        self.base = Path(self.tmpdir.name)
+        self.config = _make_config(self.base)
+        self.run_dir = create_run_dir(self.config.results_dir, self.config.run_id)
+        self.env = build_env(self.config)
+
+    def tearDown(self) -> None:
+        self.tmpdir.cleanup()
+
+    @patch("labeille.runner.run_test_command")
+    @patch("labeille.runner.get_installed_packages")
+    @patch("labeille.runner.check_import")
+    @patch("labeille.runner.install_package")
+    @patch("labeille.runner.create_venv")
+    @patch("labeille.runner.clone_repo")
+    def test_command_suffix_appended(
+        self,
+        mock_clone: MagicMock,
+        mock_venv: MagicMock,
+        mock_install: MagicMock,
+        mock_import: MagicMock,
+        mock_get_pkgs: MagicMock,
+        mock_test: MagicMock,
+    ) -> None:
+        """Suffix is appended to the package's test command."""
+        self.config.test_command_suffix = "--tb=long -v"
+        mock_clone.return_value = "abc1234"
+        mock_install.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_import.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_get_pkgs.return_value = {}
+        mock_test.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="ok\n", stderr=""
+        )
+        pkg = _make_package(test_command="python -m pytest tests/")
+        result = run_package(pkg, self.config, self.run_dir, self.env)
+        call_args = mock_test.call_args[0]
+        self.assertEqual(call_args[1], "python -m pytest tests/ --tb=long -v")
+        self.assertEqual(result.test_command, "python -m pytest tests/ --tb=long -v")
+
+    @patch("labeille.runner.run_test_command")
+    @patch("labeille.runner.get_installed_packages")
+    @patch("labeille.runner.check_import")
+    @patch("labeille.runner.install_package")
+    @patch("labeille.runner.create_venv")
+    @patch("labeille.runner.clone_repo")
+    def test_command_suffix_none_no_change(
+        self,
+        mock_clone: MagicMock,
+        mock_venv: MagicMock,
+        mock_install: MagicMock,
+        mock_import: MagicMock,
+        mock_get_pkgs: MagicMock,
+        mock_test: MagicMock,
+    ) -> None:
+        """suffix=None does not change the command."""
+        self.config.test_command_suffix = None
+        mock_clone.return_value = "abc1234"
+        mock_install.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_import.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_get_pkgs.return_value = {}
+        mock_test.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="ok\n", stderr=""
+        )
+        pkg = _make_package(test_command="python -m pytest tests/")
+        run_package(pkg, self.config, self.run_dir, self.env)
+        call_args = mock_test.call_args[0]
+        self.assertEqual(call_args[1], "python -m pytest tests/")
+
+    @patch("labeille.runner.run_test_command")
+    @patch("labeille.runner.get_installed_packages")
+    @patch("labeille.runner.check_import")
+    @patch("labeille.runner.install_package")
+    @patch("labeille.runner.create_venv")
+    @patch("labeille.runner.clone_repo")
+    def test_command_suffix_with_default_command(
+        self,
+        mock_clone: MagicMock,
+        mock_venv: MagicMock,
+        mock_install: MagicMock,
+        mock_import: MagicMock,
+        mock_get_pkgs: MagicMock,
+        mock_test: MagicMock,
+    ) -> None:
+        """Suffix works with the default test command (no package test_command)."""
+        self.config.test_command_suffix = "--tb=short"
+        mock_clone.return_value = "abc1234"
+        mock_install.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_import.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_get_pkgs.return_value = {}
+        mock_test.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="ok\n", stderr=""
+        )
+        pkg = _make_package(test_command="")
+        result = run_package(pkg, self.config, self.run_dir, self.env)
+        call_args = mock_test.call_args[0]
+        self.assertEqual(call_args[1], "python -m pytest --tb=short")
+        self.assertEqual(result.test_command, "python -m pytest --tb=short")
+
+
+class TestRepoOverride(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmpdir = tempfile.TemporaryDirectory()
+        self.base = Path(self.tmpdir.name)
+        self.config = _make_config(self.base)
+        self.run_dir = create_run_dir(self.config.results_dir, self.config.run_id)
+        self.env = build_env(self.config)
+
+    def tearDown(self) -> None:
+        self.tmpdir.cleanup()
+
+    @patch("labeille.runner.run_test_command")
+    @patch("labeille.runner.get_installed_packages")
+    @patch("labeille.runner.check_import")
+    @patch("labeille.runner.install_package")
+    @patch("labeille.runner.create_venv")
+    @patch("labeille.runner.clone_repo")
+    def test_repo_override_used(
+        self,
+        mock_clone: MagicMock,
+        mock_venv: MagicMock,
+        mock_install: MagicMock,
+        mock_import: MagicMock,
+        mock_get_pkgs: MagicMock,
+        mock_test: MagicMock,
+    ) -> None:
+        """Repo override URL is used for cloning."""
+        self.config.repo_overrides = {"testpkg": "https://example.com/fork"}
+        mock_clone.return_value = "abc1234"
+        mock_install.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_import.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_get_pkgs.return_value = {}
+        mock_test.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="ok\n", stderr=""
+        )
+        pkg = _make_package(repo="https://example.com/original")
+        result = run_package(pkg, self.config, self.run_dir, self.env)
+        self.assertEqual(result.status, "pass")
+        # clone_repo should be called with the fork URL.
+        clone_call_args = mock_clone.call_args[0]
+        self.assertEqual(clone_call_args[0], "https://example.com/fork")
+        self.assertEqual(result.repo, "https://example.com/fork")
+
+    @patch("labeille.runner.run_test_command")
+    @patch("labeille.runner.get_installed_packages")
+    @patch("labeille.runner.check_import")
+    @patch("labeille.runner.install_package")
+    @patch("labeille.runner.create_venv")
+    @patch("labeille.runner.clone_repo")
+    def test_repo_override_not_matching(
+        self,
+        mock_clone: MagicMock,
+        mock_venv: MagicMock,
+        mock_install: MagicMock,
+        mock_import: MagicMock,
+        mock_get_pkgs: MagicMock,
+        mock_test: MagicMock,
+    ) -> None:
+        """Override for a different package doesn't affect this one."""
+        self.config.repo_overrides = {"other": "https://example.com/fork"}
+        mock_clone.return_value = "abc1234"
+        mock_install.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_import.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_get_pkgs.return_value = {}
+        mock_test.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="ok\n", stderr=""
+        )
+        pkg = _make_package(repo="https://example.com/original")
+        result = run_package(pkg, self.config, self.run_dir, self.env)
+        clone_call_args = mock_clone.call_args[0]
+        self.assertEqual(clone_call_args[0], "https://example.com/original")
+        self.assertEqual(result.repo, "https://example.com/original")
+
+    @patch("labeille.runner.checkout_revision")
+    @patch("labeille.runner.run_test_command")
+    @patch("labeille.runner.get_installed_packages")
+    @patch("labeille.runner.check_import")
+    @patch("labeille.runner.install_package")
+    @patch("labeille.runner.create_venv")
+    @patch("labeille.runner.clone_repo")
+    def test_repo_override_with_revision(
+        self,
+        mock_clone: MagicMock,
+        mock_venv: MagicMock,
+        mock_install: MagicMock,
+        mock_import: MagicMock,
+        mock_get_pkgs: MagicMock,
+        mock_test: MagicMock,
+        mock_checkout: MagicMock,
+    ) -> None:
+        """Both repo override and revision override work together."""
+        self.config.repo_overrides = {"testpkg": "https://example.com/fork"}
+        self.config.revision_overrides = {"testpkg": "fix-branch"}
+        mock_clone.return_value = "original_head"
+        mock_checkout.return_value = "fix_branch_hash"
+        mock_install.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_import.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="", stderr=""
+        )
+        mock_get_pkgs.return_value = {}
+        mock_test.return_value = subprocess.CompletedProcess(
+            args="", returncode=0, stdout="ok\n", stderr=""
+        )
+        pkg = _make_package(repo="https://example.com/original")
+        result = run_package(pkg, self.config, self.run_dir, self.env)
+        self.assertEqual(result.status, "pass")
+        # Cloned from fork URL.
+        clone_call_args = mock_clone.call_args[0]
+        self.assertEqual(clone_call_args[0], "https://example.com/fork")
+        # Then checked out the revision.
+        mock_checkout.assert_called_once()
+        self.assertEqual(result.git_revision, "fix_branch_hash")
+        self.assertEqual(result.requested_revision, "fix-branch")
 
 
 if __name__ == "__main__":
