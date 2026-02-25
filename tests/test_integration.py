@@ -286,6 +286,70 @@ class TestRunIntegration(unittest.TestCase):
         )
         self.assertEqual(result.exit_code, 0, msg=result.output)
 
+    def test_run_partial_dir_warning_repos_only(self) -> None:
+        """Warn when --repos-dir is set but --venvs-dir is not."""
+        save_index(Index(), self.registry_dir)
+
+        import sys
+
+        target = sys.executable
+        repos = self.base / "repos"
+
+        runner = CliRunner()
+        result = runner.invoke(
+            main,
+            [
+                "run",
+                "--dry-run",
+                "--target-python",
+                target,
+                "--registry-dir",
+                str(self.registry_dir),
+                "--results-dir",
+                str(self.results_dir),
+                "--run-id",
+                "test-partial",
+                "--repos-dir",
+                str(repos),
+                "--log-file",
+                str(self.base / "run.log"),
+            ],
+        )
+        self.assertEqual(result.exit_code, 0, msg=result.output)
+        self.assertIn("--venvs-dir is not set", result.output)
+
+    def test_run_partial_dir_warning_venvs_only(self) -> None:
+        """Warn when --venvs-dir is set but --repos-dir is not."""
+        save_index(Index(), self.registry_dir)
+
+        import sys
+
+        target = sys.executable
+        venvs = self.base / "venvs"
+
+        runner = CliRunner()
+        result = runner.invoke(
+            main,
+            [
+                "run",
+                "--dry-run",
+                "--target-python",
+                target,
+                "--registry-dir",
+                str(self.registry_dir),
+                "--results-dir",
+                str(self.results_dir),
+                "--run-id",
+                "test-partial",
+                "--venvs-dir",
+                str(venvs),
+                "--log-file",
+                str(self.base / "run.log"),
+            ],
+        )
+        self.assertEqual(result.exit_code, 0, msg=result.output)
+        self.assertIn("--repos-dir is not set", result.output)
+
 
 if __name__ == "__main__":
     unittest.main()

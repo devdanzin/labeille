@@ -112,6 +112,7 @@ class RunData:
         self.run_dir = run_dir
         self._meta: RunMeta | None = None
         self._results: list[PackageResult] | None = None
+        self._results_by_pkg: dict[str, PackageResult] | None = None
 
     def __repr__(self) -> str:
         return f"RunData(run_id={self.run_id!r})"
@@ -131,11 +132,10 @@ class RunData:
         return self._results
 
     def result_for(self, package: str) -> PackageResult | None:
-        """Find result for a specific package, or None."""
-        for r in self.results:
-            if r.package == package:
-                return r
-        return None
+        """Find result for a specific package, or None. O(1) after first call."""
+        if self._results_by_pkg is None:
+            self._results_by_pkg = {r.package: r for r in self.results}
+        return self._results_by_pkg.get(package)
 
     def results_by_status(self) -> dict[str, list[PackageResult]]:
         """Group results by status."""
@@ -480,11 +480,10 @@ def analyze_run(
 
 def _compute_status_changes(old_run: RunData, new_run: RunData) -> list[StatusChange]:
     """Compute status changes between two runs."""
-    old_map: dict[str, PackageResult] = {r.package: r for r in old_run.results}
     changes: list[StatusChange] = []
 
     for r in new_run.results:
-        old_r = old_map.get(r.package)
+        old_r = old_run.result_for(r.package)
         if old_r is None:
             continue
         if old_r.status != r.status:
@@ -597,11 +596,8 @@ def compare_runs(
     """
     result = ComparisonResult(run_a=run_a, run_b=run_b)
 
-    map_a: dict[str, PackageResult] = {r.package: r for r in run_a.results}
-    map_b: dict[str, PackageResult] = {r.package: r for r in run_b.results}
-
-    names_a = set(map_a.keys())
-    names_b = set(map_b.keys())
+    names_a = {r.package for r in run_a.results}
+    names_b = {r.package for r in run_b.results}
     common = names_a & names_b
 
     result.packages_in_common = len(common)
@@ -609,8 +605,10 @@ def compare_runs(
     result.packages_only_in_b = sorted(names_b - names_a)
 
     for pkg in sorted(common):
-        ra = map_a[pkg]
-        rb = map_b[pkg]
+        ra = run_a.result_for(pkg)
+        rb = run_b.result_for(pkg)
+        if ra is None or rb is None:
+            continue  # shouldn't happen, but satisfies type checker
 
         if ra.status != rb.status:
             result.status_changes.append(

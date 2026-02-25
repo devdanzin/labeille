@@ -170,6 +170,22 @@ class TestRunData(unittest.TestCase):
         run = RunData(run_id="run1", run_dir=self.results_dir / "run1")
         self.assertIsNone(run.result_for("nonexistent"))
 
+    def test_result_for_cache_built_once(self) -> None:
+        """The _results_by_pkg dict is built lazily on first call."""
+        _write_run(
+            self.results_dir,
+            "run1",
+            results=[_make_result("alpha"), _make_result("beta")],
+        )
+        run = RunData(run_id="run1", run_dir=self.results_dir / "run1")
+        self.assertIsNone(run._results_by_pkg)
+        run.result_for("alpha")
+        self.assertIsNotNone(run._results_by_pkg)
+        # Second call reuses the same dict (no rebuild).
+        cache = run._results_by_pkg
+        run.result_for("beta")
+        self.assertIs(run._results_by_pkg, cache)
+
     def test_results_by_status(self) -> None:
         _write_run(
             self.results_dir,

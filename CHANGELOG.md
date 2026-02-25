@@ -28,6 +28,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - `_parse_install_packages` now handles `python -m pip install`, `python3 -m pip install`, and path-qualified pip invocations.
 - `_package_to_dict` accepts `omit_defaults` parameter to exclude default-valued fields from output.
 - `run_test_command` and `install_package` now kill the entire process tree on timeout via `os.killpg`, preventing orphaned grandchild processes from accumulating during batch runs.
+- `RunData.result_for()` now uses O(1) dict lookup instead of O(N) linear scan, with lazily-built `_results_by_pkg` cache.
+- `compare_runs` and `_compute_status_changes` use `result_for()` instead of building ad-hoc dicts.
+- Subprocess helpers (`build_env`, `check_jit_enabled`, `create_venv`, `validate_target_python`) now strip `PYTHONHOME`/`PYTHONPATH` via `_clean_env()` to prevent environment pollution.
+- CLI warns when only one of `--repos-dir`/`--venvs-dir` is set, since the other will use a temporary directory.
 
 ### Added
 - 350 enriched package configurations with full test commands, install commands, and metadata.
