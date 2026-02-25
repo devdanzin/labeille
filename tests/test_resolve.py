@@ -256,6 +256,21 @@ class TestFetchPypiMetadata(unittest.TestCase):
         self.assertIn("User-Agent", kwargs["headers"])
         self.assertIn("labeille/", kwargs["headers"]["User-Agent"])
 
+    def test_with_session(self) -> None:
+        """When a session is passed, session.get() is called instead of requests.get()."""
+        session = MagicMock(spec=requests.Session)
+        session.get.return_value = _mock_response(200, {"info": {}})
+        result = fetch_pypi_metadata("testpkg", session=session)
+        session.get.assert_called_once()
+        self.assertIsNotNone(result)
+
+    @patch("labeille.resolve.requests.get")
+    def test_without_session(self, mock_get: MagicMock) -> None:
+        """Without a session, requests.get() is called (existing behaviour)."""
+        mock_get.return_value = _mock_response(200, {"info": {}})
+        fetch_pypi_metadata("testpkg")
+        mock_get.assert_called_once()
+
 
 class TestInputReading(unittest.TestCase):
     def test_read_from_args(self) -> None:

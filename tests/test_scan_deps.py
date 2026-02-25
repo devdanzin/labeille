@@ -177,6 +177,38 @@ class TestExtractImports(unittest.TestCase):
         self.assertEqual(len(imports), 1)
         self.assertTrue(imports[0].is_conditional)
 
+    def test_extract_except_exception_not_conditional(self) -> None:
+        """import inside try/except Exception is NOT conditional."""
+        code = "try:\n    import some_lib\nexcept Exception:\n    some_lib = None\n"
+        p = self._write("test.py", code)
+        imports = extract_imports(p)
+        self.assertEqual(len(imports), 1)
+        self.assertFalse(imports[0].is_conditional)
+
+    def test_extract_bare_except_still_conditional(self) -> None:
+        """import inside bare except IS conditional."""
+        code = "try:\n    import some_lib\nexcept:\n    some_lib = None\n"
+        p = self._write("test.py", code)
+        imports = extract_imports(p)
+        self.assertEqual(len(imports), 1)
+        self.assertTrue(imports[0].is_conditional)
+
+    def test_extract_tuple_with_exception_and_importerror(self) -> None:
+        """except (Exception, ImportError) IS conditional (ImportError present)."""
+        code = "try:\n    import some_lib\nexcept (Exception, ImportError):\n    some_lib = None\n"
+        p = self._write("test.py", code)
+        imports = extract_imports(p)
+        self.assertEqual(len(imports), 1)
+        self.assertTrue(imports[0].is_conditional)
+
+    def test_extract_tuple_with_only_exception(self) -> None:
+        """except (Exception, ValueError) is NOT conditional."""
+        code = "try:\n    import some_lib\nexcept (Exception, ValueError):\n    some_lib = None\n"
+        p = self._write("test.py", code)
+        imports = extract_imports(p)
+        self.assertEqual(len(imports), 1)
+        self.assertFalse(imports[0].is_conditional)
+
     def test_extract_syntax_error(self) -> None:
         p = self._write("test.py", "def foo(\n  # broken syntax\n")
         imports = extract_imports(p)
@@ -871,6 +903,22 @@ class TestParseInstallPackages(unittest.TestCase):
     def test_version_specifiers(self) -> None:
         pkgs, extras = _parse_install_packages("pip install foo>=1.0 bar==2.0")
         self.assertEqual(pkgs, ["foo", "bar"])
+
+    def test_tilde_equals(self) -> None:
+        pkgs, extras = _parse_install_packages("pip install click~=8.0")
+        self.assertEqual(pkgs, ["click"])
+
+    def test_not_equals(self) -> None:
+        pkgs, extras = _parse_install_packages("pip install foo!=1.0")
+        self.assertEqual(pkgs, ["foo"])
+
+    def test_env_marker(self) -> None:
+        pkgs, extras = _parse_install_packages("pip install bar>=1.0;python_version>='3.8'")
+        self.assertEqual(pkgs, ["bar"])
+
+    def test_complex_specifier(self) -> None:
+        pkgs, extras = _parse_install_packages("pip install baz[extra]>=2.0,<3.0")
+        self.assertEqual(pkgs, ["baz"])
 
 
 if __name__ == "__main__":

@@ -46,6 +46,14 @@ class TestHasPlatformWheel(unittest.TestCase):
     def test_empty_list(self) -> None:
         self.assertFalse(has_platform_wheel([]))
 
+    def test_linux_x86_64(self) -> None:
+        files = ["pkg-1.0-cp312-cp312-linux_x86_64.whl"]
+        self.assertTrue(has_platform_wheel(files))
+
+    def test_linux_aarch64(self) -> None:
+        files = ["pkg-1.0-cp312-cp312-linux_aarch64.whl"]
+        self.assertTrue(has_platform_wheel(files))
+
 
 class TestClassifyFromUrls(unittest.TestCase):
     def test_pure_python(self) -> None:

@@ -32,6 +32,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - `compare_runs` and `_compute_status_changes` use `result_for()` instead of building ad-hoc dicts.
 - Subprocess helpers (`build_env`, `check_jit_enabled`, `create_venv`, `validate_target_python`) now strip `PYTHONHOME`/`PYTHONPATH` via `_clean_env()` to prevent environment pollution.
 - CLI warns when only one of `--repos-dir`/`--venvs-dir` is set, since the other will use a temporary directory.
+- `update_index_from_packages` accepts optional `modified_packages` set to avoid O(N) disk reads when only a few packages changed.
+- `_PLATFORM_INDICATORS` now detects bare `linux_x86_64`/`linux_aarch64` wheels in addition to `manylinux`/`musllinux`.
+- `fetch_pypi_metadata` and `resolve_package` accept an optional `requests.Session` for connection reuse; `resolve_all` uses shared/thread-local sessions.
+- `_is_import_error_handler` no longer treats `except Exception` as an import error handler, reducing false conditional import flags.
+- `_parse_install_packages` uses a regex instead of chained `.split()` to handle all PEP 440 specifiers (`~=`, `!=`, `;` markers).
+- `pull_repo` uses `git fetch` + `reset --hard FETCH_HEAD` + `clean -fdx` instead of `git pull --ff-only`, handling dirty working trees left by test suites.
 
 ### Added
 - 350 enriched package configurations with full test commands, install commands, and metadata.

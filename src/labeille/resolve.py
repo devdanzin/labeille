@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import re
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
@@ -208,19 +209,28 @@ def merge_inputs(*sources: list[PackageInput]) -> list[PackageInput]:
 # ---------------------------------------------------------------------------
 
 
-def fetch_pypi_metadata(package_name: str, *, timeout: float = 10.0) -> dict[str, Any] | None:
+def fetch_pypi_metadata(
+    package_name: str,
+    *,
+    timeout: float = 10.0,
+    session: requests.Session | None = None,
+) -> dict[str, Any] | None:
     """Fetch package metadata from the PyPI JSON API.
 
     Args:
         package_name: The name of the package on PyPI.
         timeout: HTTP request timeout in seconds.
+        session: Optional ``requests.Session`` for connection reuse.
 
     Returns:
         The parsed JSON metadata, or ``None`` on failure.
     """
     url = _PYPI_URL.format(name=package_name)
     try:
-        resp = requests.get(url, timeout=timeout, headers={"User-Agent": _USER_AGENT})
+        if session is not None:
+            resp = session.get(url, timeout=timeout, headers={"User-Agent": _USER_AGENT})
+        else:
+            resp = requests.get(url, timeout=timeout, headers={"User-Agent": _USER_AGENT})
     except requests.ConnectionError:
         log.error("Connection error fetching %s", package_name)
         return None
@@ -317,6 +327,7 @@ def resolve_package(
     *,
     timeout: float = 10.0,
     dry_run: bool = False,
+    session: requests.Session | None = None,
 ) -> ResolveResult:
     """Resolve a single package: fetch metadata, classify, and update registry.
 
@@ -325,6 +336,7 @@ def resolve_package(
         registry_path: Path to the registry directory.
         timeout: HTTP timeout in seconds.
         dry_run: If True, do not write any files.
+        session: Optional ``requests.Session`` for connection reuse.
 
     Returns:
         A ResolveResult describing what happened.
@@ -342,7 +354,7 @@ def resolve_package(
             return result
 
     # Fetch metadata from PyPI.
-    metadata = fetch_pypi_metadata(pkg.name, timeout=timeout)
+    metadata = fetch_pypi_metadata(pkg.name, timeout=timeout, session=session)
     if metadata is None:
         result.action = "failed"
         result.error = "Failed to fetch PyPI metadata"
@@ -400,6 +412,19 @@ def resolve_package(
     return result
 
 
+_thread_local = threading.local()
+
+
+def _get_thread_session() -> requests.Session:
+    """Return a thread-local ``requests.Session`` for connection reuse."""
+    sess: requests.Session | None = getattr(_thread_local, "session", None)
+    if sess is None:
+        sess = requests.Session()
+        sess.headers["User-Agent"] = _USER_AGENT
+        _thread_local.session = sess
+    return sess
+
+
 def _tally_result(summary: ResolveSummary, result: ResolveResult) -> None:
     """Update summary counters from a single resolve result."""
     if result.action == "created":
@@ -448,17 +473,26 @@ def resolve_all(
 
     workers = max(1, workers)
     if workers == 1:
-        for pkg in packages:
-            result = resolve_package(pkg, registry_path, timeout=timeout, dry_run=dry_run)
-            results.append(result)
-            _tally_result(summary, result)
+        with requests.Session() as session:
+            session.headers["User-Agent"] = _USER_AGENT
+            for pkg in packages:
+                result = resolve_package(
+                    pkg, registry_path, timeout=timeout, dry_run=dry_run, session=session
+                )
+                results.append(result)
+                _tally_result(summary, result)
     else:
         with ThreadPoolExecutor(max_workers=workers) as pool:
             futures: dict[Any, PackageInput] = {}
             for i, pkg in enumerate(packages):
                 futures[
                     pool.submit(
-                        resolve_package, pkg, registry_path, timeout=timeout, dry_run=dry_run
+                        resolve_package,
+                        pkg,
+                        registry_path,
+                        timeout=timeout,
+                        dry_run=dry_run,
+                        session=_get_thread_session(),
                     )
                 ] = pkg
                 # Rate-limit submissions to avoid hammering PyPI.
@@ -502,7 +536,9 @@ def resolve_all(
                                 entry.download_count = dc
                             break
 
-        update_index_from_packages(index, registry_path)
+        # Only re-read packages that were resolved in this run.
+        modified = {r.name for r in results if r.action in ("created", "updated")}
+        update_index_from_packages(index, registry_path, modified_packages=modified)
         sort_index(index)
         save_index(index, registry_path)
 

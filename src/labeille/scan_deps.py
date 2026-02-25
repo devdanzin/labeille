@@ -7,6 +7,7 @@ replacing the slow trial-and-error enrichment cycle with a single upfront scan.
 from __future__ import annotations
 
 import ast
+import re
 import sys
 from dataclasses import dataclass
 from fnmatch import fnmatch
@@ -111,13 +112,12 @@ def _is_import_error_handler(handler: ast.ExceptHandler) -> bool:
         # bare except: — treat as catching everything including ImportError
         return True
     if isinstance(handler.type, ast.Name):
-        return handler.type.id in ("ImportError", "ModuleNotFoundError", "Exception")
+        return handler.type.id in ("ImportError", "ModuleNotFoundError")
     if isinstance(handler.type, ast.Tuple):
         for elt in handler.type.elts:
             if isinstance(elt, ast.Name) and elt.id in (
                 "ImportError",
                 "ModuleNotFoundError",
-                "Exception",
             ):
                 return True
     return False
@@ -589,6 +589,11 @@ def resolve_imports(
 # ---------------------------------------------------------------------------
 
 
+# Extracts the base package name from a pip requirement string, stopping at
+# the first version specifier, extras bracket, or environment marker.
+_PIP_PKG_RE = re.compile(r"^([A-Za-z0-9]([A-Za-z0-9._-]*[A-Za-z0-9])?)")
+
+
 def _normalize_pip_command(cmd: str) -> str | None:
     """Extract the part after ``pip install`` from various pip invocations.
 
@@ -656,14 +661,14 @@ def _parse_install_packages(install_command: str) -> tuple[list[str], list[str]]
                     extra = cleaned[cleaned.index("[") : cleaned.index("]") + 1]
                     extras.append(f"{extra} (contents unknown)")
                 continue
-            # Version specifiers.
-            pkg_name = (
-                part.split(">=")[0].split("<=")[0].split("==")[0].split("<")[0].split(">")[0]
-            )
-            pkg_name = pkg_name.split("[")[0]  # Remove extras brackets.
-            pkg_name = pkg_name.strip("'\"")
-            if pkg_name and not pkg_name.startswith("-"):
-                packages.append(pkg_name)
+            # Extract base package name, ignoring version specifiers,
+            # extras, and environment markers.
+            base = part.split("[")[0].strip("'\"")
+            match = _PIP_PKG_RE.match(base)
+            if match:
+                pkg_name = match.group(1)
+                if pkg_name and not pkg_name.startswith("-"):
+                    packages.append(pkg_name)
 
     return packages, extras
 
