@@ -256,17 +256,24 @@ def save_package(entry: PackageEntry, registry_path: Path) -> None:
     log.debug("Saved package %s to %s", entry.package, p)
 
 
-def update_index_from_packages(index: Index, registry_path: Path) -> None:
+def update_index_from_packages(
+    index: Index,
+    registry_path: Path,
+    modified_packages: set[str] | None = None,
+) -> None:
     """Refresh index entries with current data from package YAML files.
 
-    For each entry in the index that has a corresponding package file, updates
-    ``extension_type``, ``enriched``, and ``skip`` from the package file.
+    If *modified_packages* is provided, only those entries are re-read
+    from disk.  Otherwise all entries are refreshed (existing behaviour).
 
     Args:
         index: The index to update (modified in place).
         registry_path: Path to the registry directory.
+        modified_packages: When given, only reload these package names.
     """
     for entry in index.packages:
+        if modified_packages is not None and entry.name not in modified_packages:
+            continue
         if package_exists(entry.name, registry_path):
             pkg = load_package(entry.name, registry_path)
             entry.extension_type = pkg.extension_type

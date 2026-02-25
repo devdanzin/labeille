@@ -353,7 +353,11 @@ def clone_repo(repo_url: str, dest: Path, clone_depth: int | None = None) -> str
 
 
 def pull_repo(dest: Path) -> str | None:
-    """Pull latest changes in an existing repo clone and return the HEAD revision.
+    """Fetch latest changes and force-reset to upstream HEAD.
+
+    Uses ``fetch`` + ``reset --hard`` + ``clean -fdx`` instead of
+    ``pull --ff-only`` to handle dirty working trees left by test
+    suites without needing a full re-clone.
 
     Args:
         dest: The directory containing the existing clone.
@@ -362,19 +366,53 @@ def pull_repo(dest: Path) -> str | None:
         The HEAD commit hash, or ``None`` on failure.
 
     Raises:
-        subprocess.CalledProcessError: If the pull fails.
+        subprocess.CalledProcessError: If the fetch fails.
     """
-    log.debug("Running: git pull --ff-only (in %s)", dest)
-    pull_proc = subprocess.run(
-        ["git", "pull", "--ff-only"],
+    log.debug("Fetching and resetting repo in %s", dest)
+
+    # Fetch latest from origin.
+    subprocess.run(
+        ["git", "fetch", "origin"],
         capture_output=True,
         text=True,
         cwd=str(dest),
         timeout=120,
         check=True,
     )
-    if pull_proc.stdout.strip():
-        log.debug("git pull: %s", pull_proc.stdout.strip())
+
+    # Reset to the fetched HEAD, discarding any local modifications.
+    # FETCH_HEAD works reliably with shallow clones where origin/HEAD
+    # or origin/main might not be set.
+    reset_proc = subprocess.run(
+        ["git", "reset", "--hard", "FETCH_HEAD"],
+        capture_output=True,
+        text=True,
+        cwd=str(dest),
+        timeout=60,
+        check=False,
+    )
+    if reset_proc.returncode != 0:
+        log.debug(
+            "git reset --hard failed (non-fatal): %s",
+            reset_proc.stderr.strip(),
+        )
+
+    # Remove untracked files and directories left by test runs.
+    clean_proc = subprocess.run(
+        ["git", "clean", "-fdx"],
+        capture_output=True,
+        text=True,
+        cwd=str(dest),
+        timeout=60,
+        check=False,
+    )
+    if clean_proc.returncode != 0:
+        log.debug(
+            "git clean failed (non-fatal): %s",
+            clean_proc.stderr.strip(),
+        )
+
+    # Get the HEAD revision.
     proc = subprocess.run(
         ["git", "rev-parse", "HEAD"],
         capture_output=True,

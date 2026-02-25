@@ -30,6 +30,7 @@ from labeille.runner import (
     filter_packages,
     get_package_version,
     load_completed_packages,
+    pull_repo,
     run_all,
     run_package,
     save_crash_stderr,
@@ -1731,6 +1732,83 @@ class TestExtractPythonMinorVersion(unittest.TestCase):
 
     def test_malformed_version(self) -> None:
         self.assertEqual(extract_python_minor_version("not-a-version"), "not-a-version")
+
+
+class TestPullRepo(unittest.TestCase):
+    @patch("labeille.runner.subprocess.run")
+    def test_success(self, mock_run: Any) -> None:
+        """Fetch + reset + clean + rev-parse all succeed → returns revision."""
+
+        def side_effect(*args: Any, **kwargs: Any) -> MagicMock:
+            cmd = args[0]
+            result = MagicMock()
+            result.returncode = 0
+            result.stdout = ""
+            result.stderr = ""
+            if cmd[0:2] == ["git", "fetch"]:
+                pass  # check=True, no exception needed
+            elif cmd[0:3] == ["git", "reset", "--hard"]:
+                pass
+            elif cmd[0:2] == ["git", "clean"]:
+                pass
+            elif cmd[0:3] == ["git", "rev-parse", "HEAD"]:
+                result.stdout = "abc123\n"
+            return result
+
+        mock_run.side_effect = side_effect
+        rev = pull_repo(Path("/tmp/repo"))
+        self.assertEqual(rev, "abc123")
+        # Should have called fetch, reset, clean, rev-parse (4 calls).
+        self.assertEqual(mock_run.call_count, 4)
+
+    @patch("labeille.runner.subprocess.run")
+    def test_fetch_fails_propagates(self, mock_run: Any) -> None:
+        """git fetch failing raises CalledProcessError."""
+        mock_run.side_effect = subprocess.CalledProcessError(1, "git fetch")
+        with self.assertRaises(subprocess.CalledProcessError):
+            pull_repo(Path("/tmp/repo"))
+
+    @patch("labeille.runner.subprocess.run")
+    def test_reset_fails_nonfatal(self, mock_run: Any) -> None:
+        """git reset --hard failing is non-fatal; revision still returned."""
+
+        def side_effect(*args: Any, **kwargs: Any) -> MagicMock:
+            cmd = args[0]
+            result = MagicMock()
+            result.returncode = 0
+            result.stdout = ""
+            result.stderr = ""
+            if cmd[0:3] == ["git", "reset", "--hard"]:
+                result.returncode = 1
+                result.stderr = "reset failed"
+            elif cmd[0:3] == ["git", "rev-parse", "HEAD"]:
+                result.stdout = "def456\n"
+            return result
+
+        mock_run.side_effect = side_effect
+        rev = pull_repo(Path("/tmp/repo"))
+        self.assertEqual(rev, "def456")
+
+    @patch("labeille.runner.subprocess.run")
+    def test_clean_fails_nonfatal(self, mock_run: Any) -> None:
+        """git clean failing is non-fatal; revision still returned."""
+
+        def side_effect(*args: Any, **kwargs: Any) -> MagicMock:
+            cmd = args[0]
+            result = MagicMock()
+            result.returncode = 0
+            result.stdout = ""
+            result.stderr = ""
+            if cmd[0:2] == ["git", "clean"]:
+                result.returncode = 1
+                result.stderr = "clean failed"
+            elif cmd[0:3] == ["git", "rev-parse", "HEAD"]:
+                result.stdout = "ghi789\n"
+            return result
+
+        mock_run.side_effect = side_effect
+        rev = pull_repo(Path("/tmp/repo"))
+        self.assertEqual(rev, "ghi789")
 
 
 if __name__ == "__main__":

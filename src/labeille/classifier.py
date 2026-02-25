@@ -18,7 +18,7 @@ log = get_logger("classifier")
 
 # Patterns that indicate a platform-specific (native extension) wheel.
 _PLATFORM_INDICATORS = re.compile(
-    r"manylinux|musllinux|macosx|win32|win_amd64|win_arm64", re.IGNORECASE
+    r"manylinux|musllinux|macosx|win32|win_amd64|win_arm64|linux_", re.IGNORECASE
 )
 
 

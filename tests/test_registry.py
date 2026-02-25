@@ -304,6 +304,43 @@ class TestIndexSkipVersionsKeys(unittest.TestCase):
         update_index_from_packages(index, self.registry)
         self.assertEqual(index.packages[0].skip_versions_keys, ["3.14", "3.15"])
 
+    def test_update_index_selective(self) -> None:
+        """modified_packages limits which packages are loaded from disk."""
+        from unittest.mock import patch
+
+        for name in ("pkg1", "pkg2", "pkg3"):
+            save_package(PackageEntry(package=name, enriched=(name == "pkg1")), self.registry)
+        index = Index(
+            packages=[
+                IndexEntry(name="pkg1", download_count=100),
+                IndexEntry(name="pkg2", download_count=50),
+                IndexEntry(name="pkg3", download_count=10),
+            ]
+        )
+        with patch("labeille.registry.load_package", wraps=load_package) as spy:
+            update_index_from_packages(index, self.registry, modified_packages={"pkg1"})
+            # Only pkg1 should have been loaded.
+            spy.assert_called_once_with("pkg1", self.registry)
+        self.assertTrue(index.packages[0].enriched)
+        # pkg2 and pkg3 should retain their defaults (not loaded).
+        self.assertFalse(index.packages[1].enriched)
+
+    def test_update_index_none_refreshes_all(self) -> None:
+        """modified_packages=None refreshes every package (existing behaviour)."""
+        from unittest.mock import patch
+
+        for name in ("pkg1", "pkg2"):
+            save_package(PackageEntry(package=name), self.registry)
+        index = Index(
+            packages=[
+                IndexEntry(name="pkg1", download_count=100),
+                IndexEntry(name="pkg2", download_count=50),
+            ]
+        )
+        with patch("labeille.registry.load_package", wraps=load_package) as spy:
+            update_index_from_packages(index, self.registry)
+            self.assertEqual(spy.call_count, 2)
+
     def test_load_index_tolerates_missing_skip_versions_keys(self) -> None:
         """Index YAML without skip_versions_keys loads with default []."""
         import yaml
