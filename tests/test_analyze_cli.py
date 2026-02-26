@@ -502,5 +502,221 @@ class TestPackageCommand(_FixtureMixin, unittest.TestCase):
         self.assertIn("No run history", result.output)
 
 
+# ---------------------------------------------------------------------------
+# Commit-aware comparison tests
+# ---------------------------------------------------------------------------
+
+
+class TestCommitAnnotation(unittest.TestCase):
+    """Test the _commit_annotation helper."""
+
+    def test_pass_to_crash_unchanged(self) -> None:
+        from labeille.analyze_cli import _commit_annotation
+
+        result = _commit_annotation("pass", "crash", commit_changed=False, commit_known=True)
+        self.assertIn("CPython/JIT regression", result)
+
+    def test_crash_to_pass_unchanged(self) -> None:
+        from labeille.analyze_cli import _commit_annotation
+
+        result = _commit_annotation("crash", "pass", commit_changed=False, commit_known=True)
+        self.assertIn("CPython/JIT fix", result)
+
+    def test_ambiguous_pass_to_crash_changed(self) -> None:
+        from labeille.analyze_cli import _commit_annotation
+
+        result = _commit_annotation("pass", "crash", commit_changed=True, commit_known=True)
+        self.assertEqual(result, "")
+
+    def test_unknown_commit(self) -> None:
+        from labeille.analyze_cli import _commit_annotation
+
+        result = _commit_annotation("pass", "crash", commit_changed=False, commit_known=False)
+        self.assertEqual(result, "")
+
+    def test_other_transition(self) -> None:
+        from labeille.analyze_cli import _commit_annotation
+
+        result = _commit_annotation("fail", "pass", commit_changed=False, commit_known=True)
+        self.assertEqual(result, "")
+
+
+class TestFormatCommitContext(unittest.TestCase):
+    """Test the _format_commit_context helper."""
+
+    def test_both_known_unchanged(self) -> None:
+        from labeille.analyze import StatusChange
+        from labeille.analyze_cli import _format_commit_context
+
+        sc = StatusChange(
+            package="pkg",
+            old_status="pass",
+            new_status="crash",
+            old_commit="abc1234def5678",
+            new_commit="abc1234def5678",
+        )
+        result = _format_commit_context(sc)
+        self.assertIn("abc1234", result)
+        self.assertIn("unchanged", result)
+        self.assertIn("CPython/JIT regression", result)
+
+    def test_both_known_changed(self) -> None:
+        from labeille.analyze import StatusChange
+        from labeille.analyze_cli import _format_commit_context
+
+        sc = StatusChange(
+            package="pkg",
+            old_status="pass",
+            new_status="fail",
+            old_commit="abc1234",
+            new_commit="def5678",
+        )
+        result = _format_commit_context(sc)
+        self.assertIn("abc1234", result)
+        self.assertIn("def5678", result)
+        self.assertIn("changed", result)
+
+    def test_unknown_commits(self) -> None:
+        from labeille.analyze import StatusChange
+        from labeille.analyze_cli import _format_commit_context
+
+        sc = StatusChange(
+            package="pkg",
+            old_status="pass",
+            new_status="crash",
+            old_commit=None,
+            new_commit=None,
+        )
+        result = _format_commit_context(sc)
+        self.assertIn("unknown", result)
+
+    def test_truncates_long_hashes(self) -> None:
+        from labeille.analyze import StatusChange
+        from labeille.analyze_cli import _format_commit_context
+
+        sc = StatusChange(
+            package="pkg",
+            old_status="pass",
+            new_status="fail",
+            old_commit="abc1234567890abcdef",
+            new_commit="def5678901234abcdef",
+        )
+        result = _format_commit_context(sc)
+        # Should show 7-char prefix.
+        self.assertIn("abc1234", result)
+        self.assertIn("def5678", result)
+        # Should NOT show full hash.
+        self.assertNotIn("abc1234567890abcdef", result)
+
+
+class TestCompareShowsCommitContext(_FixtureMixin, unittest.TestCase):
+    def setUp(self) -> None:
+        self._setup_fixtures()
+
+    def tearDown(self) -> None:
+        self._cleanup_fixtures()
+
+    def test_compare_shows_commit_context(self) -> None:
+        """Compare output includes Repo: lines for status changes."""
+        # Create runs with commit info.
+        _write_run(
+            self.results_dir,
+            "2026-02-24T10-00-00",
+            results=[
+                _make_result("alpha", status="pass", git_revision="aaa1111"),
+                _make_result("beta", status="pass", git_revision="bbb1111"),
+            ],
+        )
+        _write_run(
+            self.results_dir,
+            "2026-02-25T10-00-00",
+            results=[
+                _make_result(
+                    "alpha",
+                    status="crash",
+                    signal=11,
+                    crash_signature="SIGSEGV",
+                    git_revision="aaa1111",
+                ),
+                _make_result("beta", status="fail", git_revision="bbb2222"),
+            ],
+        )
+        result = self.runner.invoke(
+            analyze,
+            [
+                "compare",
+                "2026-02-24T10-00-00",
+                "2026-02-25T10-00-00",
+                "--results-dir",
+                str(self.results_dir),
+            ],
+        )
+        self.assertEqual(result.exit_code, 0, result.output)
+        self.assertIn("Repo:", result.output)
+        self.assertIn("aaa1111", result.output)
+        self.assertIn("unchanged", result.output)
+
+    def test_compare_unknown_commit_no_annotation(self) -> None:
+        """Status changes without commits show 'unknown' but no annotation."""
+        result = self.runner.invoke(
+            analyze,
+            [
+                "compare",
+                "2026-02-20T10-00-00",
+                "2026-02-22T10-00-00",
+                "--results-dir",
+                str(self.results_dir),
+            ],
+        )
+        self.assertEqual(result.exit_code, 0, result.output)
+        # The fixture runs don't have git_revision, so commits are unknown.
+        self.assertIn("unknown", result.output)
+
+    def test_compare_new_crashes_summary(self) -> None:
+        """Compare output includes new crashes summary with commit stats."""
+        _write_run(
+            self.results_dir,
+            "2026-02-24T10-00-00",
+            results=[
+                _make_result("alpha", status="pass", git_revision="aaa1111"),
+                _make_result("beta", status="pass", git_revision="bbb1111"),
+            ],
+        )
+        _write_run(
+            self.results_dir,
+            "2026-02-25T10-00-00",
+            results=[
+                _make_result(
+                    "alpha",
+                    status="crash",
+                    signal=11,
+                    crash_signature="SIGSEGV",
+                    git_revision="aaa1111",
+                ),
+                _make_result(
+                    "beta",
+                    status="crash",
+                    signal=6,
+                    crash_signature="SIGABRT",
+                    git_revision="bbb2222",
+                ),
+            ],
+        )
+        result = self.runner.invoke(
+            analyze,
+            [
+                "compare",
+                "2026-02-24T10-00-00",
+                "2026-02-25T10-00-00",
+                "--results-dir",
+                str(self.results_dir),
+            ],
+        )
+        self.assertEqual(result.exit_code, 0, result.output)
+        self.assertIn("New crashes: 2", result.output)
+        self.assertIn("Repo unchanged: 1", result.output)
+        self.assertIn("Repo changed: 1", result.output)
+
+
 if __name__ == "__main__":
     unittest.main()

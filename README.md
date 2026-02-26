@@ -243,6 +243,22 @@ labeille analyze history --last 5
 labeille analyze package requests
 ```
 
+### Commit-aware comparison
+
+When comparing runs, labeille shows whether each package's repository
+changed between runs:
+
+```
+labeille analyze compare run_001 run_002
+
+Status changes:
+  requests: PASS → CRASH
+    Repo: abc1234 → abc1234 (unchanged — likely a CPython/JIT regression)
+```
+
+This helps triage new crashes: if the package code didn't change,
+the regression is almost certainly on the CPython/JIT side.
+
 ## Registry Management
 
 Batch operations for managing the package registry:

@@ -8,9 +8,11 @@ import unittest
 from pathlib import Path
 
 from labeille.analyze import (
+    PackageComparison,
     PackageResult,
     ResultsStore,
     RunData,
+    StatusChange,
     analyze_history,
     analyze_package,
     analyze_registry,
@@ -897,6 +899,233 @@ class TestAnalyzePackage(unittest.TestCase):
         history = analyze_package("nonexistent", store)
         self.assertEqual(len(history.run_results), 0)
         self.assertFalse(history.likely_fixed)
+
+
+# ---------------------------------------------------------------------------
+# Commit-aware comparison tests
+# ---------------------------------------------------------------------------
+
+
+class TestStatusChangeCommits(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmpdir = tempfile.TemporaryDirectory()
+        self.results_dir = Path(self.tmpdir.name)
+
+    def tearDown(self) -> None:
+        self.tmpdir.cleanup()
+
+    def test_status_change_includes_commits(self) -> None:
+        """Status changes include old_commit and new_commit from git_revision."""
+        _write_run(
+            self.results_dir,
+            "run1",
+            results=[_make_result("a", status="pass", git_revision="abc1234")],
+        )
+        _write_run(
+            self.results_dir,
+            "run2",
+            results=[
+                _make_result(
+                    "a",
+                    status="crash",
+                    signal=11,
+                    crash_signature="SIGSEGV",
+                    git_revision="def5678",
+                ),
+            ],
+        )
+        old = RunData(run_id="run1", run_dir=self.results_dir / "run1")
+        new = RunData(run_id="run2", run_dir=self.results_dir / "run2")
+        analysis = analyze_run(new, previous_run=old)
+        self.assertIsNotNone(analysis.status_changes)
+        changes = analysis.status_changes
+        assert changes is not None
+        self.assertEqual(len(changes), 1)
+        self.assertEqual(changes[0].old_commit, "abc1234")
+        self.assertEqual(changes[0].new_commit, "def5678")
+
+    def test_status_change_missing_commit(self) -> None:
+        """Results without git_revision produce None commit fields."""
+        _write_run(
+            self.results_dir,
+            "run1",
+            results=[_make_result("a", status="pass")],
+        )
+        _write_run(
+            self.results_dir,
+            "run2",
+            results=[_make_result("a", status="fail")],
+        )
+        old = RunData(run_id="run1", run_dir=self.results_dir / "run1")
+        new = RunData(run_id="run2", run_dir=self.results_dir / "run2")
+        analysis = analyze_run(new, previous_run=old)
+        self.assertIsNotNone(analysis.status_changes)
+        changes = analysis.status_changes
+        assert changes is not None
+        self.assertEqual(len(changes), 1)
+        self.assertIsNone(changes[0].old_commit)
+        self.assertIsNone(changes[0].new_commit)
+
+    def test_status_change_has_commit_fields(self) -> None:
+        """StatusChange dataclass has old_commit and new_commit fields."""
+        sc = StatusChange(
+            package="pkg",
+            old_status="pass",
+            new_status="crash",
+            old_commit="aaa1111",
+            new_commit="bbb2222",
+        )
+        self.assertEqual(sc.old_commit, "aaa1111")
+        self.assertEqual(sc.new_commit, "bbb2222")
+
+
+class TestPackageComparison(unittest.TestCase):
+    def test_commit_changed(self) -> None:
+        pc = PackageComparison(
+            package="pkg",
+            status_a="pass",
+            status_b="crash",
+            duration_a=10.0,
+            duration_b=12.0,
+            commit_a="abc1234",
+            commit_b="def5678",
+        )
+        self.assertTrue(pc.commit_changed)
+        self.assertFalse(pc.commit_unchanged)
+
+    def test_commit_unchanged(self) -> None:
+        pc = PackageComparison(
+            package="pkg",
+            status_a="pass",
+            status_b="crash",
+            duration_a=10.0,
+            duration_b=12.0,
+            commit_a="abc1234",
+            commit_b="abc1234",
+        )
+        self.assertFalse(pc.commit_changed)
+        self.assertTrue(pc.commit_unchanged)
+
+    def test_commit_unknown(self) -> None:
+        pc = PackageComparison(
+            package="pkg",
+            status_a="pass",
+            status_b="crash",
+            duration_a=10.0,
+            duration_b=12.0,
+            commit_a=None,
+            commit_b="abc1234",
+        )
+        self.assertFalse(pc.commit_changed)
+        self.assertFalse(pc.commit_unchanged)
+
+    def test_both_none(self) -> None:
+        pc = PackageComparison(
+            package="pkg",
+            status_a="pass",
+            status_b="pass",
+            duration_a=10.0,
+            duration_b=12.0,
+            commit_a=None,
+            commit_b=None,
+        )
+        self.assertFalse(pc.commit_changed)
+        self.assertFalse(pc.commit_unchanged)
+
+
+class TestCompareRunsCommitInfo(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmpdir = tempfile.TemporaryDirectory()
+        self.results_dir = Path(self.tmpdir.name)
+
+    def tearDown(self) -> None:
+        self.tmpdir.cleanup()
+
+    def test_compare_runs_populates_commit_info(self) -> None:
+        """compare_runs populates package_details with commit info."""
+        _write_run(
+            self.results_dir,
+            "run1",
+            results=[
+                _make_result("a", status="pass", git_revision="aaa1111"),
+                _make_result("b", status="pass", git_revision="bbb1111"),
+            ],
+        )
+        _write_run(
+            self.results_dir,
+            "run2",
+            results=[
+                _make_result(
+                    "a",
+                    status="crash",
+                    signal=11,
+                    crash_signature="SIGSEGV",
+                    git_revision="aaa1111",
+                ),
+                _make_result(
+                    "b",
+                    status="crash",
+                    signal=6,
+                    crash_signature="SIGABRT",
+                    git_revision="bbb2222",
+                ),
+            ],
+        )
+        ra = RunData(run_id="run1", run_dir=self.results_dir / "run1")
+        rb = RunData(run_id="run2", run_dir=self.results_dir / "run2")
+        comp = compare_runs(ra, rb)
+
+        self.assertEqual(len(comp.package_details), 2)
+        detail_a = next(d for d in comp.package_details if d.package == "a")
+        detail_b = next(d for d in comp.package_details if d.package == "b")
+
+        self.assertEqual(detail_a.commit_a, "aaa1111")
+        self.assertEqual(detail_a.commit_b, "aaa1111")
+        self.assertTrue(detail_a.commit_unchanged)
+
+        self.assertEqual(detail_b.commit_a, "bbb1111")
+        self.assertEqual(detail_b.commit_b, "bbb2222")
+        self.assertTrue(detail_b.commit_changed)
+
+    def test_compare_runs_status_changes_have_commits(self) -> None:
+        """Status changes from compare_runs include commit fields."""
+        _write_run(
+            self.results_dir,
+            "run1",
+            results=[_make_result("a", status="pass", git_revision="abc1234")],
+        )
+        _write_run(
+            self.results_dir,
+            "run2",
+            results=[
+                _make_result("a", status="fail", git_revision="def5678"),
+            ],
+        )
+        ra = RunData(run_id="run1", run_dir=self.results_dir / "run1")
+        rb = RunData(run_id="run2", run_dir=self.results_dir / "run2")
+        comp = compare_runs(ra, rb)
+        self.assertEqual(len(comp.status_changes), 1)
+        self.assertEqual(comp.status_changes[0].old_commit, "abc1234")
+        self.assertEqual(comp.status_changes[0].new_commit, "def5678")
+
+    def test_compare_runs_missing_commits(self) -> None:
+        """Missing git_revision results in None commit fields."""
+        _write_run(
+            self.results_dir,
+            "run1",
+            results=[_make_result("a", status="pass")],
+        )
+        _write_run(
+            self.results_dir,
+            "run2",
+            results=[_make_result("a", status="fail")],
+        )
+        ra = RunData(run_id="run1", run_dir=self.results_dir / "run1")
+        rb = RunData(run_id="run2", run_dir=self.results_dir / "run2")
+        comp = compare_runs(ra, rb)
+        self.assertEqual(len(comp.package_details), 1)
+        self.assertIsNone(comp.package_details[0].commit_a)
+        self.assertIsNone(comp.package_details[0].commit_b)
 
 
 if __name__ == "__main__":

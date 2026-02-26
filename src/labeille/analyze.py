@@ -385,6 +385,8 @@ class StatusChange:
     new_status: str
     old_detail: str = ""
     new_detail: str = ""
+    old_commit: str | None = None
+    new_commit: str | None = None
 
 
 @dataclass
@@ -496,6 +498,8 @@ def _compute_status_changes(old_run: RunData, new_run: RunData) -> list[StatusCh
                     new_status=r.status,
                     old_detail=result_detail(old_r),
                     new_detail=result_detail(r),
+                    old_commit=getattr(old_r, "git_revision", None),
+                    new_commit=getattr(r, "git_revision", None),
                 )
             )
 
@@ -572,6 +576,37 @@ class TimingChange:
 
 
 @dataclass
+class PackageComparison:
+    """Per-package comparison between two runs."""
+
+    package: str
+    status_a: str
+    status_b: str
+    duration_a: float
+    duration_b: float
+    commit_a: str | None = None
+    commit_b: str | None = None
+
+    @property
+    def commit_changed(self) -> bool:
+        """True if both commits are known and differ."""
+        return (
+            self.commit_a is not None
+            and self.commit_b is not None
+            and self.commit_a != self.commit_b
+        )
+
+    @property
+    def commit_unchanged(self) -> bool:
+        """True if both commits are known and identical."""
+        return (
+            self.commit_a is not None
+            and self.commit_b is not None
+            and self.commit_a == self.commit_b
+        )
+
+
+@dataclass
 class ComparisonResult:
     """Comparison between two runs."""
 
@@ -584,6 +619,7 @@ class ComparisonResult:
     signature_changes: list[tuple[str, str | None, str | None]] = field(default_factory=list)
     timing_changes: list[TimingChange] = field(default_factory=list)
     unchanged_counts: dict[str, int] = field(default_factory=dict)
+    package_details: list[PackageComparison] = field(default_factory=list)
 
 
 def compare_runs(
@@ -614,6 +650,21 @@ def compare_runs(
         if ra is None or rb is None:
             continue  # shouldn't happen, but satisfies type checker
 
+        commit_a = getattr(ra, "git_revision", None)
+        commit_b = getattr(rb, "git_revision", None)
+
+        result.package_details.append(
+            PackageComparison(
+                package=pkg,
+                status_a=ra.status,
+                status_b=rb.status,
+                duration_a=ra.duration_seconds,
+                duration_b=rb.duration_seconds,
+                commit_a=commit_a,
+                commit_b=commit_b,
+            )
+        )
+
         if ra.status != rb.status:
             result.status_changes.append(
                 StatusChange(
@@ -622,6 +673,8 @@ def compare_runs(
                     new_status=rb.status,
                     old_detail=result_detail(ra),
                     new_detail=result_detail(rb),
+                    old_commit=commit_a,
+                    new_commit=commit_b,
                 )
             )
         else:

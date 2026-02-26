@@ -18,6 +18,7 @@ from labeille.analyze import (
     ResultsStore,
     RunAnalysis,
     RunData,
+    StatusChange,
     analyze_history,
     analyze_package,
     analyze_registry,
@@ -386,6 +387,19 @@ def _print_run_summary(
         )
         click.echo()
 
+    # 2b. Status changes with commit context (vs previous run).
+    if analysis.status_changes:
+        click.echo(f"Status changes vs previous run ({len(analysis.status_changes)}):")
+        for sc in analysis.status_changes:
+            old_icon = format_status_icon(sc.old_status).split()[0]
+            new_icon = format_status_icon(sc.new_status).split()[0]
+            click.echo(
+                f"  {old_icon}\u2192{new_icon}  {sc.package:<20s} "
+                f"{sc.old_status.upper()} \u2192 {sc.new_status.upper()}"
+            )
+            click.echo(f"    {_format_commit_context(sc)}")
+        click.echo()
+
     # 3. Aggregate summary.
     tested = len(results)
     total_pkgs = meta.packages_tested + meta.packages_skipped
@@ -563,6 +577,42 @@ def compare_cmd(
     _print_comparison(comparison, only_changes=only_changes, no_timing=no_timing)
 
 
+def _commit_annotation(
+    old_status: str,
+    new_status: str,
+    commit_changed: bool,
+    commit_known: bool,
+) -> str:
+    """Return a brief annotation about the likely cause of a status change."""
+    if not commit_known:
+        return ""
+    if old_status == "pass" and new_status == "crash":
+        if not commit_changed:
+            return " — likely a CPython/JIT regression"
+        return ""
+    if old_status == "crash" and new_status == "pass":
+        if not commit_changed:
+            return " — likely a CPython/JIT fix"
+        return ""
+    return ""
+
+
+def _format_commit_context(change: StatusChange) -> str:
+    """Format commit info for a status change."""
+    old = (change.old_commit or "unknown")[:7]
+    new = (change.new_commit or "unknown")[:7]
+    commit_known = change.old_commit is not None and change.new_commit is not None
+    if old == "unknown" or new == "unknown":
+        label = f"Repo: {old} \u2192 {new}"
+    elif old == new:
+        annotation = _commit_annotation(change.old_status, change.new_status, False, commit_known)
+        label = f"Repo: {old} (unchanged{annotation})"
+    else:
+        annotation = _commit_annotation(change.old_status, change.new_status, True, commit_known)
+        label = f"Repo: {old} \u2192 {new} (changed{annotation})"
+    return label
+
+
 def _print_comparison(
     comp: ComparisonResult,
     *,
@@ -610,7 +660,33 @@ def _print_comparison(
                     f"  {old_icon}\u2192{new_icon}  {sc.package:<20s} "
                     f"{sc.old_status.upper()} \u2192 {sc.new_status.upper()}"
                 )
+            click.echo(f"    {_format_commit_context(sc)}")
         click.echo()
+
+        # Summary statistics for new crashes.
+        new_crashes = [
+            c for c in comp.status_changes if c.old_status == "pass" and c.new_status == "crash"
+        ]
+        if new_crashes:
+            repo_unchanged = sum(
+                1
+                for c in new_crashes
+                if c.old_commit and c.new_commit and c.old_commit == c.new_commit
+            )
+            repo_changed = sum(
+                1
+                for c in new_crashes
+                if c.old_commit and c.new_commit and c.old_commit != c.new_commit
+            )
+            repo_unknown = len(new_crashes) - repo_unchanged - repo_changed
+            click.echo(f"  New crashes: {len(new_crashes)}")
+            if repo_unchanged:
+                click.echo(f"    Repo unchanged: {repo_unchanged}")
+            if repo_changed:
+                click.echo(f"    Repo changed: {repo_changed}")
+            if repo_unknown:
+                click.echo(f"    Commit unknown: {repo_unknown}")
+            click.echo()
     else:
         click.echo("No status changes.")
         click.echo()
