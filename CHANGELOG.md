@@ -6,6 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added
+- Commit-aware run comparison: `analyze compare` and `analyze run` show git commit changes alongside status changes with heuristic annotations (e.g. "unchanged — likely a CPython/JIT regression").
+- `PackageComparison` dataclass with `commit_changed`/`commit_unchanged` properties for per-package comparison data.
+- New crash summary statistics in compare output showing repo unchanged/changed/unknown counts.
+
 ### Enhanced
 - Switched build backend from setuptools to hatchling for better src layout support and lighter build dependencies.
 - Added minimum version pins to runtime dependencies (click>=8.0, pyyaml>=6.0, requests>=2.28).
