@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Enhanced
+- Switched build backend from setuptools to hatchling for better src layout support and lighter build dependencies.
+- Added minimum version pins to runtime dependencies (click>=8.0, pyyaml>=6.0, requests>=2.28).
+- Added `py.typed` marker for PEP 561 type checker support.
+- Added sdist/wheel exclusion rules to keep distribution lean (no tests, registry, results, or docs).
+- Added Installation section to README with pipx, pip, and from-source instructions.
+- Added `Environment :: Console` and `Topic :: Software Development :: Quality Assurance` classifiers.
+- Renamed `Issues` URL key to `Bug Tracker` in project metadata for PyPI display consistency.
+
 ### Fixed
 - `run_meta.json` now stores actual CLI argument strings (`sys.argv[1:]`) instead of parameter names, making runs reproducible from metadata.
 - `build_reproduce_command` uses `export PATH` for venv activation instead of fragile `.venv/bin/` prefix string replacement.

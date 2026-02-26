@@ -51,12 +51,29 @@ When using `--repos-dir` or `--venvs-dir` for persistent directories, cached
 repos and venvs from previous runs persist on disk. A compromised package's
 artifacts survive across runs unless the directories are cleaned.
 
+## Installation
+
+```bash
+pipx install labeille
+```
+
+Or with pip:
+
+```bash
+pip install labeille
+```
+
+### From source
+
+```bash
+git clone https://github.com/devdanzin/labeille
+cd labeille
+pip install -e '.[dev]'
+```
+
 ## Quick Start
 
 ```bash
-# Install in development mode
-pip install -e '.[dev]'
-
 # Step 1: Resolve packages — build the test registry from a PyPI top-packages dump
 labeille resolve --from-json top-pypi-packages.json --top 50 --registry-dir registry
 

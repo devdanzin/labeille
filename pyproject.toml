@@ -1,31 +1,33 @@
 [build-system]
-requires = ["setuptools>=68.0", "setuptools-scm>=8.0"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "labeille"
 version = "0.1.0"
-description = "Hunt for CPython JIT bugs by running real-world test suites"
+description = "Find crashes in JIT-enabled CPython builds by running real-world package test suites"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.13"
 authors = [
     { name = "Daniel Diniz", email = "74280297+devdanzin@users.noreply.github.com" },
 ]
-keywords = ["cpython", "jit", "testing", "fuzzing", "compiler-bugs"]
+keywords = ["cpython", "jit", "testing", "fuzzing", "crash-detection", "compiler-bugs"]
 classifiers = [
     "Development Status :: 2 - Pre-Alpha",
+    "Environment :: Console",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
     "Programming Language :: Python :: 3.15",
     "Topic :: Software Development :: Testing",
+    "Topic :: Software Development :: Quality Assurance",
 ]
 dependencies = [
-    "click",
-    "pyyaml",
-    "requests",
+    "click>=8.0",
+    "pyyaml>=6.0",
+    "requests>=2.28",
 ]
 
 [project.optional-dependencies]
@@ -42,10 +44,29 @@ labeille = "labeille.cli:main"
 [project.urls]
 Homepage = "https://github.com/devdanzin/labeille"
 Repository = "https://github.com/devdanzin/labeille"
-Issues = "https://github.com/devdanzin/labeille/issues"
+"Bug Tracker" = "https://github.com/devdanzin/labeille/issues"
 
-[tool.setuptools.packages.find]
-where = ["src"]
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "tests/",
+    "registry/",
+    "results/",
+    ".gitkeep",
+    "doc/",
+    "repositories/",
+    "venvs/",
+    "scripts/",
+    "google-cloud-core/",
+    "openai/",
+    ".claude/",
+    "CLAUDE.md",
+    "CONTRIBUTING.md",
+    "CREDITS.md",
+    "*.log",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/labeille"]
 
 [tool.ruff]
 line-length = 99
