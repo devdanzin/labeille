@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+- `labeille bisect` command to binary-search a package's git history and find the first commit that introduced a crash.
+- `bisect.py` module with `BisectConfig`, `BisectStep`, `BisectResult` dataclasses and the `run_bisect` algorithm with skip-neighbor handling for unbuildable commits.
 - Commit-aware run comparison: `analyze compare` and `analyze run` show git commit changes alongside status changes with heuristic annotations (e.g. "unchanged — likely a CPython/JIT regression").
 - `PackageComparison` dataclass with `commit_changed`/`commit_unchanged` properties for per-package comparison data.
 - New crash summary statistics in compare output showing repo unchanged/changed/unknown counts.

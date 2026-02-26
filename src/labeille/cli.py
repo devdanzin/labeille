@@ -589,3 +589,154 @@ def _print_human_format(result: "ScanResult", install_command: str | None) -> No
     elif result.suggested_install:
         click.echo("Suggested install command:")
         click.echo(f"  {result.suggested_install}")
+
+
+@main.command("bisect")
+@click.argument("package")
+@click.option(
+    "--good",
+    "good_rev",
+    required=True,
+    help="Known-good git revision (no crash).",
+)
+@click.option(
+    "--bad",
+    "bad_rev",
+    required=True,
+    help="Known-bad git revision (crash present).",
+)
+@click.option(
+    "--target-python",
+    type=click.Path(exists=True, path_type=Path),
+    required=True,
+    help="Path to the Python interpreter to test with.",
+)
+@click.option(
+    "--registry-dir",
+    type=click.Path(path_type=Path),
+    default=Path("registry"),
+    show_default=True,
+)
+@click.option(
+    "--test-command",
+    type=str,
+    default=None,
+    help="Override test command (default: from registry or 'python -m pytest').",
+)
+@click.option(
+    "--install-command",
+    type=str,
+    default=None,
+    help="Override install command (default: from registry or 'pip install -e .').",
+)
+@click.option(
+    "--crash-signature",
+    type=str,
+    default=None,
+    help="Only count crashes matching this substring.",
+)
+@click.option("--timeout", type=int, default=600, show_default=True)
+@click.option(
+    "--extra-deps",
+    type=str,
+    default=None,
+    help="Comma-separated list of additional packages to install.",
+)
+@click.option("--env", "env_pairs", type=str, multiple=True, help="KEY=VALUE env var.")
+@click.option(
+    "--work-dir",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Persistent work directory for clones (default: temp dir).",
+)
+@click.option("-v", "--verbose", is_flag=True)
+def bisect_cmd(
+    package: str,
+    good_rev: str,
+    bad_rev: str,
+    target_python: Path,
+    registry_dir: Path,
+    test_command: str | None,
+    install_command: str | None,
+    crash_signature: str | None,
+    timeout: int,
+    extra_deps: str | None,
+    env_pairs: tuple[str, ...],
+    work_dir: Path | None,
+    verbose: bool,
+) -> None:
+    """Bisect a package's git history to find the first commit that introduced a crash."""
+    from labeille.bisect import BisectConfig, run_bisect
+
+    setup_logging(verbose=verbose)
+
+    # Parse env pairs.
+    env_overrides: dict[str, str] = {}
+    for pair in env_pairs:
+        if "=" not in pair:
+            raise click.UsageError(f"Invalid --env format (expected KEY=VALUE): {pair}")
+        key, _, value = pair.partition("=")
+        env_overrides[key] = value
+
+    parsed_extra_deps = (
+        [d.strip() for d in extra_deps.split(",") if d.strip()] if extra_deps else []
+    )
+
+    config = BisectConfig(
+        package=package,
+        good_rev=good_rev,
+        bad_rev=bad_rev,
+        target_python=target_python,
+        registry_dir=registry_dir,
+        timeout=timeout,
+        test_command=test_command,
+        install_command=install_command,
+        crash_signature=crash_signature,
+        extra_deps=parsed_extra_deps,
+        env_overrides=env_overrides,
+        work_dir=work_dir,
+        verbose=verbose,
+    )
+
+    click.echo(f"Bisecting {package}: good={good_rev} bad={bad_rev}")
+    click.echo(f"Target Python: {target_python}")
+
+    try:
+        result = run_bisect(config)
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    # Print results.
+    click.echo("")
+    click.echo(
+        f"Bisect complete: {result.commits_tested} commits tested "
+        f"out of {result.total_commits} in range."
+    )
+
+    if result.success:
+        click.echo(
+            f"First bad commit: {result.first_bad_commit_short} ({result.first_bad_commit})"
+        )
+        # Show commit info if available.
+        from labeille.bisect import _get_commit_info
+
+        if work_dir:
+            repo_dir = work_dir / f"{package}-bisect"
+            if repo_dir.exists() and result.first_bad_commit:
+                info = _get_commit_info(repo_dir, result.first_bad_commit)
+                if info:
+                    click.echo(f"  Author: {info[0]}")
+                    click.echo(f"  Date:   {info[1]}")
+                    click.echo(f"  Subject: {info[2]}")
+    else:
+        click.echo("Could not identify the first bad commit.")
+
+    # Show step details in verbose mode.
+    if verbose:
+        click.echo("")
+        click.echo("Steps:")
+        for step in result.steps:
+            click.echo(
+                f"  {step.commit_short} [{step.status}] "
+                f"({step.duration_seconds:.1f}s) {step.detail[:80]}"
+            )

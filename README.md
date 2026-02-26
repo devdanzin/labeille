@@ -141,6 +141,34 @@ labeille run --packages=requests@fix-branch \
     --extra-deps "coverage" --no-shallow
 ```
 
+### Bisecting crashes
+
+When a crash is found, bisect the package's git history to pinpoint the
+first commit that introduced it:
+
+```bash
+# Find which commit introduced a SIGSEGV in requests
+labeille bisect requests \
+    --good=v2.30.0 --bad=v2.31.0 \
+    --target-python /path/to/jit-python
+
+# Filter by crash signature
+labeille bisect requests \
+    --good=v2.30.0 --bad=v2.31.0 \
+    --target-python /path/to/jit-python \
+    --crash-signature "SIGSEGV"
+
+# Use a persistent work directory (avoids re-cloning)
+labeille bisect requests \
+    --good=v2.30.0 --bad=v2.31.0 \
+    --target-python /path/to/jit-python \
+    --work-dir /tmp/bisect-work
+```
+
+The bisect algorithm clones the repo at full depth, verifies the good and
+bad revisions, then binary-searches to find the first bad commit. Commits
+that fail to build are automatically skipped by trying neighboring commits.
+
 ## How It Works
 
 labeille operates in two phases:
@@ -339,9 +367,10 @@ Result statuses: `pass`, `fail`, `crash`, `timeout`, `install_error`,
 ```
 labeille/
 ├── src/labeille/        # Main package
-│   ├── cli.py           # Click CLI with resolve, run, scan-deps, registry, and analyze subcommands
+│   ├── cli.py           # Click CLI with resolve, run, bisect, scan-deps, registry, and analyze subcommands
 │   ├── resolve.py       # Resolve PyPI packages to source repositories
 │   ├── runner.py        # Run test suites and capture results
+│   ├── bisect.py        # Automated crash bisection across git history
 │   ├── registry.py      # Registry reading/writing/schema
 │   ├── registry_cli.py  # Batch registry management CLI
 │   ├── registry_ops.py  # Batch operations (add/remove/rename/set/validate)
