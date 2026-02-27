@@ -103,6 +103,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Registry schema and data structures.
 
 ### Documentation
+- Added Anthropic support acknowledgment section to README.md.
 - Added security warnings to README.md, runner.py module docstring, and CLAUDE.md.
 - Added Gemini acknowledgment to CREDITS.md.
 - Comprehensive enrichment guide with manual workflow, troubleshooting, and Claude Code prompts (doc/enrichment.md).
