@@ -413,6 +413,12 @@ and real-world workloads.
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, coding standards, and
 the pull request process.
 
+## Acknowledgments
+
+[Anthropic](https://www.anthropic.com/) provided financial support that enabled access to
+advanced AI capabilities for labeille's development. See [CREDITS.md](CREDITS.md) for full
+details.
+
 ## License
 
 MIT — see [LICENSE](LICENSE) for details.
