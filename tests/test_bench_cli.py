@@ -102,9 +102,7 @@ class TestBenchRunNoConditions(unittest.TestCase):
             # Should fail because no conditions are defined.
             self.assertNotEqual(result.exit_code, 0)
             exc_str = str(result.exception) if result.exception else ""
-            self.assertIn(
-                "condition", (result.output + exc_str).lower()
-            )
+            self.assertIn("condition", (result.output + exc_str).lower())
 
 
 class TestBenchShow(unittest.TestCase):
@@ -199,7 +197,7 @@ class TestBenchExport(unittest.TestCase):
             result = CliRunner().invoke(bench, ["export", bench_dir, "--format", "csv"])
             self.assertEqual(result.exit_code, 0)
             self.assertIn("testpkg", result.output)
-            self.assertIn("baseline_wall_median", result.output)
+            self.assertIn("wall_time_s", result.output)
 
     def test_export_markdown(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

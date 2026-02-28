@@ -500,107 +500,12 @@ def system_cmd(target_python: str | None, as_json: bool) -> None:
 # ---------------------------------------------------------------------------
 
 
-def _export_csv(
-    meta: BenchMeta,
-    results: list[BenchPackageResult],
-) -> str:
-    """Export benchmark results to CSV format."""
-    import csv
-    import io
-
-    buf = io.StringIO()
-    writer = csv.writer(buf)
-
-    condition_names = list(meta.conditions.keys())
-
-    # Header.
-    header = ["package"]
-    for cn in condition_names:
-        header.extend(
-            [
-                f"{cn}_wall_median",
-                f"{cn}_wall_stdev",
-                f"{cn}_cpu_mean",
-                f"{cn}_rss_median",
-                f"{cn}_cv",
-                f"{cn}_status",
-            ]
-        )
-    writer.writerow(header)
-
-    # Rows.
-    for r in results:
-        if r.skipped:
-            continue
-        row: list[str] = [r.package]
-        for cn in condition_names:
-            cond = r.conditions.get(cn)
-            if not cond or not cond.wall_time_stats:
-                row.extend([""] * 6)
-                continue
-            ws = cond.wall_time_stats
-            us = cond.user_time_stats
-            rs = cond.peak_rss_stats
-            statuses = [it.status for it in cond.measured_iterations]
-            status = max(set(statuses), key=statuses.count) if statuses else ""
-            row.extend(
-                [
-                    f"{ws.median:.4f}",
-                    f"{ws.stdev:.4f}",
-                    f"{us.mean:.4f}" if us else "",
-                    f"{rs.median:.1f}" if rs else "",
-                    f"{ws.cv:.4f}",
-                    status,
-                ]
-            )
-        writer.writerow(row)
-
-    return buf.getvalue()
-
-
-def _export_markdown(
-    meta: BenchMeta,
-    results: list[BenchPackageResult],
-) -> str:
-    """Export benchmark results to Markdown table format."""
-    condition_names = list(meta.conditions.keys())
-
-    lines: list[str] = []
-    title = meta.name or meta.bench_id
-    lines.append(f"# {title}")
-    lines.append("")
-
-    # Header row.
-    header = "| Package |"
-    separator = "| --- |"
-    for cn in condition_names:
-        header += f" {cn} Wall (s) | {cn} CV |"
-        separator += " ---: | ---: |"
-    lines.append(header)
-    lines.append(separator)
-
-    for r in results:
-        if r.skipped:
-            continue
-        row = f"| {r.package} |"
-        for cn in condition_names:
-            cond = r.conditions.get(cn)
-            if not cond or not cond.wall_time_stats:
-                row += " N/A | N/A |"
-                continue
-            ws = cond.wall_time_stats
-            row += f" {ws.median:.2f} | {ws.cv:.3f} |"
-        lines.append(row)
-
-    return "\n".join(lines)
-
-
 @bench.command("export")
 @click.argument("result_dir", type=click.Path(exists=True))
 @click.option(
     "--format",
     "fmt",
-    type=click.Choice(["csv", "markdown"]),
+    type=click.Choice(["csv", "csv-summary", "markdown"]),
     default="csv",
     help="Export format.",
 )
@@ -617,16 +522,20 @@ def export(result_dir: str, fmt: str, output: str | None) -> None:
     \b
     Examples:
         labeille bench export results/bench_001 --format csv > data.csv
+        labeille bench export results/bench_001 --format csv-summary > summary.csv
         labeille bench export results/bench_001 --format markdown -o report.md
     """
+    from labeille.bench.export import export_csv, export_csv_summary, export_markdown
     from labeille.bench.results import load_bench_run
 
     meta, results = load_bench_run(Path(result_dir))
 
     if fmt == "csv":
-        text = _export_csv(meta, results)
+        text = export_csv(meta, results)
+    elif fmt == "csv-summary":
+        text = export_csv_summary(meta, results)
     else:
-        text = _export_markdown(meta, results)
+        text = export_markdown(meta, results)
 
     if output:
         Path(output).write_text(text)
