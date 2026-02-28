@@ -2,6 +2,9 @@
 
 Captures hardware, OS, Python, and runtime state information so
 benchmark results can be properly contextualized and compared.
+
+Supports Linux and macOS. Each capture function dispatches to a
+platform-specific implementation; unsupported platforms get defaults.
 """
 
 from __future__ import annotations
@@ -12,6 +15,7 @@ import os
 import platform
 import re
 import subprocess
+import sys
 import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -153,19 +157,149 @@ class SystemSnapshot:
             snap.load_avg_1m = round(os.getloadavg()[0], 2)
         except Exception:  # noqa: BLE001
             pass
-        try:
-            meminfo = Path("/proc/meminfo").read_text()
-            for line in meminfo.splitlines():
-                if line.startswith("MemAvailable:"):
-                    snap.ram_available_gb = round(int(line.split()[1]) / (1024 * 1024), 2)
-                    break
-        except Exception:  # noqa: BLE001
-            pass
+
+        avail = _get_available_ram_gb()
+        if avail is not None:
+            snap.ram_available_gb = round(avail, 2)
+
         return snap
 
 
 # ---------------------------------------------------------------------------
-# Capture functions
+# macOS sysctl helpers
+# ---------------------------------------------------------------------------
+
+
+def _sysctl(key: str) -> str | None:
+    """Read a sysctl string value. Returns None on failure."""
+    try:
+        proc = subprocess.run(
+            ["sysctl", "-n", key],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if proc.returncode == 0 and proc.stdout.strip():
+            return proc.stdout.strip()
+    except Exception:  # noqa: BLE001
+        pass
+    return None
+
+
+def _sysctl_int(key: str) -> int | None:
+    """Read a sysctl integer value. Returns None on failure."""
+    val = _sysctl(key)
+    if val is not None:
+        try:
+            return int(val)
+        except ValueError:
+            pass
+    return None
+
+
+# ---------------------------------------------------------------------------
+# macOS vm_stat helper
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class _DarwinMemInfo:
+    """Parsed vm_stat output."""
+
+    page_size: int = 16384
+    pages_free: int = 0
+    pages_inactive: int = 0
+    pages_active: int = 0
+    pages_speculative: int = 0
+    pages_wired: int = 0
+
+    @property
+    def available_bytes(self) -> int:
+        """Approximate available memory (free + inactive pages)."""
+        return (self.pages_free + self.pages_inactive) * self.page_size
+
+
+def _parse_vm_stat() -> _DarwinMemInfo | None:
+    """Parse macOS vm_stat output into structured data."""
+    try:
+        proc = subprocess.run(
+            ["vm_stat"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if proc.returncode != 0:
+            return None
+
+        info = _DarwinMemInfo()
+        for line in proc.stdout.splitlines():
+            if "page size of" in line:
+                parts = line.split()
+                for i, p in enumerate(parts):
+                    if p == "size":
+                        try:
+                            info.page_size = int(parts[i + 2].rstrip(")"))
+                        except (IndexError, ValueError):
+                            pass
+            elif line.startswith("Pages free:"):
+                info.pages_free = _parse_vm_stat_value(line)
+            elif line.startswith("Pages inactive:"):
+                info.pages_inactive = _parse_vm_stat_value(line)
+            elif line.startswith("Pages active:"):
+                info.pages_active = _parse_vm_stat_value(line)
+            elif line.startswith("Pages speculative:"):
+                info.pages_speculative = _parse_vm_stat_value(line)
+            elif line.startswith("Pages wired down:"):
+                info.pages_wired = _parse_vm_stat_value(line)
+        return info
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _parse_vm_stat_value(line: str) -> int:
+    """Parse a vm_stat line like 'Pages free:    12345.' -> 12345."""
+    try:
+        return int(line.split(":")[1].strip().rstrip("."))
+    except (IndexError, ValueError):
+        return 0
+
+
+# ---------------------------------------------------------------------------
+# Cross-platform available RAM helper
+# ---------------------------------------------------------------------------
+
+
+def _get_available_ram_gb() -> float | None:
+    """Get available RAM in GB, platform-aware."""
+    if sys.platform == "linux":
+        return _get_available_ram_gb_linux()
+    elif sys.platform == "darwin":
+        return _get_available_ram_gb_darwin()
+    return None
+
+
+def _get_available_ram_gb_linux() -> float | None:
+    """Get available RAM from /proc/meminfo on Linux."""
+    try:
+        meminfo = Path("/proc/meminfo").read_text()
+        for line in meminfo.splitlines():
+            if line.startswith("MemAvailable:"):
+                return int(line.split()[1]) / (1024 * 1024)
+    except Exception:  # noqa: BLE001
+        pass
+    return None
+
+
+def _get_available_ram_gb_darwin() -> float | None:
+    """Get available RAM from vm_stat on macOS."""
+    info = _parse_vm_stat()
+    if info is not None:
+        return info.available_bytes / (1024**3)
+    return None
+
+
+# ---------------------------------------------------------------------------
+# Capture functions (platform dispatch)
 # ---------------------------------------------------------------------------
 
 
@@ -196,6 +330,69 @@ def capture_system_profile() -> SystemProfile:
 
 
 def _capture_cpu_info(profile: SystemProfile) -> None:
+    """Populate CPU fields (dispatches by platform)."""
+    if sys.platform == "linux":
+        _capture_cpu_info_linux(profile)
+    elif sys.platform == "darwin":
+        _capture_cpu_info_darwin(profile)
+    else:
+        log.debug("CPU info capture not supported on %s", sys.platform)
+
+
+def _capture_memory_info(profile: SystemProfile) -> None:
+    """Populate memory fields (dispatches by platform)."""
+    if sys.platform == "linux":
+        _capture_memory_info_linux(profile)
+    elif sys.platform == "darwin":
+        _capture_memory_info_darwin(profile)
+    else:
+        log.debug("Memory info capture not supported on %s", sys.platform)
+
+
+def _capture_os_info(profile: SystemProfile) -> None:
+    """Populate OS distro info (dispatches by platform)."""
+    if sys.platform == "linux":
+        _capture_os_info_linux(profile)
+    elif sys.platform == "darwin":
+        _capture_os_info_darwin(profile)
+    else:
+        log.debug("OS info capture not supported on %s", sys.platform)
+
+
+def _capture_load(profile: SystemProfile) -> None:
+    """Capture system load average and process count."""
+    # Load averages are POSIX — work on both Linux and macOS.
+    try:
+        load = os.getloadavg()
+        profile.load_avg_1m = round(load[0], 2)
+        profile.load_avg_5m = round(load[1], 2)
+        profile.load_avg_15m = round(load[2], 2)
+    except Exception:  # noqa: BLE001
+        pass
+
+    # Process count is platform-specific.
+    if sys.platform == "linux":
+        _capture_process_count_linux(profile)
+    elif sys.platform == "darwin":
+        _capture_process_count_darwin(profile)
+
+
+def _capture_disk_info(profile: SystemProfile) -> None:
+    """Populate disk info (dispatches by platform)."""
+    if sys.platform == "linux":
+        _capture_disk_info_linux(profile)
+    elif sys.platform == "darwin":
+        _capture_disk_info_darwin(profile)
+    else:
+        log.debug("Disk info capture not supported on %s", sys.platform)
+
+
+# ---------------------------------------------------------------------------
+# Linux capture implementations
+# ---------------------------------------------------------------------------
+
+
+def _capture_cpu_info_linux(profile: SystemProfile) -> None:
     """Populate CPU fields from /proc/cpuinfo and os.cpu_count."""
     try:
         profile.cpu_cores_logical = os.cpu_count() or 0
@@ -254,7 +451,7 @@ def _capture_cpu_info(profile: SystemProfile) -> None:
             pass
 
 
-def _capture_memory_info(profile: SystemProfile) -> None:
+def _capture_memory_info_linux(profile: SystemProfile) -> None:
     """Populate memory fields from /proc/meminfo."""
     try:
         meminfo = Path("/proc/meminfo").read_text()
@@ -274,7 +471,7 @@ def _capture_memory_info(profile: SystemProfile) -> None:
         pass
 
 
-def _capture_os_info(profile: SystemProfile) -> None:
+def _capture_os_info_linux(profile: SystemProfile) -> None:
     """Populate OS distro from /etc/os-release or platform."""
     try:
         os_release = Path("/etc/os-release").read_text()
@@ -290,18 +487,9 @@ def _capture_os_info(profile: SystemProfile) -> None:
             pass
 
 
-def _capture_load(profile: SystemProfile) -> None:
-    """Capture system load average and process count."""
+def _capture_process_count_linux(profile: SystemProfile) -> None:
+    """Get running process count from /proc/stat on Linux."""
     try:
-        load = os.getloadavg()
-        profile.load_avg_1m = round(load[0], 2)
-        profile.load_avg_5m = round(load[1], 2)
-        profile.load_avg_15m = round(load[2], 2)
-    except Exception:  # noqa: BLE001
-        pass
-
-    try:
-        # Count running processes from /proc/stat.
         stat = Path("/proc/stat").read_text()
         for line in stat.splitlines():
             if line.startswith("procs_running"):
@@ -311,8 +499,8 @@ def _capture_load(profile: SystemProfile) -> None:
         pass
 
 
-def _capture_disk_info(profile: SystemProfile) -> None:
-    """Capture disk type and available space."""
+def _capture_disk_info_linux(profile: SystemProfile) -> None:
+    """Capture disk type and available space on Linux."""
     try:
         stat = os.statvfs("/")
         profile.disk_available_gb = round((stat.f_bavail * stat.f_frsize) / (1024**3), 1)
@@ -345,6 +533,148 @@ def _capture_disk_info(profile: SystemProfile) -> None:
         if rotational.exists():
             is_rotational = rotational.read_text().strip() == "1"
             profile.disk_type = "hdd" if is_rotational else "ssd"
+    except Exception:  # noqa: BLE001
+        pass
+
+
+# ---------------------------------------------------------------------------
+# macOS capture implementations
+# ---------------------------------------------------------------------------
+
+
+def _capture_cpu_info_darwin(profile: SystemProfile) -> None:
+    """Populate CPU fields using sysctl on macOS."""
+    try:
+        profile.cpu_cores_logical = os.cpu_count() or 0
+    except Exception:  # noqa: BLE001
+        pass
+
+    # CPU model.
+    model = _sysctl("machdep.cpu.brand_string")
+    if model:
+        profile.cpu_model = model
+
+    # Physical cores.
+    phys = _sysctl_int("hw.physicalcpu")
+    if phys is not None:
+        profile.cpu_cores_physical = phys
+    else:
+        profile.cpu_cores_physical = profile.cpu_cores_logical
+
+    # CPU frequency.
+    # On Intel Macs, hw.cpufrequency gives the base frequency in Hz.
+    # On Apple Silicon, this sysctl doesn't exist — frequency is
+    # dynamic and not exposed. We leave it as None.
+    freq_hz = _sysctl_int("hw.cpufrequency")
+    if freq_hz is not None:
+        profile.cpu_freq_mhz = freq_hz / 1_000_000
+
+    freq_max_hz = _sysctl_int("hw.cpufrequency_max")
+    if freq_max_hz is not None:
+        profile.cpu_freq_max_mhz = freq_max_hz / 1_000_000
+
+
+def _capture_memory_info_darwin(profile: SystemProfile) -> None:
+    """Populate memory fields using sysctl and vm_stat on macOS."""
+    # Total RAM from sysctl (in bytes).
+    total_bytes = _sysctl_int("hw.memsize")
+    if total_bytes is not None:
+        profile.ram_total_gb = total_bytes / (1024**3)
+
+    # Available memory from vm_stat.
+    info = _parse_vm_stat()
+    if info is not None:
+        profile.ram_available_gb = round(info.available_bytes / (1024**3), 2)
+
+    # Swap from sysctl.
+    swap_usage = _sysctl("vm.swapusage")
+    if swap_usage:
+        try:
+            match = re.search(r"total\s*=\s*([\d.]+)([MG])", swap_usage)
+            if match:
+                val = float(match.group(1))
+                unit = match.group(2)
+                if unit == "G":
+                    profile.swap_total_gb = val
+                elif unit == "M":
+                    profile.swap_total_gb = val / 1024
+        except Exception:  # noqa: BLE001
+            pass
+
+
+def _capture_os_info_darwin(profile: SystemProfile) -> None:
+    """Populate OS info on macOS using sw_vers."""
+    try:
+        proc = subprocess.run(
+            ["sw_vers"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if proc.returncode == 0:
+            name = ""
+            version = ""
+            for line in proc.stdout.splitlines():
+                if line.startswith("ProductName:"):
+                    name = line.split(":", 1)[1].strip()
+                elif line.startswith("ProductVersion:"):
+                    version = line.split(":", 1)[1].strip()
+            if name and version:
+                profile.os_distro = f"{name} {version}"
+    except Exception:  # noqa: BLE001
+        # Fallback.
+        try:
+            profile.os_distro = f"macOS {platform.mac_ver()[0]}"
+        except Exception:  # noqa: BLE001
+            pass
+
+
+def _capture_process_count_darwin(profile: SystemProfile) -> None:
+    """Get running process count on macOS."""
+    try:
+        proc = subprocess.run(
+            ["ps", "-axo", "state"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if proc.returncode == 0:
+            # Count processes in running state (R).
+            running = sum(1 for line in proc.stdout.splitlines() if line.strip().startswith("R"))
+            profile.running_processes = running
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def _capture_disk_info_darwin(profile: SystemProfile) -> None:
+    """Capture disk info on macOS using diskutil."""
+    # Available space (os.statvfs works on macOS).
+    try:
+        stat = os.statvfs("/")
+        profile.disk_available_gb = round((stat.f_bavail * stat.f_frsize) / (1024**3), 1)
+    except Exception:  # noqa: BLE001
+        pass
+
+    # SSD vs HDD detection.
+    try:
+        proc = subprocess.run(
+            ["diskutil", "info", "/"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if proc.returncode == 0:
+            for line in proc.stdout.splitlines():
+                if "Solid State" in line:
+                    if "Yes" in line:
+                        profile.disk_type = "ssd"
+                    elif "No" in line:
+                        profile.disk_type = "hdd"
+                    break
+            else:
+                # APFS on Apple Silicon is always SSD.
+                if "APFS" in proc.stdout:
+                    profile.disk_type = "ssd"
     except Exception:  # noqa: BLE001
         pass
 
@@ -470,6 +800,7 @@ def check_stability(
     """
     result = StabilityCheck(stable=True)
 
+    # Load average — works on both Linux and macOS (POSIX).
     try:
         load = os.getloadavg()
         if load[0] > max_load:
@@ -488,22 +819,18 @@ def check_stability(
     except Exception:  # noqa: BLE001
         result.warnings.append("Could not read load average.")
 
-    try:
-        meminfo = Path("/proc/meminfo").read_text()
-        for line in meminfo.splitlines():
-            if line.startswith("MemAvailable:"):
-                avail_kb = int(line.split()[1])
-                avail_gb = avail_kb / (1024 * 1024)
-                if avail_gb < min_available_ram_gb:
-                    result.stable = False
-                    result.errors.append(
-                        f"Available RAM is {avail_gb:.1f} GB "
-                        f"(minimum: {min_available_ram_gb:.1f} GB). "
-                        f"Low memory may cause swapping and "
-                        f"unreliable timings."
-                    )
-                break
-    except Exception:  # noqa: BLE001
+    # Available RAM — platform-specific.
+    avail_gb = _get_available_ram_gb()
+    if avail_gb is not None:
+        if avail_gb < min_available_ram_gb:
+            result.stable = False
+            result.errors.append(
+                f"Available RAM is {avail_gb:.1f} GB "
+                f"(minimum: {min_available_ram_gb:.1f} GB). "
+                f"Low memory may cause swapping and "
+                f"unreliable timings."
+            )
+    else:
         result.warnings.append("Could not read memory info.")
 
     return result
@@ -540,8 +867,13 @@ def format_system_profile(profile: SystemProfile) -> str:
     if profile.swap_total_gb > 0:
         lines.append(f"Swap:     {profile.swap_total_gb:.1f} GB")
 
-    # OS
-    lines.append(f"OS:       {profile.os_distro} (Linux {profile.os_kernel_version})")
+    # OS — macOS distro string is self-explanatory; no need for kernel version.
+    if profile.os_name == "Darwin":
+        lines.append(f"OS:       {profile.os_distro}")
+    else:
+        lines.append(
+            f"OS:       {profile.os_distro} ({profile.os_name} {profile.os_kernel_version})"
+        )
 
     # Disk
     lines.append(

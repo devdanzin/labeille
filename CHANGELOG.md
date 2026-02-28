@@ -17,6 +17,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - New crash summary statistics in compare output showing repo unchanged/changed/unknown counts.
 
 ### Enhanced
+- macOS support for system profiling: CPU info from `sysctl`, memory from `vm_stat`, OS from `sw_vers`, disk type from `diskutil`. All existing Linux code paths preserved unchanged.
+- `check_stability()` and `SystemSnapshot.capture()` now use cross-platform `_get_available_ram_gb()` helper instead of Linux-only `/proc/meminfo`.
+- `format_system_profile()` no longer hardcodes "Linux" in the OS line; shows platform-appropriate output.
 - Switched build backend from setuptools to hatchling for better src layout support and lighter build dependencies.
 - Added minimum version pins to runtime dependencies (click>=8.0, pyyaml>=6.0, requests>=2.28).
 - Added `py.typed` marker for PEP 561 type checker support.
