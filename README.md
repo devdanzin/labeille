@@ -169,6 +169,18 @@ The bisect algorithm clones the repo at full depth, verifies the good and
 bad revisions, then binary-searches to find the first bad commit. Commits
 that fail to build are automatically skipped by trying neighboring commits.
 
+### Platform support
+
+System profiling works on Linux and macOS. Platform-specific details:
+
+- **Linux**: CPU info from `/proc/cpuinfo`, memory from `/proc/meminfo`,
+  disk type from `/sys/block/`.
+- **macOS**: CPU info from `sysctl`, memory from `vm_stat`, disk type
+  from `diskutil`.
+
+All other features (registry, runner, analysis, bisect) work identically
+on both platforms.
+
 ## How It Works
 
 labeille operates in two phases:
