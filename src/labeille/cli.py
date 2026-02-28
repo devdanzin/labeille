@@ -36,6 +36,10 @@ from labeille.analyze_cli import analyze as analyze_group  # noqa: E402
 
 main.add_command(analyze_group)
 
+from labeille.bench_cli import bench as bench_group  # noqa: E402
+
+main.add_command(bench_group)
+
 
 @main.command()
 @click.argument("packages", nargs=-1)

@@ -17,6 +17,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - `config.py` module in `bench` subpackage with `BenchConfig` dataclass, YAML profile loading, inline condition parsing, test command resolution, environment/deps merging, and configuration validation.
 - `runner.py` module in `bench` subpackage with `BenchRunner` class orchestrating the full benchmark lifecycle: system profiling, stability checks, package setup (clone/venv/install per condition), timed iteration execution, and incremental JSONL result writing. Supports block, alternating, and interleaved execution strategies with progress callbacks.
 - `BenchProgress` dataclass and `quick_config()` helper for rapid iteration during development.
+- `display.py` module in `bench` subpackage with terminal formatting for benchmark results: per-package timing tables, multi-condition comparison tables with overhead/CI/significance, measurement quality summaries, and aggregate comparison summaries.
+- `bench_cli.py` module with `labeille bench` CLI subgroup: `run` (execute benchmarks from profiles or inline conditions), `show` (display saved results), `compare` (compare conditions within or across runs), `system` (print system characterization), and `export` (CSV/Markdown export).
 - `labeille bisect` command to binary-search a package's git history and find the first commit that introduced a crash.
 - `bisect.py` module with `BisectConfig`, `BisectStep`, `BisectResult` dataclasses and the `run_bisect` algorithm with skip-neighbor handling for unbuildable commits.
 - Commit-aware run comparison: `analyze compare` and `analyze run` show git commit changes alongside status changes with heuristic annotations (e.g. "unchanged — likely a CPython/JIT regression").
