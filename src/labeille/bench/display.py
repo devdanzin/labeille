@@ -10,12 +10,12 @@ from __future__ import annotations
 import math
 import statistics as _stats
 
+from labeille.bench.compare import ComparisonReport, compare_conditions
 from labeille.bench.results import (
     BenchMeta,
     BenchPackageResult,
 )
 from labeille.bench.stats import (
-    OverheadResult,
     compute_overhead,
 )
 
@@ -328,6 +328,9 @@ def format_comparison_summary(
 ) -> str:
     """Format an aggregate comparison summary.
 
+    Delegates to compare_conditions for analysis, then formats
+    the resulting ComparisonReport.
+
     Args:
         results: Package results containing both conditions.
         baseline_name: Name of the baseline condition.
@@ -336,58 +339,53 @@ def format_comparison_summary(
     Returns:
         Formatted summary string.
     """
-    overheads: list[tuple[BenchPackageResult, OverheadResult]] = []
-    for r in results:
-        if r.skipped:
-            continue
-        base = r.conditions.get(baseline_name)
-        treat = r.conditions.get(treatment_name)
-        if not base or not treat:
-            continue
-        if not base.wall_times or not treat.wall_times:
-            continue
-        oh = compute_overhead(base.wall_times, treat.wall_times, ci_seed=42)
-        overheads.append((r, oh))
+    report = compare_conditions(results, baseline_name, treatment_name)
+    return format_comparison_report(report)
 
-    if not overheads:
+
+def format_comparison_report(report: ComparisonReport) -> str:
+    """Format a ComparisonReport for terminal display."""
+    if report.total_packages == 0:
         return "No comparable packages found."
-
-    pcts = [oh.overhead_pct for _, oh in overheads]
-    significant = [oh for _, oh in overheads if oh.ttest.significant_05]
-    practical = [oh for _, oh in overheads if oh.practically_significant]
-    faster = [oh for _, oh in overheads if oh.overhead_pct < 0]
-    slower = [oh for _, oh in overheads if oh.overhead_pct > 0]
 
     lines: list[str] = []
     lines.append("Aggregate Summary")
+    lines.append("\u2500" * 17)
+    lines.append(f"  Packages compared:       {report.total_packages}")
+    lines.append(f"    Reliable measurements: {report.reliable_packages}")
+    if report.unreliable_packages:
+        lines.append(f"    Unreliable (high CV):  {report.unreliable_packages}")
+    lines.append(f"  Median overhead:         {_format_pct(report.median_overhead_pct)}")
+    lines.append(f"  Mean overhead:           {_format_pct(report.mean_overhead_pct)}")
     lines.append(
-        "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500"
-        "\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500"
+        f"  Range:                   "
+        f"{_format_pct(report.min_overhead_pct)} to "
+        f"{_format_pct(report.max_overhead_pct)}"
     )
-    lines.append(f"  Packages compared:       {len(overheads)}")
-    lines.append(f"  Median overhead:         {_format_pct(_stats.median(pcts))}")
-    lines.append(f"  Mean overhead:           {_format_pct(_stats.mean(pcts))}")
-    lines.append(
-        f"  Range:                   {_format_pct(min(pcts))} to {_format_pct(max(pcts))}"
-    )
-    lines.append(f"  Statistically significant (p<0.05): {len(significant)}")
-    lines.append(f"  Practically significant: {len(practical)}")
-    lines.append(f"  Faster under treatment:  {len(faster)}")
-    lines.append(f"  Slower under treatment:  {len(slower)}")
+    lines.append(f"  Statistically significant: {report.significant_packages}")
+    lines.append(f"  Practically significant:   {report.practically_significant}")
+    lines.append(f"  Faster under treatment:    {report.faster_packages}")
+    lines.append(f"  Slower under treatment:    {report.slower_packages}")
 
-    # Top 5 most affected packages.
-    sorted_oh = sorted(overheads, key=lambda x: x[1].overhead_pct, reverse=True)
-    if sorted_oh:
+    if report.most_affected:
         lines.append("")
         lines.append("  Most affected (highest overhead):")
-        for r, oh in sorted_oh[:5]:
-            lines.append(f"    {r.package:<25s} {_format_pct(oh.overhead_pct):>8s}")
+        for p in report.most_affected:
+            lines.append(f"    {p.package:<25s} {_format_pct(p.overhead.overhead_pct):>8s}")
 
-    if sorted_oh and any(oh.overhead_pct < 0 for _, oh in sorted_oh):
+    if report.most_improved:
         lines.append("")
         lines.append("  Most improved (fastest under treatment):")
-        for r, oh in reversed(sorted_oh[-5:]):
-            if oh.overhead_pct < 0:
-                lines.append(f"    {r.package:<25s} {_format_pct(oh.overhead_pct):>8s}")
+        for p in report.most_improved:
+            lines.append(f"    {p.package:<25s} {_format_pct(p.overhead.overhead_pct):>8s}")
+
+    # Anomaly summary.
+    if report.high_cv_count or report.status_mismatch_count:
+        lines.append("")
+        lines.append("  Anomalies:")
+        if report.high_cv_count:
+            lines.append(f"    High CV (>10%):        {report.high_cv_count} packages")
+        if report.status_mismatch_count:
+            lines.append(f"    Status mismatch:       {report.status_mismatch_count} packages")
 
     return "\n".join(lines)
