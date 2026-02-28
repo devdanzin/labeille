@@ -10,6 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - `bench` subpackage with `system.py` module for capturing system profiles (CPU, RAM, OS, disk) and Python interpreter profiles (version, JIT/GIL state, build flags) for benchmark reproducibility.
 - `SystemProfile`, `PythonProfile`, `StabilityCheck`, and `SystemSnapshot` dataclasses with JSON serialization and terminal display formatting.
 - `check_stability()` pre-benchmark validation (load average, available RAM).
+- `stats.py` module in `bench` subpackage with pure-Python statistical functions: `describe()`, `welch_ttest()`, `cohens_d()`, `bootstrap_ci()`, `detect_outliers()`, and `compute_overhead()` for benchmark comparison.
+- `DescriptiveStats`, `TTestResult`, `EffectSize`, `BootstrapCI`, and `OverheadResult` dataclasses with scipy fallback for t-test p-values.
 - `labeille bisect` command to binary-search a package's git history and find the first commit that introduced a crash.
 - `bisect.py` module with `BisectConfig`, `BisectStep`, `BisectResult` dataclasses and the `run_bisect` algorithm with skip-neighbor handling for unbuildable commits.
 - Commit-aware run comparison: `analyze compare` and `analyze run` show git commit changes alongside status changes with heuristic annotations (e.g. "unchanged — likely a CPython/JIT regression").
