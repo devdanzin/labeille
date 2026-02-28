@@ -12,6 +12,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - `check_stability()` pre-benchmark validation (load average, available RAM).
 - `stats.py` module in `bench` subpackage with pure-Python statistical functions: `describe()`, `welch_ttest()`, `cohens_d()`, `bootstrap_ci()`, `detect_outliers()`, and `compute_overhead()` for benchmark comparison.
 - `DescriptiveStats`, `TTestResult`, `EffectSize`, `BootstrapCI`, and `OverheadResult` dataclasses with scipy fallback for t-test p-values.
+- `timing.py` module in `bench` subpackage with `run_timed()` and `run_timed_in_venv()` for capturing wall time, CPU time (via `resource.getrusage` delta), and peak RSS (via GNU `/usr/bin/time` with `ru_maxrss` fallback).
+- `results.py` module in `bench` subpackage with `BenchIteration`, `BenchConditionResult`, `BenchPackageResult`, `ConditionDef`, and `BenchMeta` dataclasses for the full benchmark result hierarchy, plus JSONL/JSON serialization via `save_bench_run()`, `load_bench_run()`, and `append_package_result()`.
 - `labeille bisect` command to binary-search a package's git history and find the first commit that introduced a crash.
 - `bisect.py` module with `BisectConfig`, `BisectStep`, `BisectResult` dataclasses and the `run_bisect` algorithm with skip-neighbor handling for unbuildable commits.
 - Commit-aware run comparison: `analyze compare` and `analyze run` show git commit changes alongside status changes with heuristic annotations (e.g. "unchanged — likely a CPython/JIT regression").
