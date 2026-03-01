@@ -8,6 +8,7 @@ from unittest.mock import MagicMock
 from labeille.ft.display import (
     format_compatibility_summary,
     format_flakiness_profile,
+    format_ft_comparison,
     format_gil_comparison,
     format_package_table,
     format_progress,
@@ -315,6 +316,75 @@ class TestFormatGilComparison(unittest.TestCase):
         output = format_gil_comparison(comparisons)
         self.assertIn("FT-specific failures: 2", output)
         self.assertIn("Pre-existing failures: 1", output)
+
+
+# ---------------------------------------------------------------------------
+# format_ft_comparison tests
+# ---------------------------------------------------------------------------
+
+
+class TestFormatFtComparison(unittest.TestCase):
+    def _make_comp(self, **kwargs: object) -> MagicMock:
+        comp = MagicMock()
+        comp.label_a = kwargs.get("label_a", "3.14a1")
+        comp.label_b = kwargs.get("label_b", "3.14b2")
+        comp.improvements = kwargs.get("improvements", [])
+        comp.regressions = kwargs.get("regressions", [])
+        comp.unchanged = kwargs.get("unchanged", 0)
+        comp.packages_only_in_a = kwargs.get("packages_only_in_a", [])
+        comp.packages_only_in_b = kwargs.get("packages_only_in_b", [])
+        comp.compatible_count_a = kwargs.get("compatible_count_a", 0)
+        comp.compatible_count_b = kwargs.get("compatible_count_b", 0)
+        comp.crash_count_a = kwargs.get("crash_count_a", 0)
+        comp.crash_count_b = kwargs.get("crash_count_b", 0)
+        comp.net_improvement = comp.compatible_count_b - comp.compatible_count_a
+        return comp
+
+    def _make_transition(
+        self, package: str = "pkg", detail: str = "crash → compatible"
+    ) -> MagicMock:
+        t = MagicMock()
+        t.package = package
+        t.detail = detail
+        return t
+
+    def test_format_comparison_improvements(self) -> None:
+        comp = self._make_comp(
+            improvements=[
+                self._make_transition("a"),
+                self._make_transition("b"),
+                self._make_transition("c"),
+            ]
+        )
+        output = format_ft_comparison(comp)
+        self.assertIn("Improvements (3):", output)
+
+    def test_format_comparison_regressions(self) -> None:
+        comp = self._make_comp(
+            regressions=[
+                self._make_transition("x", "compatible → crash"),
+                self._make_transition("y", "compatible → crash"),
+            ]
+        )
+        output = format_ft_comparison(comp)
+        self.assertIn("Regressions (2):", output)
+
+    def test_format_comparison_aggregate(self) -> None:
+        comp = self._make_comp(
+            compatible_count_a=245,
+            compatible_count_b=260,
+        )
+        output = format_ft_comparison(comp)
+        self.assertIn("Compatible: 245", output)
+        self.assertIn("260", output)
+        self.assertIn("+15", output)
+
+    def test_format_comparison_no_changes(self) -> None:
+        comp = self._make_comp(unchanged=100)
+        output = format_ft_comparison(comp)
+        self.assertIn("Unchanged: 100 packages", output)
+        self.assertNotIn("Improvements", output)
+        self.assertNotIn("Regressions", output)
 
 
 # ---------------------------------------------------------------------------

@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+- `ft/compare.py` module with `PackageTransition`, `FTComparisonResult` dataclasses and `compare_ft_runs()` for cross-run comparison: category transitions, pass rate changes, new/resolved crashes, aggregate deltas.
+- `ft/export.py` module with `export_csv()`, `export_json()`, and `generate_report()` for CSV, JSON, and markdown report export of free-threading results.
 - `ft/display.py` module with terminal formatting for free-threading results: compatibility summaries, package tables, flakiness profiles, triage lists, GIL comparison reports, and progress output.
 - `ft_cli.py` module with `labeille ft` CLI subgroup: `run`, `show`, `compare`, `compat`, `flaky`, `report`, `export` commands for free-threading compatibility testing.
 - `ft/analysis.py` module with `FlakyTest`, `FlakinessProfile`, `GILComparisonResult`, `TriageEntry`, `DurationAnomaly`, and `FTAnalysisReport` dataclasses for free-threading result analysis.
