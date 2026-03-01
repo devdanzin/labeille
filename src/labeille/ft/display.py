@@ -316,26 +316,75 @@ def format_gil_comparison(
 
 
 def format_ft_comparison(
-    comparison: Any,
+    comp: Any,
     *,
-    label_a: str = "run_a",
-    label_b: str = "run_b",
+    label_a: str = "",
+    label_b: str = "",
 ) -> str:
-    """Format a comparison between two free-threading runs.
+    """Format a cross-run comparison for terminal display.
 
-    This is a stub that will be fully implemented in prompt 29
-    when ft/compare.py is available.
+    Output::
+
+        Free-Threading Compatibility Changes: 3.14a1 -> 3.14b2
+        ══════════════════════════════════════════════════════
+
+        Improvements (15):
+          numpy:       crash -> compatible (pass rate 70% -> 100%)
+          ...
+
+        Regressions (3):
+          cryptography: compatible -> crash (new crashes)
+          ...
+
+        Unchanged: 240 packages
+
+        Aggregate:
+          Compatible: 245 -> 260 (+15)
+          Crashes: 7 -> 4 (-3)
     """
+    a_label = label_a or comp.label_a
+    b_label = label_b or comp.label_b
+
     lines = [
-        f"Free-Threading Run Comparison: {label_a} vs {label_b}",
+        f"Free-Threading Compatibility Changes: {a_label} → {b_label}",
         "═" * 60,
+        "",
     ]
-    if hasattr(comparison, "improved") and hasattr(comparison, "regressed"):
-        lines.append(f"  Improved:   {len(comparison.improved)} packages")
-        lines.append(f"  Regressed:  {len(comparison.regressed)} packages")
-        lines.append(f"  Unchanged:  {len(comparison.unchanged)} packages")
-    else:
-        lines.append("  (comparison data not available)")
+
+    # Improvements.
+    if comp.improvements:
+        lines.append(f"Improvements ({len(comp.improvements)}):")
+        for t in comp.improvements:
+            lines.append(f"  {t.package:<20s} {t.detail}")
+        lines.append("")
+
+    # Regressions.
+    if comp.regressions:
+        lines.append(f"Regressions ({len(comp.regressions)}):")
+        for t in comp.regressions:
+            lines.append(f"  {t.package:<20s} {t.detail}")
+        lines.append("")
+
+    lines.append(f"Unchanged: {comp.unchanged} packages")
+
+    # New / removed packages.
+    if comp.packages_only_in_b:
+        lines.append(f"New packages in {b_label}: {len(comp.packages_only_in_b)}")
+    if comp.packages_only_in_a:
+        lines.append(f"Removed from {b_label}: {len(comp.packages_only_in_a)}")
+
+    # Aggregate.
+    lines.append("")
+    lines.append("Aggregate:")
+    net = comp.net_improvement
+    net_str = f"+{net}" if net > 0 else str(net)
+    lines.append(
+        f"  Compatible: {comp.compatible_count_a} → {comp.compatible_count_b} ({net_str})"
+    )
+    crash_delta = comp.crash_count_b - comp.crash_count_a
+    crash_str = f"+{crash_delta}" if crash_delta > 0 else str(crash_delta)
+    lines.append(f"  Crashes:    {comp.crash_count_a} → {comp.crash_count_b} ({crash_str})")
+
     return "\n".join(lines)
 
 
