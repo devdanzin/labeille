@@ -7,6 +7,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+- `ft` subpackage with `compat.py` module for extension GIL compatibility detection: runtime probe via `sys._is_gil_enabled()` and source scan for `Py_mod_gil` declarations.
+- `ExtensionInfo`, `SourceScanResult`, `ModGilDeclaration`, and `ExtensionCompat` dataclasses with JSON serialization.
+- `probe_gil_fallback()` runtime probe, `scan_source_for_mod_gil()` source scanner, `assess_extension_compat()` combined assessment, and `format_extension_compat()` display helper.
+- `guess_import_name()` with `_IMPORT_NAME_OVERRIDES` table for PyPI-to-import name resolution.
 - `bench` subpackage with `system.py` module for capturing system profiles (CPU, RAM, OS, disk) and Python interpreter profiles (version, JIT/GIL state, build flags) for benchmark reproducibility.
 - `SystemProfile`, `PythonProfile`, `StabilityCheck`, and `SystemSnapshot` dataclasses with JSON serialization and terminal display formatting.
 - `check_stability()` pre-benchmark validation (load average, available RAM).
