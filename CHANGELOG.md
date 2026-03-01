@@ -7,6 +7,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+- `ft/analysis.py` module with `FlakyTest`, `FlakinessProfile`, `GILComparisonResult`, `TriageEntry`, `DurationAnomaly`, and `FTAnalysisReport` dataclasses for free-threading result analysis.
+- `analyze_flakiness()` for detailed flakiness profiling with failure pattern classification and consecutive streak detection.
+- `compare_gil_modes()` for GIL-enabled vs free-threaded result comparison.
+- `prioritize_triage()` severity-scored triage with extension and TSAN bonuses.
+- `detect_duration_anomalies()` using statistical outlier detection from bench/stats.py.
+- `analyze_ft_run()` full analysis pipeline producing `FTAnalysisReport`.
 - `ft/runner.py` module with `FTRunConfig`, `OutputMonitor`, `run_single_iteration()`, `run_package_ft()`, and `run_ft()` for free-threading test execution with crash/deadlock/TSAN detection and pytest output parsing.
 - `ft/results.py` module with `FailureCategory` enum, `IterationOutcome`, `FTPackageResult`, `FTRunMeta`, and `FTRunSummary` dataclasses for free-threading result storage, categorization, and JSONL/JSON serialization.
 - `categorize_package()` priority-ordered classification (install failure > import failure > deadlock > crash > TSAN > GIL fallback > compatible > incompatible > intermittent).
