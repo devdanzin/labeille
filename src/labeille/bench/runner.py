@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -53,6 +54,34 @@ from labeille.bench.system import (
 from labeille.bench.timing import run_timed_in_venv
 
 log = logging.getLogger("labeille")
+
+
+# ---------------------------------------------------------------------------
+# Install environment
+# ---------------------------------------------------------------------------
+
+
+def _build_install_env(
+    condition_env: dict[str, str],
+    venv_dir: Path,
+) -> dict[str, str]:
+    """Build a complete environment for package installation.
+
+    Starts from the inherited ``os.environ`` (so tools like ``git``,
+    ``cc``, etc. are found), strips Python-specific pollution, prepends
+    the venv ``bin/`` to ``PATH``, and layers condition-specific
+    variables on top.
+    """
+    env = dict(os.environ)
+    env.pop("PYTHONHOME", None)
+    env.pop("PYTHONPATH", None)
+
+    venv_bin = str(venv_dir / "bin")
+    env["PATH"] = f"{venv_bin}:{env.get('PATH', '')}"
+    env["VIRTUAL_ENV"] = str(venv_dir)
+
+    env.update(condition_env)
+    return env
 
 
 # ---------------------------------------------------------------------------
@@ -536,7 +565,10 @@ class BenchRunner:
 
             # Install the package.
             venv_python = venv_dir / "bin" / "python"
-            env = resolve_env(cond, self.config.default_env)
+            install_env = _build_install_env(
+                resolve_env(cond, self.config.default_env),
+                venv_dir,
+            )
             install_cmd = (
                 cond.install_command or getattr(pkg, "install_command", None) or "pip install -e ."
             )
@@ -547,7 +579,7 @@ class BenchRunner:
                     venv_python,
                     install_cmd,
                     cwd=repo_dir,
-                    env=env,
+                    env=install_env,
                     timeout=self.config.timeout,
                 )
                 if hasattr(result, "returncode") and result.returncode != 0:
@@ -572,7 +604,7 @@ class BenchRunner:
                         venv_python,
                         f"pip install {deps_str}",
                         cwd=repo_dir,
-                        env=env,
+                        env=install_env,
                         timeout=self.config.timeout,
                     )
                 except Exception as exc:  # noqa: BLE001
