@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+- `ft/runner.py` module with `FTRunConfig`, `OutputMonitor`, `run_single_iteration()`, `run_package_ft()`, and `run_ft()` for free-threading test execution with crash/deadlock/TSAN detection and pytest output parsing.
 - `ft/results.py` module with `FailureCategory` enum, `IterationOutcome`, `FTPackageResult`, `FTRunMeta`, and `FTRunSummary` dataclasses for free-threading result storage, categorization, and JSONL/JSON serialization.
 - `categorize_package()` priority-ordered classification (install failure > import failure > deadlock > crash > TSAN > GIL fallback > compatible > incompatible > intermittent).
 - `ft` subpackage with `compat.py` module for extension GIL compatibility detection: runtime probe via `sys._is_gil_enabled()` and source scan for `Py_mod_gil` declarations.
