@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+- `ft/results.py` module with `FailureCategory` enum, `IterationOutcome`, `FTPackageResult`, `FTRunMeta`, and `FTRunSummary` dataclasses for free-threading result storage, categorization, and JSONL/JSON serialization.
+- `categorize_package()` priority-ordered classification (install failure > import failure > deadlock > crash > TSAN > GIL fallback > compatible > incompatible > intermittent).
 - `ft` subpackage with `compat.py` module for extension GIL compatibility detection: runtime probe via `sys._is_gil_enabled()` and source scan for `Py_mod_gil` declarations.
 - `ExtensionInfo`, `SourceScanResult`, `ModGilDeclaration`, and `ExtensionCompat` dataclasses with JSON serialization.
 - `probe_gil_fallback()` runtime probe, `scan_source_for_mod_gil()` source scanner, `assess_extension_compat()` combined assessment, and `format_extension_compat()` display helper.
