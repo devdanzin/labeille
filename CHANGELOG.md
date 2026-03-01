@@ -7,6 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+- `ft/display.py` module with terminal formatting for free-threading results: compatibility summaries, package tables, flakiness profiles, triage lists, GIL comparison reports, and progress output.
+- `ft_cli.py` module with `labeille ft` CLI subgroup: `run`, `show`, `compare`, `compat`, `flaky`, `report`, `export` commands for free-threading compatibility testing.
 - `ft/analysis.py` module with `FlakyTest`, `FlakinessProfile`, `GILComparisonResult`, `TriageEntry`, `DurationAnomaly`, and `FTAnalysisReport` dataclasses for free-threading result analysis.
 - `analyze_flakiness()` for detailed flakiness profiling with failure pattern classification and consecutive streak detection.
 - `compare_gil_modes()` for GIL-enabled vs free-threaded result comparison.
