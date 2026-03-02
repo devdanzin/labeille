@@ -10,7 +10,8 @@ from __future__ import annotations
 import math
 import statistics as _stats
 
-from labeille.bench.compare import ComparisonReport, compare_conditions
+from labeille.bench.anomaly import AnomalyReport
+from labeille.bench.compare import ComparisonReport, TestOverhead, compare_conditions
 from labeille.bench.results import (
     BenchMeta,
     BenchPackageResult,
@@ -18,6 +19,8 @@ from labeille.bench.results import (
 from labeille.bench.stats import (
     compute_overhead,
 )
+from labeille.bench.timing import PerTestTimings
+from labeille.bench.trends import RegressionAlert, SeriesTrend
 
 
 # ---------------------------------------------------------------------------
@@ -387,5 +390,263 @@ def format_comparison_report(report: ComparisonReport) -> str:
             lines.append(f"    High CV (>10%):        {report.high_cv_count} packages")
         if report.status_mismatch_count:
             lines.append(f"    Status mismatch:       {report.status_mismatch_count} packages")
+
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# Per-test timing display
+# ---------------------------------------------------------------------------
+
+
+def format_per_test_comparison(
+    overheads: list[TestOverhead],
+    *,
+    top_n: int = 20,
+) -> str:
+    """Format per-test overhead comparison as a table.
+
+    Shows top N tests by overhead percentage. Columns:
+    Test | Baseline (s) | Treatment (s) | Overhead
+
+    Args:
+        overheads: List of TestOverhead from compare_per_test().
+        top_n: Maximum number of tests to show.
+
+    Returns:
+        Formatted string.
+    """
+    if not overheads:
+        return "No per-test comparison data available."
+
+    lines: list[str] = []
+    lines.append("Per-Test Overhead Comparison")
+    lines.append("\u2500" * 27)
+
+    header = f"  {'Test':<50s} {'Baseline':>10s} {'Treatment':>10s} {'Overhead':>10s}"
+    lines.append(header)
+    lines.append("  " + "\u2500" * (len(header) - 2))
+
+    for oh in overheads[:top_n]:
+        test_name = oh.test_id
+        if len(test_name) > 50:
+            test_name = "..." + test_name[-47:]
+        sign = "+" if oh.overhead_pct >= 0 else ""
+        lines.append(
+            f"  {test_name:<50s} "
+            f"{oh.baseline_median_s:>9.4f}s "
+            f"{oh.treatment_median_s:>9.4f}s "
+            f"{sign}{oh.overhead_pct:>8.1f}%"
+        )
+
+    total = len(overheads)
+    if total > top_n:
+        lines.append(f"  ... and {total - top_n} more tests")
+
+    return "\n".join(lines)
+
+
+def format_per_test_summary(
+    timings: PerTestTimings,
+    *,
+    top_n: int = 10,
+) -> str:
+    """Format per-test timing summary for a single run.
+
+    Shows top N slowest tests with their call durations. Also
+    shows total test count and total test time.
+
+    Args:
+        timings: Per-test timings from an iteration.
+        top_n: Number of slowest tests to show.
+
+    Returns:
+        Formatted string.
+    """
+    if not timings.timings:
+        return "No per-test timing data available."
+
+    lines: list[str] = []
+    lines.append("Per-Test Timing Summary")
+    lines.append("\u2500" * 22)
+    lines.append(f"  Tests: {timings.test_count}")
+    lines.append(f"  Total test time: {timings.total_test_time_s:.2f}s")
+
+    if not timings.parse_success:
+        lines.append("  (Warning: durations output was partially parsed)")
+
+    slowest = timings.slowest_tests
+    if slowest:
+        lines.append("")
+        lines.append(f"  {'Slowest tests:':<50s} {'Duration':>10s}")
+        lines.append("  " + "\u2500" * 62)
+        for test_id, duration in slowest[:top_n]:
+            name = test_id
+            if len(name) > 50:
+                name = "..." + name[-47:]
+            lines.append(f"  {name:<50s} {duration:>9.4f}s")
+        if len(slowest) > top_n:
+            lines.append(f"  ... and {len(slowest) - top_n} more tests")
+
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# Anomaly report
+# ---------------------------------------------------------------------------
+
+
+def format_anomaly_report(report: AnomalyReport) -> str:
+    """Format an anomaly report for terminal display.
+
+    Groups by severity (errors first, then warnings, then info).
+    Each anomaly shows: [SEVERITY] package/condition: description
+    Followed by: -> recommendation
+
+    Returns empty string if no anomalies found.
+    """
+    if not report.anomalies:
+        return ""
+
+    lines: list[str] = []
+    lines.append("Anomaly Report")
+    lines.append("\u2500" * 14)
+
+    severity_labels = {"error": "ERROR", "warning": "WARNING", "info": "INFO"}
+    severity_order = ["error", "warning", "info"]
+
+    by_severity = report.by_severity
+    for severity in severity_order:
+        group = by_severity.get(severity, [])
+        if not group:
+            continue
+        for a in group:
+            label = severity_labels.get(a.severity, a.severity.upper())
+            lines.append(f"  [{label}] {a.package}/{a.condition}: {a.description}")
+            lines.append(f"    \u2192 {a.recommendation}")
+
+    lines.append("")
+    lines.append(
+        f"  Summary: {report.error_count} errors, "
+        f"{report.warning_count} warnings, "
+        f"{report.info_count} info "
+        f"({len(report.affected_packages)} packages affected)"
+    )
+
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# Series trend display
+# ---------------------------------------------------------------------------
+
+
+def format_series_trend(trend: SeriesTrend) -> str:
+    """Format a series trend analysis for terminal display.
+
+    Sections:
+    1. Overview: series name, runs, date range, condition, baseline.
+    2. Summary: counts of regressing/improving/volatile/stable packages.
+    3. Regression alerts (if any): sorted by severity.
+    4. Top regressing packages: table with package, baseline, latest,
+       change%, direction.
+    5. Top improving packages: same format.
+    """
+    lines: list[str] = []
+
+    # Overview.
+    lines.append(f"Trend Analysis: {trend.series_id}")
+    lines.append("\u2500" * (17 + len(trend.series_id)))
+
+    lines.append(f"  Runs:      {trend.n_runs}")
+    if trend.date_range:
+        lines.append(f"  Period:    {trend.date_range[0][:19]} \u2192 {trend.date_range[1][:19]}")
+    lines.append(f"  Condition: {trend.condition}")
+    lines.append(f"  Baseline:  {trend.baseline_bench_id}")
+    lines.append("")
+
+    # Summary.
+    lines.append("Classification Summary")
+    lines.append("\u2500" * 21)
+    lines.append(f"  Total packages: {trend.total_packages}")
+    lines.append(f"  Regressing:     {trend.n_regressing}")
+    lines.append(f"  Improving:      {trend.n_improving}")
+    lines.append(f"  Volatile:       {trend.n_volatile}")
+    lines.append(f"  Stable:         {trend.n_stable}")
+    lines.append(f"  Aggregate change: {_format_pct(trend.aggregate_median_change_pct)}")
+    lines.append("")
+
+    # Alerts.
+    if trend.alerts:
+        lines.append(format_regression_alerts(trend.alerts))
+        lines.append("")
+
+    # Top regressing packages.
+    regressing = [pt for pt in trend.package_trends if pt.trend_direction == "regressing"]
+    if regressing:
+        regressing.sort(key=lambda pt: pt.cumulative_change_pct, reverse=True)
+        lines.append("Top Regressing Packages")
+        lines.append("\u2500" * 22)
+        lines.append(
+            f"  {'Package':<30s} {'Baseline':>10s} {'Latest':>10s} "
+            f"{'Change':>10s} {'Direction':>12s}"
+        )
+        lines.append("  " + "\u2500" * 76)
+        for pt in regressing[:10]:
+            baseline_s = _format_time(pt.medians[0]) if pt.medians else "N/A"
+            latest_s = _format_time(pt.medians[-1]) if pt.medians else "N/A"
+            lines.append(
+                f"  {pt.package:<30s} {baseline_s:>10s} {latest_s:>10s} "
+                f"{_format_pct(pt.cumulative_change_pct):>10s} {pt.trend_direction:>12s}"
+            )
+        lines.append("")
+
+    # Top improving packages.
+    improving = [pt for pt in trend.package_trends if pt.trend_direction == "improving"]
+    if improving:
+        improving.sort(key=lambda pt: pt.cumulative_change_pct)
+        lines.append("Top Improving Packages")
+        lines.append("\u2500" * 21)
+        lines.append(
+            f"  {'Package':<30s} {'Baseline':>10s} {'Latest':>10s} "
+            f"{'Change':>10s} {'Direction':>12s}"
+        )
+        lines.append("  " + "\u2500" * 76)
+        for pt in improving[:10]:
+            baseline_s = _format_time(pt.medians[0]) if pt.medians else "N/A"
+            latest_s = _format_time(pt.medians[-1]) if pt.medians else "N/A"
+            lines.append(
+                f"  {pt.package:<30s} {baseline_s:>10s} {latest_s:>10s} "
+                f"{_format_pct(pt.cumulative_change_pct):>10s} {pt.trend_direction:>12s}"
+            )
+        lines.append("")
+
+    return "\n".join(lines)
+
+
+def format_regression_alerts(alerts: list[RegressionAlert]) -> str:
+    """Format regression alerts for terminal display.
+
+    Each alert shows:
+    [SEVERITY] package (condition): description
+        Baseline: Xs -> Current: Ys (change%)
+    """
+    if not alerts:
+        return "No regression alerts."
+
+    lines: list[str] = []
+    lines.append("Regression Alerts")
+    lines.append("\u2500" * 17)
+
+    severity_labels = {"error": "ERROR", "warning": "WARNING", "info": "INFO"}
+
+    for a in alerts:
+        label = severity_labels.get(a.severity, a.severity.upper())
+        lines.append(f"  [{label}] {a.package} ({a.condition}): {a.description}")
+        lines.append(
+            f"    Baseline: {_format_time(a.baseline_median_s)} "
+            f"\u2192 Current: {_format_time(a.current_median_s)} "
+            f"({_format_pct(a.cumulative_change_pct)})"
+        )
 
     return "\n".join(lines)

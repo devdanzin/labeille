@@ -40,6 +40,10 @@ from labeille.bench_cli import bench as bench_group  # noqa: E402
 
 main.add_command(bench_group)
 
+from labeille.ft_cli import ft as ft_group  # noqa: E402
+
+main.add_command(ft_group)
+
 
 @main.command()
 @click.argument("packages", nargs=-1)

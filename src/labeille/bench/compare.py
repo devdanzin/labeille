@@ -18,6 +18,7 @@ from labeille.bench.stats import (
     OverheadResult,
     compute_overhead,
 )
+from typing import Any
 
 log = logging.getLogger("labeille")
 
@@ -276,3 +277,120 @@ def compare_runs(
         name_b,
         ci_seed=ci_seed,
     )
+
+
+# ---------------------------------------------------------------------------
+# Per-test overhead comparison
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class TestOverhead:
+    """Overhead for a single test between two conditions."""
+
+    test_id: str
+    baseline_median_s: float
+    treatment_median_s: float
+    absolute_diff_s: float
+    overhead_pct: float
+    n_baseline: int
+    n_treatment: int
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize to a JSON-compatible dict."""
+        return {
+            "test_id": self.test_id,
+            "baseline_median_s": round(self.baseline_median_s, 6),
+            "treatment_median_s": round(self.treatment_median_s, 6),
+            "absolute_diff_s": round(self.absolute_diff_s, 6),
+            "overhead_pct": round(self.overhead_pct, 2),
+            "n_baseline": self.n_baseline,
+            "n_treatment": self.n_treatment,
+        }
+
+
+def compare_per_test(
+    results: list[BenchPackageResult],
+    baseline_name: str,
+    treatment_name: str,
+    package_name: str,
+) -> list[TestOverhead]:
+    """Compare per-test timings for a specific package.
+
+    Collects per-test call durations across all measured iterations for
+    both conditions, computes median durations per test, and returns
+    overhead sorted by overhead_pct descending.
+
+    Returns an empty list if per-test timings are not available for
+    both conditions.
+
+    Args:
+        results: Benchmark results.
+        baseline_name: Baseline condition name.
+        treatment_name: Treatment condition name.
+        package_name: The package to analyze.
+
+    Returns:
+        List of TestOverhead, sorted by overhead_pct descending.
+    """
+    # Find the package.
+    pkg_result = None
+    for r in results:
+        if r.package == package_name:
+            pkg_result = r
+            break
+    if not pkg_result:
+        return []
+
+    base_cond = pkg_result.conditions.get(baseline_name)
+    treat_cond = pkg_result.conditions.get(treatment_name)
+    if not base_cond or not treat_cond:
+        return []
+
+    # Collect per-test call durations across measured iterations.
+    def _collect_call_durations(
+        cond: Any,
+    ) -> dict[str, list[float]]:
+        durations: dict[str, list[float]] = {}
+        for it in cond.measured_iterations:
+            if it.per_test_timings is None:
+                continue
+            for t in it.per_test_timings.timings:
+                if t.phase == "call":
+                    durations.setdefault(t.test_id, []).append(t.duration_s)
+        return durations
+
+    base_durations = _collect_call_durations(base_cond)
+    treat_durations = _collect_call_durations(treat_cond)
+
+    if not base_durations or not treat_durations:
+        return []
+
+    # Compute overhead for tests present in both conditions.
+    common_tests = sorted(set(base_durations.keys()) & set(treat_durations.keys()))
+    overheads: list[TestOverhead] = []
+
+    for test_id in common_tests:
+        base_vals = sorted(base_durations[test_id])
+        treat_vals = sorted(treat_durations[test_id])
+
+        base_median = base_vals[len(base_vals) // 2]
+        treat_median = treat_vals[len(treat_vals) // 2]
+
+        diff = treat_median - base_median
+        pct = (diff / base_median * 100) if base_median > 0 else 0.0
+
+        overheads.append(
+            TestOverhead(
+                test_id=test_id,
+                baseline_median_s=base_median,
+                treatment_median_s=treat_median,
+                absolute_diff_s=diff,
+                overhead_pct=pct,
+                n_baseline=len(base_vals),
+                n_treatment=len(treat_vals),
+            )
+        )
+
+    overheads.sort(key=lambda o: o.overhead_pct, reverse=True)
+    return overheads

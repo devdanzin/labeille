@@ -11,6 +11,60 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Multi-forge URL normalization via `_normalize_forge_url()` supporting GitHub, GitLab, Bitbucket, and Codeberg.
 - Expanded `extract_repo_url()` with all-values `project_urls` scan and `description` field scanning as last resort.
 - `recover-no-tests-found` and `recover-no-repo-url` registry migrations for recovering falsely skipped packages.
+- `trends.py` module in `bench` subpackage with `PackageTrend`, `RegressionAlert`, and `SeriesTrend` dataclasses for longitudinal benchmark analysis.
+- `compute_package_trend()` with configurable regression/trend thresholds and sustained-change detection.
+- `analyze_series_trends()` for full series analysis: loads all runs, computes per-package trends, generates regression alerts.
+- Five alert types: `new_regression`, `sustained_regression`, `recovery`, `new_instability`, `new_improvement`.
+- `labeille bench track trend` command for viewing trend analysis with table, CSV, and Markdown output.
+- `labeille bench track alert` command for viewing regression alerts since the last run.
+- `export_trend_markdown()` and `export_trend_csv()` in `bench/export.py` for trend report generation.
+- `format_series_trend()` and `format_regression_alerts()` in `bench/display.py` for terminal output.
+- `tracking.py` module in `bench` subpackage with `TrackingSeries` and `TrackingRunEntry` dataclasses for longitudinal benchmark tracking.
+- `compute_config_fingerprint()` for comparing benchmark configurations across runs (ignores package list and system profile).
+- Series management: `init_series()`, `add_run_to_series()`, `pin_baseline()`, `unpin_baseline()`, `load_series()`, `save_series()`, `list_series()`.
+- `labeille bench track` CLI subgroup with `init`, `add`, `show`, `list`, `pin`, and `unpin` commands.
+- Symlink-based run storage within tracking directories to avoid data duplication.
+- `constraints.py` module in `bench` subpackage with `ResourceConstraints` dataclass and ulimit/taskset command wrapping.
+- Resource constraints as part of the condition abstraction: `--memory-limit`, `--cpu-affinity`, and `--cpu-time-limit` CLI flags for `labeille bench run`.
+- Per-condition constraint specification in YAML benchmark profiles.
+- Inline condition constraint parsing (e.g. `--condition "constrained:memory_limit=1024,cpu_affinity=0+1"`).
+- OOM detection via `detect_oom_from_result()` with new `"oom"` iteration status.
+- `constraints_applied` and `oom_detected` fields on `BenchIteration`.
+- `constraints` field on `ConditionDef` for per-condition resource limits.
+- `cache.py` module in `bench` subpackage for filesystem cache management during benchmarks.
+- `--drop-caches` flag for `labeille bench run` to drop filesystem caches between iterations for cold-cache benchmarking.
+- `--warm-vs-cold` flag to automatically compare warm-cache and cold-cache performance.
+- `--run-dangerously-as-root` safety flag — labeille refuses to run as root without it.
+- `labeille bench setup-cache-drop` command showing setup instructions for the sudoers-based cache-dropping helper.
+- `generate_drop_caches_script()` and `format_setup_instructions()` helpers for cache-drop setup.
+- `caches_dropped` field on `BenchIteration` to record cache state per iteration.
+- Per-test timing capture via pytest `--durations=0` output, enabled with `--per-test-timing` flag on `labeille bench run`.
+- `TestTiming` and `PerTestTimings` dataclasses in `bench/timing.py` with pytest output parser.
+- `compare_per_test()` in `bench/compare.py` for per-test overhead analysis between conditions.
+- `--per-test <package>` option for `labeille bench show` and `labeille bench compare` to display per-test timing breakdown.
+- `anomaly.py` module in `bench` subpackage with `PackageAnomaly` and `AnomalyReport` dataclasses for proactive measurement-quality assessment.
+- `detect_anomalies()` with five anomaly types: `high_cv`, `bimodal`, `outlier_heavy`, `status_mixed`, and `trend`.
+- `is_bimodal()` gap-analysis heuristic and `has_monotonic_trend()` Spearman rank correlation for pure-Python distribution analysis.
+- `--anomalies` flag for `labeille bench show` to display measurement anomaly report.
+- Anomaly summary in `labeille bench compare` output when anomalies are detected.
+- `## Anomalies` section in Markdown export when anomalies are present.
+- `ft/compare.py` module with `PackageTransition`, `FTComparisonResult` dataclasses and `compare_ft_runs()` for cross-run comparison: category transitions, pass rate changes, new/resolved crashes, aggregate deltas.
+- `ft/export.py` module with `export_csv()`, `export_json()`, and `generate_report()` for CSV, JSON, and markdown report export of free-threading results.
+- `ft/display.py` module with terminal formatting for free-threading results: compatibility summaries, package tables, flakiness profiles, triage lists, GIL comparison reports, and progress output.
+- `ft_cli.py` module with `labeille ft` CLI subgroup: `run`, `show`, `compare`, `compat`, `flaky`, `report`, `export` commands for free-threading compatibility testing.
+- `ft/analysis.py` module with `FlakyTest`, `FlakinessProfile`, `GILComparisonResult`, `TriageEntry`, `DurationAnomaly`, and `FTAnalysisReport` dataclasses for free-threading result analysis.
+- `analyze_flakiness()` for detailed flakiness profiling with failure pattern classification and consecutive streak detection.
+- `compare_gil_modes()` for GIL-enabled vs free-threaded result comparison.
+- `prioritize_triage()` severity-scored triage with extension and TSAN bonuses.
+- `detect_duration_anomalies()` using statistical outlier detection from bench/stats.py.
+- `analyze_ft_run()` full analysis pipeline producing `FTAnalysisReport`.
+- `ft/runner.py` module with `FTRunConfig`, `OutputMonitor`, `run_single_iteration()`, `run_package_ft()`, and `run_ft()` for free-threading test execution with crash/deadlock/TSAN detection and pytest output parsing.
+- `ft/results.py` module with `FailureCategory` enum, `IterationOutcome`, `FTPackageResult`, `FTRunMeta`, and `FTRunSummary` dataclasses for free-threading result storage, categorization, and JSONL/JSON serialization.
+- `categorize_package()` priority-ordered classification (install failure > import failure > deadlock > crash > TSAN > GIL fallback > compatible > incompatible > intermittent).
+- `ft` subpackage with `compat.py` module for extension GIL compatibility detection: runtime probe via `sys._is_gil_enabled()` and source scan for `Py_mod_gil` declarations.
+- `ExtensionInfo`, `SourceScanResult`, `ModGilDeclaration`, and `ExtensionCompat` dataclasses with JSON serialization.
+- `probe_gil_fallback()` runtime probe, `scan_source_for_mod_gil()` source scanner, `assess_extension_compat()` combined assessment, and `format_extension_compat()` display helper.
+- `guess_import_name()` with `_IMPORT_NAME_OVERRIDES` table for PyPI-to-import name resolution.
 - `bench` subpackage with `system.py` module for capturing system profiles (CPU, RAM, OS, disk) and Python interpreter profiles (version, JIT/GIL state, build flags) for benchmark reproducibility.
 - `SystemProfile`, `PythonProfile`, `StabilityCheck`, and `SystemSnapshot` dataclasses with JSON serialization and terminal display formatting.
 - `check_stability()` pre-benchmark validation (load average, available RAM).
@@ -32,6 +86,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - New crash summary statistics in compare output showing repo unchanged/changed/unknown counts.
 
 ### Enhanced
+- `BenchRunner._run_iteration()` applies resource constraints via command wrapping before execution.
+- `BenchRunner.run()` now checks for root execution and refuses unless `--run-dangerously-as-root` is passed.
 - macOS support for system profiling: CPU info from `sysctl`, memory from `vm_stat`, OS from `sw_vers`, disk type from `diskutil`. All existing Linux code paths preserved unchanged.
 - `check_stability()` and `SystemSnapshot.capture()` now use cross-platform `_get_available_ram_gb()` helper instead of Linux-only `/proc/meminfo`.
 - `format_system_profile()` no longer hardcodes "Linux" in the OS line; shows platform-appropriate output.
@@ -44,6 +100,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Renamed `Issues` URL key to `Bug Tracker` in project metadata for PyPI display consistency.
 
 ### Fixed
+- Bench runner `install_package` now receives a complete environment (starting from `os.environ`) instead of bare condition env vars, fixing install failures when build backends need `PATH` to find tools like `git`.
 - `run_meta.json` now stores actual CLI argument strings (`sys.argv[1:]`) instead of parameter names, making runs reproducible from metadata.
 - `build_reproduce_command` uses `export PATH` for venv activation instead of fragile `.venv/bin/` prefix string replacement.
 - Deduplicated `_signal_name` (3 copies → `format_signal_name` in `formatting.py`).

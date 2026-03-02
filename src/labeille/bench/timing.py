@@ -9,12 +9,14 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 import resource
 import shlex
 import subprocess
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Any
 
 log = logging.getLogger("labeille")
 
@@ -248,3 +250,178 @@ def run_timed_in_venv(
         env=run_env,
         timeout=timeout,
     )
+
+
+# ---------------------------------------------------------------------------
+# Per-test timing capture
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class TestTiming:
+    """Timing for a single test phase from pytest --durations output."""
+
+    test_id: str  # e.g. "tests/test_foo.py::test_heavy_computation"
+    phase: str  # "setup", "call", "teardown"
+    duration_s: float
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize to a JSON-compatible dict."""
+        return {
+            "test_id": self.test_id,
+            "phase": self.phase,
+            "duration_s": round(self.duration_s, 6),
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> TestTiming:
+        """Deserialize from a dict, ignoring unknown fields."""
+        known = {f.name for f in cls.__dataclass_fields__.values()}
+        return cls(**{k: v for k, v in data.items() if k in known})
+
+
+@dataclass
+class PerTestTimings:
+    """All test timings parsed from a single pytest run's output."""
+
+    timings: list[TestTiming] = field(default_factory=list)
+    parse_success: bool = True
+    raw_output: str = ""  # Preserved for debugging (not serialized by default)
+
+    @property
+    def by_test(self) -> dict[str, dict[str, float]]:
+        """Group by test_id -> {phase: duration_s}."""
+        result: dict[str, dict[str, float]] = {}
+        for t in self.timings:
+            result.setdefault(t.test_id, {})[t.phase] = t.duration_s
+        return result
+
+    @property
+    def slowest_tests(self) -> list[tuple[str, float]]:
+        """Top tests by call duration, sorted descending."""
+        calls = [(t.test_id, t.duration_s) for t in self.timings if t.phase == "call"]
+        return sorted(calls, key=lambda x: x[1], reverse=True)
+
+    @property
+    def total_test_time_s(self) -> float:
+        """Sum of all call durations."""
+        return sum(t.duration_s for t in self.timings if t.phase == "call")
+
+    @property
+    def test_count(self) -> int:
+        """Number of unique test IDs."""
+        return len({t.test_id for t in self.timings})
+
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize to a JSON-compatible dict."""
+        return {
+            "timings": [t.to_dict() for t in self.timings],
+            "parse_success": self.parse_success,
+            # raw_output intentionally omitted to save space
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> PerTestTimings:
+        """Deserialize from a dict."""
+        return cls(
+            timings=[TestTiming.from_dict(t) for t in data.get("timings", [])],
+            parse_success=data.get("parse_success", True),
+        )
+
+
+# Header pattern for pytest --durations output.
+_DURATIONS_HEADER_RE = re.compile(
+    r"={3,}\s*slowest\s+(test\s+)?durations\s*={3,}",
+    re.IGNORECASE,
+)
+
+# Line pattern: "1.23s call     tests/test_foo.py::test_heavy"
+_TIMING_LINE_RE = re.compile(
+    r"^\s*(\d+\.\d+)s\s+(setup|call|teardown)\s+(.+)$",
+)
+
+
+def parse_pytest_durations(output: str) -> PerTestTimings:
+    """Parse pytest --durations=0 output into structured test timings.
+
+    Expects the standard pytest format::
+
+        ===== slowest durations =====
+        1.23s call     tests/test_foo.py::test_heavy
+        0.45s call     tests/test_bar.py::test_network
+        0.12s setup    tests/test_foo.py::test_heavy
+        0.01s teardown tests/test_foo.py::test_heavy
+
+    The parser is lenient: if the durations section cannot be found or
+    individual lines don't match the expected format, parse_success is
+    set to False and whatever was successfully parsed is returned.
+    Never raises -- a failed parse should not fail a benchmark.
+
+    Args:
+        output: The combined stdout from a pytest run.
+
+    Returns:
+        PerTestTimings with parsed data and success flag.
+    """
+    timings: list[TestTiming] = []
+    parse_success = True
+
+    # Find the durations header.
+    lines = output.splitlines()
+    header_idx = -1
+    for i, line in enumerate(lines):
+        if _DURATIONS_HEADER_RE.search(line):
+            header_idx = i
+            break
+
+    if header_idx < 0:
+        return PerTestTimings(
+            timings=[],
+            parse_success=False,
+            raw_output=output,
+        )
+
+    # Parse lines after the header until the next === section or end.
+    for line in lines[header_idx + 1 :]:
+        stripped = line.strip()
+        if not stripped:
+            continue
+        if stripped.startswith("==="):
+            break
+        match = _TIMING_LINE_RE.match(stripped)
+        if match:
+            duration = float(match.group(1))
+            phase = match.group(2)
+            test_id = match.group(3).strip()
+            timings.append(TestTiming(test_id=test_id, phase=phase, duration_s=duration))
+        # Non-matching lines are silently skipped.
+
+    return PerTestTimings(
+        timings=timings,
+        parse_success=parse_success,
+        raw_output=output,
+    )
+
+
+def prepare_per_test_command(
+    test_command: str,
+    test_framework: str,
+) -> tuple[str, bool]:
+    """Prepare a test command for per-test timing capture.
+
+    Appends --durations=0 to pytest commands. Returns the original
+    command unchanged for non-pytest frameworks.
+
+    Args:
+        test_command: The original test command.
+        test_framework: From the registry ("pytest" or "unittest").
+
+    Returns:
+        Tuple of (modified_command, per_test_enabled). per_test_enabled
+        is True only if --durations=0 was successfully added.
+    """
+    if test_framework != "pytest":
+        return (test_command, False)
+    if "--durations" in test_command:
+        return (test_command, False)
+    return (f"{test_command} --durations=0", True)

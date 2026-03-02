@@ -1323,5 +1323,71 @@ class TestDefaultProgress(unittest.TestCase):
         self.assertIn("ok", logged)
 
 
+# ---------------------------------------------------------------------------
+# _build_install_env tests
+# ---------------------------------------------------------------------------
+
+
+class TestBuildInstallEnv(unittest.TestCase):
+    """Tests for _build_install_env."""
+
+    def setUp(self) -> None:
+        from labeille.bench.runner import _build_install_env
+
+        self._build_install_env = _build_install_env
+
+    def test_inherits_os_environ(self) -> None:
+        """Result includes PATH and HOME from os.environ."""
+        venv_dir = Path("/fake/venv")
+        with patch.dict("os.environ", {"PATH": "/usr/bin", "HOME": "/home/test"}, clear=True):
+            env = self._build_install_env({}, venv_dir)
+        self.assertIn("/usr/bin", env["PATH"])
+        self.assertEqual(env["HOME"], "/home/test")
+
+    def test_prepends_venv_bin_to_path(self) -> None:
+        """Venv bin/ directory is prepended to PATH."""
+        venv_dir = Path("/fake/venv")
+        with patch.dict("os.environ", {"PATH": "/usr/bin"}, clear=True):
+            env = self._build_install_env({}, venv_dir)
+        self.assertTrue(env["PATH"].startswith("/fake/venv/bin:"))
+
+    def test_sets_virtual_env(self) -> None:
+        """VIRTUAL_ENV is set to the venv directory."""
+        venv_dir = Path("/fake/venv")
+        with patch.dict("os.environ", {"PATH": "/usr/bin"}, clear=True):
+            env = self._build_install_env({}, venv_dir)
+        self.assertEqual(env["VIRTUAL_ENV"], "/fake/venv")
+
+    def test_strips_pythonhome(self) -> None:
+        """PYTHONHOME is removed from the environment."""
+        venv_dir = Path("/fake/venv")
+        with patch.dict("os.environ", {"PATH": "/usr/bin", "PYTHONHOME": "/bad"}, clear=True):
+            env = self._build_install_env({}, venv_dir)
+        self.assertNotIn("PYTHONHOME", env)
+
+    def test_strips_pythonpath(self) -> None:
+        """PYTHONPATH is removed from the environment."""
+        venv_dir = Path("/fake/venv")
+        with patch.dict("os.environ", {"PATH": "/usr/bin", "PYTHONPATH": "/bad"}, clear=True):
+            env = self._build_install_env({}, venv_dir)
+        self.assertNotIn("PYTHONPATH", env)
+
+    def test_condition_env_overrides(self) -> None:
+        """Condition-specific vars take precedence."""
+        venv_dir = Path("/fake/venv")
+        with patch.dict("os.environ", {"PATH": "/usr/bin", "FOO": "old"}, clear=True):
+            env = self._build_install_env({"FOO": "new", "BAR": "baz"}, venv_dir)
+        self.assertEqual(env["FOO"], "new")
+        self.assertEqual(env["BAR"], "baz")
+
+    def test_empty_condition_env_still_has_path(self) -> None:
+        """Even with empty condition env, PATH and other system vars are present."""
+        venv_dir = Path("/fake/venv")
+        with patch.dict("os.environ", {"PATH": "/usr/bin", "LANG": "C.UTF-8"}, clear=True):
+            env = self._build_install_env({}, venv_dir)
+        self.assertIn("PATH", env)
+        self.assertEqual(env["LANG"], "C.UTF-8")
+
+
 if __name__ == "__main__":
     unittest.main()

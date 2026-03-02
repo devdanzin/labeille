@@ -165,6 +165,48 @@ def bench() -> None:
     multiple=True,
     help="KEY=VALUE env var for all conditions (repeatable).",
 )
+@click.option(
+    "--per-test-timing",
+    is_flag=True,
+    default=False,
+    help="Capture per-test timing via pytest --durations=0.",
+)
+@click.option(
+    "--memory-limit",
+    type=int,
+    default=None,
+    help="Memory limit in MB for all conditions (ulimit -v).",
+)
+@click.option(
+    "--cpu-affinity",
+    type=str,
+    default=None,
+    help="CPU core list (e.g. '0,1') for all conditions (taskset).",
+)
+@click.option(
+    "--cpu-time-limit",
+    type=int,
+    default=None,
+    help="CPU time limit in seconds for all conditions (ulimit -t).",
+)
+@click.option(
+    "--drop-caches",
+    is_flag=True,
+    default=False,
+    help="Drop filesystem caches between iterations (requires setup, see docs).",
+)
+@click.option(
+    "--warm-vs-cold",
+    is_flag=True,
+    default=False,
+    help="Run with and without cache dropping, compare results.",
+)
+@click.option(
+    "--run-dangerously-as-root",
+    is_flag=True,
+    default=False,
+    help="Allow running as root (for containers). Not recommended.",
+)
 @click.option("-v", "--verbose", is_flag=True, default=False)
 def run(  # noqa: PLR0913
     profile_path: str | None,
@@ -188,6 +230,13 @@ def run(  # noqa: PLR0913
     check_stability: bool,
     wait_for_stability: bool,
     quick: bool,
+    per_test_timing: bool,
+    memory_limit: int | None,
+    cpu_affinity: str | None,
+    cpu_time_limit: int | None,
+    drop_caches: bool,
+    warm_vs_cold: bool,
+    run_dangerously_as_root: bool,
     env_pairs: tuple[str, ...],
     verbose: bool,
 ) -> None:
@@ -288,6 +337,21 @@ def run(  # noqa: PLR0913
 
     config.check_stability = check_stability
     config.wait_for_stability = wait_for_stability
+    config.per_test_timing = per_test_timing
+    config.drop_caches = drop_caches or warm_vs_cold  # warm-vs-cold implies drop-caches
+    config.warm_vs_cold = warm_vs_cold
+    config.run_dangerously_as_root = run_dangerously_as_root
+
+    if memory_limit or cpu_affinity or cpu_time_limit:
+        from labeille.bench.constraints import ResourceConstraints
+
+        affinity_list = [int(c.strip()) for c in cpu_affinity.split(",")] if cpu_affinity else None
+        config.default_constraints = ResourceConstraints(
+            memory_limit_mb=memory_limit,
+            cpu_affinity=affinity_list,
+            cpu_time_limit_s=cpu_time_limit,
+        )
+
     config.cli_args = sys.argv[1:]
 
     if quick:
@@ -320,7 +384,15 @@ def run(  # noqa: PLR0913
 
 @bench.command("show")
 @click.argument("result_dir", type=click.Path(exists=True))
-def show(result_dir: str) -> None:
+@click.option("--anomalies", is_flag=True, default=False, help="Show measurement anomalies.")
+@click.option(
+    "--per-test",
+    "per_test_package",
+    type=str,
+    default=None,
+    help="Show per-test timing for a specific package.",
+)
+def show(result_dir: str, anomalies: bool, per_test_package: str | None) -> None:
     """Display results from a benchmark run.
 
     RESULT_DIR is the path to a benchmark output directory
@@ -331,6 +403,31 @@ def show(result_dir: str) -> None:
 
     meta, results = load_bench_run(Path(result_dir))
     click.echo(format_bench_show(meta, results))
+
+    if per_test_package:
+        from labeille.bench.display import format_per_test_summary
+
+        pkg_result = next((r for r in results if r.package == per_test_package), None)
+        if not pkg_result:
+            click.echo(f"\nPackage '{per_test_package}' not found.", err=True)
+        else:
+            # Use the last measured iteration's timings.
+            for cond_name, cond in pkg_result.conditions.items():
+                for it in reversed(cond.measured_iterations):
+                    if it.per_test_timings:
+                        click.echo(f"\n{cond_name}:")
+                        click.echo(format_per_test_summary(it.per_test_timings))
+                        break
+
+    if anomalies:
+        from labeille.bench.anomaly import detect_anomalies
+        from labeille.bench.display import format_anomaly_report
+
+        report = detect_anomalies(results)
+        text = format_anomaly_report(report)
+        if text:
+            click.echo()
+            click.echo(text)
 
 
 # ---------------------------------------------------------------------------
@@ -357,7 +454,19 @@ def show(result_dir: str) -> None:
     default="wall",
     help="Metric to compare.",
 )
-def compare(result_dirs: tuple[str, ...], baseline: str | None, metric: str) -> None:
+@click.option(
+    "--per-test",
+    "per_test_package",
+    type=str,
+    default=None,
+    help="Show per-test overhead for a specific package.",
+)
+def compare(
+    result_dirs: tuple[str, ...],
+    baseline: str | None,
+    metric: str,
+    per_test_package: str | None,
+) -> None:
     """Compare results from two or more benchmark runs.
 
     Accepts either:
@@ -407,6 +516,30 @@ def compare(result_dirs: tuple[str, ...], baseline: str | None, metric: str) -> 
             click.echo(f"\n{baseline_name} vs {cond_name}")
             click.echo("=" * (len(baseline_name) + len(cond_name) + 4))
             click.echo(format_comparison_summary(results, baseline_name, cond_name))
+
+        # Per-test comparison.
+        if per_test_package:
+            from labeille.bench.compare import compare_per_test
+            from labeille.bench.display import format_per_test_comparison
+
+            for cond_name in conditions:
+                if cond_name == baseline_name:
+                    continue
+                overheads = compare_per_test(results, baseline_name, cond_name, per_test_package)
+                if overheads:
+                    click.echo()
+                    click.echo(format_per_test_comparison(overheads))
+
+        # Anomaly summary.
+        from labeille.bench.anomaly import detect_anomalies
+
+        anomaly_report = detect_anomalies(results)
+        if anomaly_report.anomalies:
+            n_pkgs = len(anomaly_report.affected_packages)
+            click.echo(
+                f"\n\u26a0 {n_pkgs} package(s) have measurement anomalies "
+                f"(use 'bench show --anomalies' for details)."
+            )
     else:
         # Multiple directories: cross-run comparison.
         all_runs: list[tuple[BenchMeta, list[BenchPackageResult]]] = []
@@ -453,6 +586,17 @@ def compare(result_dirs: tuple[str, ...], baseline: str | None, metric: str) -> 
                 click.echo(f"\n{baseline_name} vs {treatment}")
                 click.echo("=" * (len(baseline_name) + len(treatment) + 4))
                 click.echo(format_comparison_summary(merged_list, baseline_name, treatment))
+
+            # Anomaly summary.
+            from labeille.bench.anomaly import detect_anomalies
+
+            anomaly_report = detect_anomalies(merged_list)
+            if anomaly_report.anomalies:
+                n_pkgs = len(anomaly_report.affected_packages)
+                click.echo(
+                    f"\n\u26a0 {n_pkgs} package(s) have measurement anomalies "
+                    f"(use 'bench show --anomalies' for details)."
+                )
 
 
 # ---------------------------------------------------------------------------
@@ -535,10 +679,346 @@ def export(result_dir: str, fmt: str, output: str | None) -> None:
     elif fmt == "csv-summary":
         text = export_csv_summary(meta, results)
     else:
-        text = export_markdown(meta, results)
+        from labeille.bench.anomaly import detect_anomalies
+
+        anomaly_report = detect_anomalies(results)
+        text = export_markdown(meta, results, anomaly_report=anomaly_report)
 
     if output:
         Path(output).write_text(text)
         click.echo(f"Exported to {output}")
     else:
         click.echo(text)
+
+
+# ---------------------------------------------------------------------------
+# bench setup-cache-drop
+# ---------------------------------------------------------------------------
+
+
+@bench.command("setup-cache-drop")
+@click.option(
+    "--show-script",
+    is_flag=True,
+    default=False,
+    help="Print the helper script contents (for piping to a file).",
+)
+def setup_cache_drop(show_script: bool) -> None:
+    """Show setup instructions for filesystem cache dropping.
+
+    Prints the helper script contents and sudoers configuration
+    needed for --drop-caches to work.
+    """
+    from labeille.bench.cache import (
+        check_cache_drop_available,
+        format_setup_instructions,
+        generate_drop_caches_script,
+    )
+
+    if show_script:
+        click.echo(generate_drop_caches_script(), nl=False)
+        return
+
+    status = check_cache_drop_available()
+    if status.available:
+        click.echo("Cache dropping is already configured and working.")
+    else:
+        click.echo(format_setup_instructions())
+
+
+# ---------------------------------------------------------------------------
+# bench track (subgroup)
+# ---------------------------------------------------------------------------
+
+
+@bench.group("track")
+def track() -> None:
+    """Manage benchmark tracking series for longitudinal comparison."""
+
+
+@track.command("init")
+@click.argument("series_name")
+@click.option("--description", "-d", default="", help="Series description.")
+@click.option(
+    "--tracking-dir",
+    type=click.Path(),
+    default="results/tracking",
+    help="Parent directory for tracking series.",
+)
+def track_init(series_name: str, description: str, tracking_dir: str) -> None:
+    """Create a new benchmark tracking series."""
+    from labeille.bench.tracking import init_series
+
+    try:
+        series = init_series(Path(tracking_dir), series_name, description=description)
+        click.echo(f"Created tracking series '{series.series_id}'.")
+    except ValueError as exc:
+        click.echo(f"Error: {exc}", err=True)
+        raise SystemExit(1) from exc
+
+
+@track.command("add")
+@click.argument("series_name")
+@click.argument("bench_run_dir", type=click.Path(exists=True))
+@click.option("--notes", "-n", default="", help="Notes for this run.")
+@click.option(
+    "--commit",
+    type=str,
+    multiple=True,
+    help="key=value commit info (repeatable).",
+)
+@click.option(
+    "--tracking-dir",
+    type=click.Path(),
+    default="results/tracking",
+    help="Parent directory for tracking series.",
+)
+def track_add(
+    series_name: str,
+    bench_run_dir: str,
+    notes: str,
+    commit: tuple[str, ...],
+    tracking_dir: str,
+) -> None:
+    """Add a benchmark run to a tracking series."""
+    from labeille.bench.tracking import add_run_to_series
+
+    commit_info: dict[str, str] = {}
+    for pair in commit:
+        if "=" in pair:
+            k, v = pair.split("=", 1)
+            commit_info[k] = v
+
+    series_dir = Path(tracking_dir) / series_name
+    try:
+        entry = add_run_to_series(
+            series_dir,
+            Path(bench_run_dir),
+            notes=notes,
+            commit_info=commit_info,
+        )
+        click.echo(f"Added run '{entry.bench_id}' to series '{series_name}'.")
+    except FileNotFoundError as exc:
+        click.echo(f"Error: {exc}", err=True)
+        raise SystemExit(1) from exc
+
+
+@track.command("show")
+@click.argument("series_name")
+@click.option("--last", "last_n", type=int, default=None, help="Show only last N runs.")
+@click.option(
+    "--tracking-dir",
+    type=click.Path(),
+    default="results/tracking",
+    help="Parent directory for tracking series.",
+)
+def track_show(series_name: str, last_n: int | None, tracking_dir: str) -> None:
+    """Show runs in a tracking series."""
+    from labeille.bench.tracking import load_series
+
+    series_dir = Path(tracking_dir) / series_name
+    try:
+        series = load_series(series_dir)
+    except FileNotFoundError:
+        click.echo(f"Series '{series_name}' not found.", err=True)
+        raise SystemExit(1)  # noqa: B904
+
+    click.echo(f"Series: {series.series_id}")
+    if series.description:
+        click.echo(f"  {series.description}")
+    click.echo(f"  Created: {series.created}")
+    click.echo(f"  Config fingerprint: {series.config_fingerprint or '(none yet)'}")
+    if series.pinned_baseline_id:
+        click.echo(f"  Pinned baseline: {series.pinned_baseline_id}")
+    click.echo()
+
+    runs = series.runs
+    if last_n and last_n < len(runs):
+        runs = runs[-last_n:]
+
+    if not runs:
+        click.echo("  No runs yet.")
+        return
+
+    # Table header.
+    click.echo(f"  {'#':>3}  {'Date':20s}  {'Bench ID':30s}  {'Pkgs':>5}  Notes")
+    click.echo(f"  {'---':>3}  {'----':20s}  {'--------':30s}  {'----':>5}  -----")
+    for i, run in enumerate(runs, 1):
+        date_str = run.timestamp[:19] if run.timestamp else "unknown"
+        baseline_marker = " *" if run.bench_id == series.pinned_baseline_id else ""
+        click.echo(
+            f"  {i:3d}  {date_str:20s}  {run.bench_id:30s}  "
+            f"{run.packages_completed:5d}  {run.notes}{baseline_marker}"
+        )
+
+
+@track.command("pin")
+@click.argument("series_name")
+@click.argument("bench_id")
+@click.option(
+    "--tracking-dir",
+    type=click.Path(),
+    default="results/tracking",
+    help="Parent directory for tracking series.",
+)
+def track_pin(series_name: str, bench_id: str, tracking_dir: str) -> None:
+    """Pin a run as the baseline for trend analysis."""
+    from labeille.bench.tracking import pin_baseline
+
+    series_dir = Path(tracking_dir) / series_name
+    try:
+        pin_baseline(series_dir, bench_id)
+        click.echo(f"Pinned '{bench_id}' as baseline for series '{series_name}'.")
+    except (FileNotFoundError, ValueError) as exc:
+        click.echo(f"Error: {exc}", err=True)
+        raise SystemExit(1) from exc
+
+
+@track.command("unpin")
+@click.argument("series_name")
+@click.option(
+    "--tracking-dir",
+    type=click.Path(),
+    default="results/tracking",
+    help="Parent directory for tracking series.",
+)
+def track_unpin(series_name: str, tracking_dir: str) -> None:
+    """Remove the pinned baseline."""
+    from labeille.bench.tracking import unpin_baseline
+
+    series_dir = Path(tracking_dir) / series_name
+    try:
+        unpin_baseline(series_dir)
+        click.echo(f"Unpinned baseline for series '{series_name}'.")
+    except FileNotFoundError as exc:
+        click.echo(f"Error: {exc}", err=True)
+        raise SystemExit(1) from exc
+
+
+@track.command("list")
+@click.option(
+    "--tracking-dir",
+    type=click.Path(),
+    default="results/tracking",
+    help="Parent directory for tracking series.",
+)
+def track_list(tracking_dir: str) -> None:
+    """List all tracking series."""
+    from labeille.bench.tracking import list_series
+
+    all_series = list_series(Path(tracking_dir))
+    if not all_series:
+        click.echo("No tracking series found.")
+        return
+
+    click.echo(f"{'Name':25s}  {'Runs':>5}  {'Date Range':43s}  Description")
+    click.echo(f"{'----':25s}  {'----':>5}  {'----------':43s}  -----------")
+    for s in all_series:
+        dr = s.date_range
+        date_str = f"{dr[0][:19]} .. {dr[1][:19]}" if dr else "no runs"
+        click.echo(f"{s.series_id:25s}  {s.n_runs:5d}  {date_str:43s}  {s.description}")
+
+
+@track.command("trend")
+@click.argument("series_name")
+@click.option("--condition", type=str, default=None, help="Condition to analyze.")
+@click.option(
+    "--regression-threshold",
+    type=float,
+    default=0.02,
+    help="Per-run change threshold for regression (fraction, default 0.02).",
+)
+@click.option(
+    "--trend-threshold",
+    type=float,
+    default=0.05,
+    help="Overall slope threshold for classification (fraction, default 0.05).",
+)
+@click.option(
+    "--format",
+    "fmt",
+    type=click.Choice(["table", "csv", "markdown"]),
+    default="table",
+    help="Output format.",
+)
+@click.option(
+    "--tracking-dir",
+    type=click.Path(),
+    default="results/tracking",
+)
+def track_trend(
+    series_name: str,
+    condition: str | None,
+    regression_threshold: float,
+    trend_threshold: float,
+    fmt: str,
+    tracking_dir: str,
+) -> None:
+    """Analyze trends across runs in a tracking series."""
+    from labeille.bench.tracking import load_series
+    from labeille.bench.trends import analyze_series_trends
+
+    series_dir = Path(tracking_dir) / series_name
+    try:
+        series = load_series(series_dir)
+    except FileNotFoundError:
+        click.echo(f"Series '{series_name}' not found.", err=True)
+        raise SystemExit(1)  # noqa: B904
+
+    trend = analyze_series_trends(
+        series,
+        series_dir,
+        condition=condition,
+        regression_threshold=regression_threshold,
+        trend_threshold=trend_threshold,
+    )
+
+    if fmt == "table":
+        from labeille.bench.display import format_series_trend
+
+        click.echo(format_series_trend(trend))
+    elif fmt == "csv":
+        from labeille.bench.export import export_trend_csv
+
+        click.echo(export_trend_csv(trend))
+    else:
+        from labeille.bench.export import export_trend_markdown
+
+        click.echo(export_trend_markdown(trend))
+
+
+@track.command("alert")
+@click.argument("series_name")
+@click.option("--condition", type=str, default=None, help="Condition to analyze.")
+@click.option(
+    "--tracking-dir",
+    type=click.Path(),
+    default="results/tracking",
+)
+def track_alert(
+    series_name: str,
+    condition: str | None,
+    tracking_dir: str,
+) -> None:
+    """Show regression alerts for a tracking series.
+
+    Compares the latest run against the baseline and previous run.
+    Shows new regressions, sustained regressions, and recoveries.
+    """
+    from labeille.bench.display import format_regression_alerts
+    from labeille.bench.tracking import load_series
+    from labeille.bench.trends import analyze_series_trends
+
+    series_dir = Path(tracking_dir) / series_name
+    try:
+        series = load_series(series_dir)
+    except FileNotFoundError:
+        click.echo(f"Series '{series_name}' not found.", err=True)
+        raise SystemExit(1)  # noqa: B904
+
+    trend = analyze_series_trends(series, series_dir, condition=condition)
+
+    if trend.alerts:
+        click.echo(format_regression_alerts(trend.alerts))
+    else:
+        click.echo("No regression alerts.")
