@@ -536,7 +536,13 @@ class BenchRunner:
         Returns a setup dict with repo_dir, venvs, and durations.
         Returns None if setup fails.
         """
-        from labeille.runner import clone_repo, create_venv, install_package
+        from labeille.runner import (
+            clone_repo,
+            create_venv,
+            install_package,
+            install_with_fallback,
+            resolve_installer,
+        )
 
         setup: dict[str, Any] = {}
 
@@ -563,6 +569,9 @@ class BenchRunner:
         setup["clone_duration"] = time.monotonic() - clone_start
         setup["repo_dir"] = repo_dir
 
+        # Resolve installer backend.
+        installer = resolve_installer(self.config.installer)
+
         # Create a venv per condition.
         venvs: dict[str, Path] = {}
         venvs_base = self.config.venvs_dir or (self.config.output_dir / "venvs")
@@ -579,7 +588,7 @@ class BenchRunner:
                     import shutil
 
                     shutil.rmtree(venv_dir)
-                create_venv(python_path, venv_dir)
+                create_venv(python_path, venv_dir, installer)
             except Exception as exc:  # noqa: BLE001
                 log.error(
                     "Failed to create venv for %s/%s: %s",
@@ -602,13 +611,16 @@ class BenchRunner:
 
             install_start = time.monotonic()
             try:
-                result = install_package(
-                    venv_python,
+                result, actual_backend = install_with_fallback(
+                    python_path,
+                    venv_dir,
                     install_cmd,
-                    cwd=repo_dir,
-                    env=install_env,
-                    timeout=self.config.timeout,
+                    repo_dir,
+                    install_env,
+                    self.config.timeout,
+                    installer,
                 )
+                venv_python = venv_dir / "bin" / "python"  # refresh after possible recreate
                 if hasattr(result, "returncode") and result.returncode != 0:
                     log.error(
                         "Install failed for %s/%s (exit %d)",
@@ -633,6 +645,7 @@ class BenchRunner:
                         cwd=repo_dir,
                         env=install_env,
                         timeout=self.config.timeout,
+                        installer=actual_backend,
                     )
                 except Exception as exc:  # noqa: BLE001
                     log.warning(

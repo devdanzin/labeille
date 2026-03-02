@@ -17,6 +17,7 @@ from labeille.bisect import (
     run_bisect,
     test_revision,
 )
+from labeille.runner import InstallerBackend
 
 
 class TestLog2(unittest.TestCase):
@@ -136,7 +137,7 @@ class TestTestRevision(unittest.TestCase):
 
     @patch("labeille.bisect.detect_crash")
     @patch("labeille.bisect.run_test_command")
-    @patch("labeille.bisect.install_package")
+    @patch("labeille.bisect.install_with_fallback")
     @patch("labeille.bisect.create_venv")
     @patch("labeille.bisect.subprocess.run")
     def test_good_revision_no_crash(
@@ -151,8 +152,9 @@ class TestTestRevision(unittest.TestCase):
         mock_run.return_value = subprocess.CompletedProcess(
             args=[], returncode=0, stdout="", stderr=""
         )
-        mock_install.return_value = subprocess.CompletedProcess(
-            args=[], returncode=0, stdout="", stderr=""
+        mock_install.return_value = (
+            subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr=""),
+            InstallerBackend.PIP,
         )
         mock_test.return_value = subprocess.CompletedProcess(
             args=[], returncode=0, stdout="", stderr=""
@@ -166,7 +168,7 @@ class TestTestRevision(unittest.TestCase):
 
     @patch("labeille.bisect.detect_crash")
     @patch("labeille.bisect.run_test_command")
-    @patch("labeille.bisect.install_package")
+    @patch("labeille.bisect.install_with_fallback")
     @patch("labeille.bisect.create_venv")
     @patch("labeille.bisect.subprocess.run")
     def test_bad_revision_with_crash(
@@ -180,8 +182,9 @@ class TestTestRevision(unittest.TestCase):
         mock_run.return_value = subprocess.CompletedProcess(
             args=[], returncode=0, stdout="", stderr=""
         )
-        mock_install.return_value = subprocess.CompletedProcess(
-            args=[], returncode=0, stdout="", stderr=""
+        mock_install.return_value = (
+            subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr=""),
+            InstallerBackend.PIP,
         )
         mock_test.return_value = subprocess.CompletedProcess(
             args=[], returncode=-11, stdout="", stderr="Segmentation fault"
@@ -197,7 +200,7 @@ class TestTestRevision(unittest.TestCase):
 
     @patch("labeille.bisect.detect_crash")
     @patch("labeille.bisect.run_test_command")
-    @patch("labeille.bisect.install_package")
+    @patch("labeille.bisect.install_with_fallback")
     @patch("labeille.bisect.create_venv")
     @patch("labeille.bisect.subprocess.run")
     def test_crash_signature_mismatch_returns_good(
@@ -211,8 +214,9 @@ class TestTestRevision(unittest.TestCase):
         mock_run.return_value = subprocess.CompletedProcess(
             args=[], returncode=0, stdout="", stderr=""
         )
-        mock_install.return_value = subprocess.CompletedProcess(
-            args=[], returncode=0, stdout="", stderr=""
+        mock_install.return_value = (
+            subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr=""),
+            InstallerBackend.PIP,
         )
         mock_test.return_value = subprocess.CompletedProcess(
             args=[], returncode=-11, stdout="", stderr="Segmentation fault"
@@ -228,7 +232,7 @@ class TestTestRevision(unittest.TestCase):
 
     @patch("labeille.bisect.detect_crash")
     @patch("labeille.bisect.run_test_command")
-    @patch("labeille.bisect.install_package")
+    @patch("labeille.bisect.install_with_fallback")
     @patch("labeille.bisect.create_venv")
     @patch("labeille.bisect.subprocess.run")
     def test_crash_signature_match_returns_bad(
@@ -242,8 +246,9 @@ class TestTestRevision(unittest.TestCase):
         mock_run.return_value = subprocess.CompletedProcess(
             args=[], returncode=0, stdout="", stderr=""
         )
-        mock_install.return_value = subprocess.CompletedProcess(
-            args=[], returncode=0, stdout="", stderr=""
+        mock_install.return_value = (
+            subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr=""),
+            InstallerBackend.PIP,
         )
         mock_test.return_value = subprocess.CompletedProcess(
             args=[], returncode=-11, stdout="", stderr="Segmentation fault"
@@ -256,7 +261,7 @@ class TestTestRevision(unittest.TestCase):
         step = test_revision(Path("/repo"), "abc1234567890", config)
         self.assertEqual(step.status, "bad")
 
-    @patch("labeille.bisect.install_package")
+    @patch("labeille.bisect.install_with_fallback")
     @patch("labeille.bisect.create_venv")
     @patch("labeille.bisect.subprocess.run")
     def test_install_failure_returns_skip(
@@ -268,8 +273,9 @@ class TestTestRevision(unittest.TestCase):
         mock_run.return_value = subprocess.CompletedProcess(
             args=[], returncode=0, stdout="", stderr=""
         )
-        mock_install.return_value = subprocess.CompletedProcess(
-            args=[], returncode=1, stdout="", stderr="install error"
+        mock_install.return_value = (
+            subprocess.CompletedProcess(args=[], returncode=1, stdout="", stderr="install error"),
+            InstallerBackend.PIP,
         )
 
         config = self._make_config()
@@ -277,7 +283,7 @@ class TestTestRevision(unittest.TestCase):
         self.assertEqual(step.status, "skip")
         self.assertIn("install failed", step.detail)
 
-    @patch("labeille.bisect.install_package")
+    @patch("labeille.bisect.install_with_fallback")
     @patch("labeille.bisect.create_venv")
     @patch("labeille.bisect.subprocess.run")
     def test_install_timeout_returns_skip(
@@ -314,7 +320,7 @@ class TestTestRevision(unittest.TestCase):
         self.assertIn("venv creation failed", step.detail)
 
     @patch("labeille.bisect.run_test_command")
-    @patch("labeille.bisect.install_package")
+    @patch("labeille.bisect.install_with_fallback")
     @patch("labeille.bisect.create_venv")
     @patch("labeille.bisect.subprocess.run")
     def test_test_timeout_returns_skip(
@@ -327,8 +333,9 @@ class TestTestRevision(unittest.TestCase):
         mock_run.return_value = subprocess.CompletedProcess(
             args=[], returncode=0, stdout="", stderr=""
         )
-        mock_install.return_value = subprocess.CompletedProcess(
-            args=[], returncode=0, stdout="", stderr=""
+        mock_install.return_value = (
+            subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr=""),
+            InstallerBackend.PIP,
         )
         mock_test.side_effect = subprocess.TimeoutExpired(cmd="pytest", timeout=600)
 
@@ -338,23 +345,29 @@ class TestTestRevision(unittest.TestCase):
         self.assertIn("tests timed out", step.detail)
 
     @patch("labeille.bisect.install_package")
+    @patch("labeille.bisect.install_with_fallback")
     @patch("labeille.bisect.create_venv")
     @patch("labeille.bisect.subprocess.run")
     def test_extra_deps_installed(
         self,
         mock_run: MagicMock,
         mock_create_venv: MagicMock,
+        mock_fallback: MagicMock,
         mock_install: MagicMock,
     ) -> None:
         """Extra deps are installed after the main package."""
         mock_run.return_value = subprocess.CompletedProcess(
             args=[], returncode=0, stdout="", stderr=""
         )
-        # First call: main install succeeds. Second call: extra deps.
-        mock_install.side_effect = [
+        # Main install via install_with_fallback.
+        mock_fallback.return_value = (
             subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr=""),
-            subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr=""),
-        ]
+            InstallerBackend.PIP,
+        )
+        # Extra deps via install_package.
+        mock_install.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="", stderr=""
+        )
 
         with (
             patch("labeille.bisect.run_test_command") as mock_test,
@@ -368,10 +381,11 @@ class TestTestRevision(unittest.TestCase):
             config = self._make_config(extra_deps=["pytest-xdist", "coverage"])
             test_revision(Path("/repo"), "abc1234567890", config)
 
-        self.assertEqual(mock_install.call_count, 2)
-        extra_call = mock_install.call_args_list[1]
-        self.assertIn("pytest-xdist", extra_call.args[1])
-        self.assertIn("coverage", extra_call.args[1])
+        mock_fallback.assert_called_once()
+        mock_install.assert_called_once()
+        extra_call_cmd = mock_install.call_args
+        self.assertIn("pytest-xdist", extra_call_cmd.args[1])
+        self.assertIn("coverage", extra_call_cmd.args[1])
 
 
 class TestTryNeighbors(unittest.TestCase):

@@ -14,7 +14,14 @@ from pathlib import Path
 
 from labeille.crash import detect_crash
 from labeille.logging import get_logger
-from labeille.runner import _clean_env, create_venv, install_package, run_test_command
+from labeille.runner import (
+    _clean_env,
+    create_venv,
+    install_package,
+    install_with_fallback,
+    resolve_installer,
+    run_test_command,
+)
 
 log = get_logger("bisect")
 
@@ -41,6 +48,7 @@ class BisectConfig:
     env_overrides: dict[str, str] = field(default_factory=dict)
     work_dir: Path | None = None
     verbose: bool = False
+    installer: str = "auto"
 
 
 @dataclass
@@ -186,11 +194,14 @@ def test_revision(repo_dir: Path, commit: str, config: BisectConfig) -> BisectSt
         check=False,
     )
 
+    # Resolve installer backend.
+    installer = resolve_installer(config.installer)
+
     # Create a fresh venv for this revision.
     with tempfile.TemporaryDirectory(prefix=f"bisect-{short}-") as venv_str:
         venv_path = Path(venv_str)
         try:
-            create_venv(config.target_python, venv_path)
+            create_venv(config.target_python, venv_path, installer)
         except (subprocess.CalledProcessError, OSError) as exc:
             return BisectStep(
                 commit=commit,
@@ -212,9 +223,16 @@ def test_revision(repo_dir: Path, commit: str, config: BisectConfig) -> BisectSt
         # Install the package.
         install_cmd = config.install_command or "pip install -e ."
         try:
-            install_result = install_package(
-                venv_python, install_cmd, cwd=repo_dir, env=env, timeout=config.timeout
+            install_result, installer = install_with_fallback(
+                config.target_python,
+                venv_path,
+                install_cmd,
+                repo_dir,
+                env,
+                config.timeout,
+                installer,
             )
+            venv_python = venv_path / "bin" / "python"  # refresh after possible recreate
             if install_result.returncode != 0:
                 stderr_tail = (install_result.stderr or "").strip()[-200:]
                 return BisectStep(
@@ -238,7 +256,12 @@ def test_revision(repo_dir: Path, commit: str, config: BisectConfig) -> BisectSt
             extra_cmd = f"pip install {' '.join(config.extra_deps)}"
             try:
                 install_package(
-                    venv_python, extra_cmd, cwd=repo_dir, env=env, timeout=config.timeout
+                    venv_python,
+                    extra_cmd,
+                    cwd=repo_dir,
+                    env=env,
+                    timeout=config.timeout,
+                    installer=installer,
                 )
             except (subprocess.TimeoutExpired, OSError):
                 pass

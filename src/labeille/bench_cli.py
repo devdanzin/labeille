@@ -207,6 +207,13 @@ def bench() -> None:
     default=False,
     help="Allow running as root (for containers). Not recommended.",
 )
+@click.option(
+    "--installer",
+    type=click.Choice(["auto", "uv", "pip"], case_sensitive=False),
+    default="auto",
+    show_default=True,
+    help="Package installer backend. 'auto' uses uv if available.",
+)
 @click.option("-v", "--verbose", is_flag=True, default=False)
 def run(  # noqa: PLR0913
     profile_path: str | None,
@@ -237,6 +244,7 @@ def run(  # noqa: PLR0913
     drop_caches: bool,
     warm_vs_cold: bool,
     run_dangerously_as_root: bool,
+    installer: str,
     env_pairs: tuple[str, ...],
     verbose: bool,
 ) -> None:
@@ -335,6 +343,7 @@ def run(  # noqa: PLR0913
             k, v = pair.split("=", 1)
             config.default_env[k] = v
 
+    config.installer = installer
     config.check_stability = check_stability
     config.wait_for_stability = wait_for_stability
     config.per_test_timing = per_test_timing

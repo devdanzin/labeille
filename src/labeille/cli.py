@@ -257,6 +257,13 @@ def resolve(
     show_default=True,
     help="Number of packages to test in parallel.",
 )
+@click.option(
+    "--installer",
+    type=click.Choice(["auto", "uv", "pip"], case_sensitive=False),
+    default="auto",
+    show_default=True,
+    help="Package installer backend. 'auto' uses uv if available.",
+)
 @click.pass_context
 def run_cmd(
     ctx: click.Context,
@@ -288,6 +295,7 @@ def run_cmd(
     no_shallow: bool,
     work_dir: Path | None,
     workers: int,
+    installer: str,
 ) -> None:
     """Run test suites against a JIT-enabled Python build and detect crashes."""
     from datetime import datetime, timezone
@@ -401,6 +409,7 @@ def run_cmd(
         test_command_override=test_command_override,
         test_command_suffix=test_command_suffix,
         repo_overrides=repo_overrides,
+        installer=installer,
     )
 
     click.echo(f"Run ID: {run_id}")
@@ -658,6 +667,13 @@ def _print_human_format(result: "ScanResult", install_command: str | None) -> No
     help="Persistent work directory for clones (default: temp dir).",
 )
 @click.option("-v", "--verbose", is_flag=True)
+@click.option(
+    "--installer",
+    type=click.Choice(["auto", "uv", "pip"], case_sensitive=False),
+    default="auto",
+    show_default=True,
+    help="Package installer backend. 'auto' uses uv if available.",
+)
 def bisect_cmd(
     package: str,
     good_rev: str,
@@ -672,6 +688,7 @@ def bisect_cmd(
     env_pairs: tuple[str, ...],
     work_dir: Path | None,
     verbose: bool,
+    installer: str,
 ) -> None:
     """Bisect a package's git history to find the first commit that introduced a crash."""
     from labeille.bisect import BisectConfig, run_bisect
@@ -704,6 +721,7 @@ def bisect_cmd(
         env_overrides=env_overrides,
         work_dir=work_dir,
         verbose=verbose,
+        installer=installer,
     )
 
     click.echo(f"Bisecting {package}: good={good_rev} bad={bad_rev}")

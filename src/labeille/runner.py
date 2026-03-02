@@ -14,6 +14,7 @@ the results including any crashes (segfaults, aborts, assertion failures).
 
 from __future__ import annotations
 
+import enum
 import json
 import os
 import platform
@@ -34,6 +35,51 @@ from labeille.logging import get_logger
 from labeille.registry import Index, PackageEntry, load_index, load_package, package_exists
 
 log = get_logger("runner")
+
+
+# ---------------------------------------------------------------------------
+# Installer backend
+# ---------------------------------------------------------------------------
+
+
+class InstallerBackend(enum.Enum):
+    """Package installer backend."""
+
+    PIP = "pip"
+    UV = "uv"
+
+
+def detect_uv() -> str | None:
+    """Return the path to uv if available on PATH, else None."""
+    return shutil.which("uv")
+
+
+def resolve_installer(preference: str = "auto") -> InstallerBackend:
+    """Resolve the installer backend from a preference string.
+
+    Args:
+        preference: One of ``"auto"``, ``"uv"``, or ``"pip"``.
+
+    Returns:
+        The resolved backend.
+
+    Raises:
+        RuntimeError: If ``"uv"`` is requested but not found.
+    """
+    pref = preference.lower().strip()
+    if pref == "pip":
+        return InstallerBackend.PIP
+    if pref == "uv":
+        if detect_uv() is None:
+            raise RuntimeError(
+                "uv requested as installer but not found on PATH. "
+                "Install it: https://docs.astral.sh/uv/getting-started/installation/"
+            )
+        return InstallerBackend.UV
+    # auto: use uv if available, else pip.
+    if detect_uv() is not None:
+        return InstallerBackend.UV
+    return InstallerBackend.PIP
 
 
 # ---------------------------------------------------------------------------
@@ -73,6 +119,7 @@ class RunnerConfig:
     test_command_override: str | None = None
     test_command_suffix: str | None = None
     repo_overrides: dict[str, str] = field(default_factory=dict)
+    installer: str = "auto"
 
 
 @dataclass
@@ -95,6 +142,7 @@ class PackageResult:
     installed_dependencies: dict[str, str] = field(default_factory=dict)
     error_message: str | None = None
     requested_revision: str | None = None
+    installer_backend: str = ""
     timestamp: str = ""
 
 
@@ -161,6 +209,8 @@ def write_run_meta(
         "env_overrides": config.env_overrides,
         "hostname": socket.gethostname(),
         "platform": platform.platform(),
+        "installer": config.installer,
+        "uv_available": detect_uv() is not None,
     }
     if summary is not None:
         meta["packages_tested"] = summary.tested
@@ -189,6 +239,7 @@ def append_result(run_dir: Path, result: PackageResult) -> None:
         "installed_dependencies": result.installed_dependencies,
         "error_message": result.error_message,
         "requested_revision": result.requested_revision,
+        "installer_backend": result.installer_backend,
         "timestamp": result.timestamp,
     }
     with open(run_dir / "results.jsonl", "a", encoding="utf-8") as f:
@@ -440,12 +491,34 @@ def pull_repo(dest: Path) -> str | None:
     return None
 
 
-def create_venv(python_path: Path, venv_dir: Path) -> None:
+def create_venv(
+    python_path: Path,
+    venv_dir: Path,
+    installer: InstallerBackend = InstallerBackend.PIP,
+) -> None:
     """Create a virtual environment using the target Python.
+
+    When *installer* is :attr:`InstallerBackend.UV`, uv creates the venv
+    directly (no ensurepip step).  Otherwise falls back to ``python -m venv``
+    with ensurepip.
 
     Raises:
         subprocess.CalledProcessError: If venv creation fails.
     """
+    if installer is InstallerBackend.UV:
+        uv_path = detect_uv()
+        if uv_path:
+            log.debug("Running: %s venv --python %s %s", uv_path, python_path, venv_dir)
+            subprocess.run(
+                [uv_path, "venv", "--python", str(python_path), str(venv_dir)],
+                capture_output=True,
+                text=True,
+                timeout=120,
+                check=True,
+                env=_clean_env(ASAN_OPTIONS="detect_leaks=0"),
+            )
+            return
+
     log.debug("Running: %s -m venv %s", python_path, venv_dir)
     subprocess.run(
         [str(python_path), "-m", "venv", str(venv_dir)],
@@ -528,26 +601,33 @@ def _run_in_process_group(
         raise subprocess.TimeoutExpired(cmd, timeout, output=stdout, stderr=stderr)
 
 
-def install_package(
-    venv_python: Path,
+def _rewrite_install_command(
     install_command: str,
-    cwd: Path,
-    env: dict[str, str],
-    timeout: int,
-) -> subprocess.CompletedProcess[str]:
-    """Install a package in the venv.
+    venv_python: Path,
+    installer: InstallerBackend = InstallerBackend.PIP,
+) -> str:
+    """Rewrite an install command for the given backend.
 
-    The *install_command* is interpreted as a shell command with ``pip`` and
-    ``python`` replaced by the venv paths.  Runs in its own process group
-    so the entire process tree is killed on timeout.
-
-    Returns:
-        The completed process.
+    For pip: replaces ``pip`` and ``python`` with venv-local paths.
+    For uv: rewrites ``pip install`` to ``uv pip install --python <path>``.
     """
     venv_bin = venv_python.parent
-    venv_pip = venv_bin / "pip"
-
     cmd = install_command
+
+    if installer is InstallerBackend.UV:
+        uv_path = detect_uv()
+        if uv_path:
+            # Replace "python " with venv python FIRST (before introducing --python).
+            cmd = cmd.replace("python ", f"{venv_python} ")
+            # Replace "pip install" with "uv pip install --python <venv_python>"
+            cmd = cmd.replace("pip install", f"{uv_path} pip install --python {venv_python}")
+            # Replace standalone "pip " at the start
+            if cmd.startswith("pip "):
+                cmd = f"{uv_path} pip --python {venv_python} {cmd[4:]}"
+            return cmd
+
+    # pip path.
+    venv_pip = venv_bin / "pip"
     cmd = cmd.replace("pip install", f"{venv_pip} install")
     cmd = cmd.replace("python ", f"{venv_python} ")
 
@@ -555,6 +635,28 @@ def install_package(
     if cmd.startswith("pip "):
         cmd = f"{venv_pip} {cmd[4:]}"
 
+    return cmd
+
+
+def install_package(
+    venv_python: Path,
+    install_command: str,
+    cwd: Path,
+    env: dict[str, str],
+    timeout: int,
+    installer: InstallerBackend = InstallerBackend.PIP,
+) -> subprocess.CompletedProcess[str]:
+    """Install a package in the venv.
+
+    The *install_command* is interpreted as a shell command with ``pip`` and
+    ``python`` replaced by the venv paths (or ``uv pip`` when using uv).
+    Runs in its own process group so the entire process tree is killed on
+    timeout.
+
+    Returns:
+        The completed process.
+    """
+    cmd = _rewrite_install_command(install_command, venv_python, installer)
     log.debug("Install command (resolved): %s", cmd)
     return _run_in_process_group(cmd, cwd=str(cwd), env=env, timeout=timeout)
 
@@ -589,11 +691,23 @@ def run_test_command(
     return _run_in_process_group(cmd, cwd=str(cwd), env=run_env, timeout=timeout)
 
 
-def get_installed_packages(venv_python: Path, env: dict[str, str]) -> dict[str, str]:
+def get_installed_packages(
+    venv_python: Path,
+    env: dict[str, str],
+    installer: InstallerBackend = InstallerBackend.PIP,
+) -> dict[str, str]:
     """Get installed packages and versions from the venv."""
     try:
+        if installer is InstallerBackend.UV:
+            uv_path = detect_uv()
+            if uv_path:
+                cmd = [uv_path, "pip", "list", "--python", str(venv_python), "--format=json"]
+            else:
+                cmd = [str(venv_python), "-m", "pip", "list", "--format=json"]
+        else:
+            cmd = [str(venv_python), "-m", "pip", "list", "--format=json"]
         proc = subprocess.run(
-            [str(venv_python), "-m", "pip", "list", "--format=json"],
+            cmd,
             capture_output=True,
             text=True,
             timeout=60,
@@ -617,6 +731,44 @@ def get_package_version(package_name: str, installed: dict[str, str]) -> str | N
         if name.lower().replace("-", "_") == normalised:
             return version
     return None
+
+
+def install_with_fallback(
+    python_path: Path,
+    venv_dir: Path,
+    install_command: str,
+    cwd: Path,
+    env: dict[str, str],
+    timeout: int,
+    installer: InstallerBackend,
+) -> tuple[subprocess.CompletedProcess[str], InstallerBackend]:
+    """Install a package with automatic fallback from uv to pip.
+
+    If the initial install with the chosen backend fails and the backend
+    is uv, deletes the venv, recreates it with pip, and retries.
+
+    Returns:
+        A tuple of (completed_process, actual_backend_used).
+    """
+    venv_python = venv_dir / "bin" / "python"
+    proc = install_package(venv_python, install_command, cwd, env, timeout, installer)
+
+    if proc.returncode == 0 or installer is InstallerBackend.PIP:
+        return proc, installer
+
+    # uv failed — fall back to pip.
+    log.warning(
+        "uv install failed (exit %d), falling back to pip for %s",
+        proc.returncode,
+        cwd.name,
+    )
+    shutil.rmtree(venv_dir, ignore_errors=True)
+    create_venv(python_path, venv_dir, InstallerBackend.PIP)
+    venv_python = venv_dir / "bin" / "python"
+    pip_proc = install_package(
+        venv_python, install_command, cwd, env, timeout, InstallerBackend.PIP
+    )
+    return pip_proc, InstallerBackend.PIP
 
 
 def check_import(
@@ -922,13 +1074,18 @@ def _run_package_inner(
         shutil.rmtree(venv_dir)
         venv_existed = False
 
+    # Resolve installer backend.
+    installer = resolve_installer(config.installer)
+    result.installer_backend = installer.value
+    log.debug("Installer backend for %s: %s", pkg.package, installer.value)
+
     if venv_existed:
         log.info("Reusing venv for %s at %s", pkg.package, venv_dir)
     else:
         log.info("Creating venv for %s at %s", pkg.package, venv_dir)
         venv_start = time.monotonic()
         try:
-            create_venv(config.target_python, venv_dir)
+            create_venv(config.target_python, venv_dir, installer)
         except (subprocess.CalledProcessError, OSError) as exc:
             result.status = "error"
             result.error_message = f"Venv creation failed: {exc}"
@@ -949,9 +1106,25 @@ def _run_package_inner(
         log.info("Installing %s: %s", pkg.package, install_cmd)
         install_start = time.monotonic()
         try:
-            install_proc = install_package(
-                venv_python, install_cmd, repo_dir, env, per_pkg_timeout
+            install_proc, actual_backend = install_with_fallback(
+                config.target_python,
+                venv_dir,
+                install_cmd,
+                repo_dir,
+                env,
+                per_pkg_timeout,
+                installer,
             )
+            venv_python = venv_dir / "bin" / "python"  # refresh after possible recreate
+            if actual_backend is not installer:
+                result.installer_backend = actual_backend.value
+                log.info(
+                    "Installer fell back from %s to %s for %s",
+                    installer.value,
+                    actual_backend.value,
+                    pkg.package,
+                )
+            installer = actual_backend
         except subprocess.TimeoutExpired:
             result.status = "install_error"
             result.error_message = "Install timed out"
@@ -1011,7 +1184,9 @@ def _run_package_inner(
         extra_cmd = f"pip install {' '.join(config.extra_deps)}"
         log.info("Installing extra deps for %s: %s", pkg.package, extra_cmd)
         try:
-            extra_proc = install_package(venv_python, extra_cmd, repo_dir, env, per_pkg_timeout)
+            extra_proc = install_package(
+                venv_python, extra_cmd, repo_dir, env, per_pkg_timeout, installer
+            )
             if extra_proc.returncode != 0:
                 log.warning(
                     "Extra deps install failed for %s (exit %d, non-fatal)",
@@ -1022,7 +1197,7 @@ def _run_package_inner(
             log.warning("Failed to install extra deps for %s: %s", pkg.package, exc)
 
     # --- Collect installed packages ---
-    result.installed_dependencies = get_installed_packages(venv_python, env)
+    result.installed_dependencies = get_installed_packages(venv_python, env, installer)
     result.package_version = get_package_version(pkg.package, result.installed_dependencies)
     if result.installed_dependencies:
         dep_count = len(result.installed_dependencies)
