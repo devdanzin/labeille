@@ -70,6 +70,9 @@ class BenchConfig:
     max_load: float = 1.0
     min_available_ram_gb: float = 2.0
 
+    # Per-test timing
+    per_test_timing: bool = False  # Capture per-test timing via pytest --durations=0
+
     # CLI provenance
     cli_args: list[str] = field(default_factory=list)
 

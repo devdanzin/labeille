@@ -51,7 +51,11 @@ from labeille.bench.system import (
     format_python_profile,
     format_system_profile,
 )
-from labeille.bench.timing import run_timed_in_venv
+from labeille.bench.timing import (
+    parse_pytest_durations,
+    prepare_per_test_command,
+    run_timed_in_venv,
+)
 
 log = logging.getLogger("labeille")
 
@@ -642,6 +646,12 @@ class BenchRunner:
             default_suffix=self.config.default_test_command_suffix,
         )
 
+        # Per-test timing: modify command if enabled.
+        per_test_enabled = False
+        if self.config.per_test_timing:
+            test_framework = getattr(pkg, "test_framework", "") or ""
+            test_cmd, per_test_enabled = prepare_per_test_command(test_cmd, test_framework)
+
         # Build environment.
         env = resolve_env(cond, self.config.default_env)
         env.setdefault("PYTHONFAULTHANDLER", "1")
@@ -672,6 +682,11 @@ class BenchRunner:
         else:
             status = "fail"
 
+        # Parse per-test timings if enabled.
+        per_test_timings = None
+        if per_test_enabled:
+            per_test_timings = parse_pytest_durations(timed.stdout)
+
         return BenchIteration(
             index=iter_index,
             warmup=is_warmup,
@@ -684,6 +699,7 @@ class BenchRunner:
             load_avg_start=snap_before.load_avg_1m,
             load_avg_end=snap_after.load_avg_1m,
             ram_available_start_gb=snap_before.ram_available_gb,
+            per_test_timings=per_test_timings,
         )
 
     def _wait_for_stability(self) -> None:

@@ -165,6 +165,12 @@ def bench() -> None:
     multiple=True,
     help="KEY=VALUE env var for all conditions (repeatable).",
 )
+@click.option(
+    "--per-test-timing",
+    is_flag=True,
+    default=False,
+    help="Capture per-test timing via pytest --durations=0.",
+)
 @click.option("-v", "--verbose", is_flag=True, default=False)
 def run(  # noqa: PLR0913
     profile_path: str | None,
@@ -188,6 +194,7 @@ def run(  # noqa: PLR0913
     check_stability: bool,
     wait_for_stability: bool,
     quick: bool,
+    per_test_timing: bool,
     env_pairs: tuple[str, ...],
     verbose: bool,
 ) -> None:
@@ -288,6 +295,7 @@ def run(  # noqa: PLR0913
 
     config.check_stability = check_stability
     config.wait_for_stability = wait_for_stability
+    config.per_test_timing = per_test_timing
     config.cli_args = sys.argv[1:]
 
     if quick:
@@ -321,7 +329,14 @@ def run(  # noqa: PLR0913
 @bench.command("show")
 @click.argument("result_dir", type=click.Path(exists=True))
 @click.option("--anomalies", is_flag=True, default=False, help="Show measurement anomalies.")
-def show(result_dir: str, anomalies: bool) -> None:
+@click.option(
+    "--per-test",
+    "per_test_package",
+    type=str,
+    default=None,
+    help="Show per-test timing for a specific package.",
+)
+def show(result_dir: str, anomalies: bool, per_test_package: str | None) -> None:
     """Display results from a benchmark run.
 
     RESULT_DIR is the path to a benchmark output directory
@@ -332,6 +347,21 @@ def show(result_dir: str, anomalies: bool) -> None:
 
     meta, results = load_bench_run(Path(result_dir))
     click.echo(format_bench_show(meta, results))
+
+    if per_test_package:
+        from labeille.bench.display import format_per_test_summary
+
+        pkg_result = next((r for r in results if r.package == per_test_package), None)
+        if not pkg_result:
+            click.echo(f"\nPackage '{per_test_package}' not found.", err=True)
+        else:
+            # Use the last measured iteration's timings.
+            for cond_name, cond in pkg_result.conditions.items():
+                for it in reversed(cond.measured_iterations):
+                    if it.per_test_timings:
+                        click.echo(f"\n{cond_name}:")
+                        click.echo(format_per_test_summary(it.per_test_timings))
+                        break
 
     if anomalies:
         from labeille.bench.anomaly import detect_anomalies
@@ -368,7 +398,19 @@ def show(result_dir: str, anomalies: bool) -> None:
     default="wall",
     help="Metric to compare.",
 )
-def compare(result_dirs: tuple[str, ...], baseline: str | None, metric: str) -> None:
+@click.option(
+    "--per-test",
+    "per_test_package",
+    type=str,
+    default=None,
+    help="Show per-test overhead for a specific package.",
+)
+def compare(
+    result_dirs: tuple[str, ...],
+    baseline: str | None,
+    metric: str,
+    per_test_package: str | None,
+) -> None:
     """Compare results from two or more benchmark runs.
 
     Accepts either:
@@ -418,6 +460,19 @@ def compare(result_dirs: tuple[str, ...], baseline: str | None, metric: str) -> 
             click.echo(f"\n{baseline_name} vs {cond_name}")
             click.echo("=" * (len(baseline_name) + len(cond_name) + 4))
             click.echo(format_comparison_summary(results, baseline_name, cond_name))
+
+        # Per-test comparison.
+        if per_test_package:
+            from labeille.bench.compare import compare_per_test
+            from labeille.bench.display import format_per_test_comparison
+
+            for cond_name in conditions:
+                if cond_name == baseline_name:
+                    continue
+                overheads = compare_per_test(results, baseline_name, cond_name, per_test_package)
+                if overheads:
+                    click.echo()
+                    click.echo(format_per_test_comparison(overheads))
 
         # Anomaly summary.
         from labeille.bench.anomaly import detect_anomalies
