@@ -7,6 +7,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+- `trends.py` module in `bench` subpackage with `PackageTrend`, `RegressionAlert`, and `SeriesTrend` dataclasses for longitudinal benchmark analysis.
+- `compute_package_trend()` with configurable regression/trend thresholds and sustained-change detection.
+- `analyze_series_trends()` for full series analysis: loads all runs, computes per-package trends, generates regression alerts.
+- Five alert types: `new_regression`, `sustained_regression`, `recovery`, `new_instability`, `new_improvement`.
+- `labeille bench track trend` command for viewing trend analysis with table, CSV, and Markdown output.
+- `labeille bench track alert` command for viewing regression alerts since the last run.
+- `export_trend_markdown()` and `export_trend_csv()` in `bench/export.py` for trend report generation.
+- `format_series_trend()` and `format_regression_alerts()` in `bench/display.py` for terminal output.
 - `tracking.py` module in `bench` subpackage with `TrackingSeries` and `TrackingRunEntry` dataclasses for longitudinal benchmark tracking.
 - `compute_config_fingerprint()` for comparing benchmark configurations across runs (ignores package list and system profile).
 - Series management: `init_series()`, `add_run_to_series()`, `pin_baseline()`, `unpin_baseline()`, `load_series()`, `save_series()`, `list_series()`.
