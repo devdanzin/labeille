@@ -10,6 +10,7 @@ from __future__ import annotations
 import math
 import statistics as _stats
 
+from labeille.bench.anomaly import AnomalyReport
 from labeille.bench.compare import ComparisonReport, compare_conditions
 from labeille.bench.results import (
     BenchMeta,
@@ -387,5 +388,50 @@ def format_comparison_report(report: ComparisonReport) -> str:
             lines.append(f"    High CV (>10%):        {report.high_cv_count} packages")
         if report.status_mismatch_count:
             lines.append(f"    Status mismatch:       {report.status_mismatch_count} packages")
+
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# Anomaly report
+# ---------------------------------------------------------------------------
+
+
+def format_anomaly_report(report: AnomalyReport) -> str:
+    """Format an anomaly report for terminal display.
+
+    Groups by severity (errors first, then warnings, then info).
+    Each anomaly shows: [SEVERITY] package/condition: description
+    Followed by: -> recommendation
+
+    Returns empty string if no anomalies found.
+    """
+    if not report.anomalies:
+        return ""
+
+    lines: list[str] = []
+    lines.append("Anomaly Report")
+    lines.append("\u2500" * 14)
+
+    severity_labels = {"error": "ERROR", "warning": "WARNING", "info": "INFO"}
+    severity_order = ["error", "warning", "info"]
+
+    by_severity = report.by_severity
+    for severity in severity_order:
+        group = by_severity.get(severity, [])
+        if not group:
+            continue
+        for a in group:
+            label = severity_labels.get(a.severity, a.severity.upper())
+            lines.append(f"  [{label}] {a.package}/{a.condition}: {a.description}")
+            lines.append(f"    \u2192 {a.recommendation}")
+
+    lines.append("")
+    lines.append(
+        f"  Summary: {report.error_count} errors, "
+        f"{report.warning_count} warnings, "
+        f"{report.info_count} info "
+        f"({len(report.affected_packages)} packages affected)"
+    )
 
     return "\n".join(lines)
