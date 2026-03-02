@@ -320,7 +320,8 @@ def run(  # noqa: PLR0913
 
 @bench.command("show")
 @click.argument("result_dir", type=click.Path(exists=True))
-def show(result_dir: str) -> None:
+@click.option("--anomalies", is_flag=True, default=False, help="Show measurement anomalies.")
+def show(result_dir: str, anomalies: bool) -> None:
     """Display results from a benchmark run.
 
     RESULT_DIR is the path to a benchmark output directory
@@ -331,6 +332,16 @@ def show(result_dir: str) -> None:
 
     meta, results = load_bench_run(Path(result_dir))
     click.echo(format_bench_show(meta, results))
+
+    if anomalies:
+        from labeille.bench.anomaly import detect_anomalies
+        from labeille.bench.display import format_anomaly_report
+
+        report = detect_anomalies(results)
+        text = format_anomaly_report(report)
+        if text:
+            click.echo()
+            click.echo(text)
 
 
 # ---------------------------------------------------------------------------
@@ -407,6 +418,17 @@ def compare(result_dirs: tuple[str, ...], baseline: str | None, metric: str) -> 
             click.echo(f"\n{baseline_name} vs {cond_name}")
             click.echo("=" * (len(baseline_name) + len(cond_name) + 4))
             click.echo(format_comparison_summary(results, baseline_name, cond_name))
+
+        # Anomaly summary.
+        from labeille.bench.anomaly import detect_anomalies
+
+        anomaly_report = detect_anomalies(results)
+        if anomaly_report.anomalies:
+            n_pkgs = len(anomaly_report.affected_packages)
+            click.echo(
+                f"\n\u26a0 {n_pkgs} package(s) have measurement anomalies "
+                f"(use 'bench show --anomalies' for details)."
+            )
     else:
         # Multiple directories: cross-run comparison.
         all_runs: list[tuple[BenchMeta, list[BenchPackageResult]]] = []
@@ -453,6 +475,17 @@ def compare(result_dirs: tuple[str, ...], baseline: str | None, metric: str) -> 
                 click.echo(f"\n{baseline_name} vs {treatment}")
                 click.echo("=" * (len(baseline_name) + len(treatment) + 4))
                 click.echo(format_comparison_summary(merged_list, baseline_name, treatment))
+
+            # Anomaly summary.
+            from labeille.bench.anomaly import detect_anomalies
+
+            anomaly_report = detect_anomalies(merged_list)
+            if anomaly_report.anomalies:
+                n_pkgs = len(anomaly_report.affected_packages)
+                click.echo(
+                    f"\n\u26a0 {n_pkgs} package(s) have measurement anomalies "
+                    f"(use 'bench show --anomalies' for details)."
+                )
 
 
 # ---------------------------------------------------------------------------
@@ -535,7 +568,10 @@ def export(result_dir: str, fmt: str, output: str | None) -> None:
     elif fmt == "csv-summary":
         text = export_csv_summary(meta, results)
     else:
-        text = export_markdown(meta, results)
+        from labeille.bench.anomaly import detect_anomalies
+
+        anomaly_report = detect_anomalies(results)
+        text = export_markdown(meta, results, anomaly_report=anomaly_report)
 
     if output:
         Path(output).write_text(text)

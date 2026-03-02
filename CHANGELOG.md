@@ -7,6 +7,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+- `anomaly.py` module in `bench` subpackage with `PackageAnomaly` and `AnomalyReport` dataclasses for proactive measurement-quality assessment.
+- `detect_anomalies()` with five anomaly types: `high_cv`, `bimodal`, `outlier_heavy`, `status_mixed`, and `trend`.
+- `is_bimodal()` gap-analysis heuristic and `has_monotonic_trend()` Spearman rank correlation for pure-Python distribution analysis.
+- `--anomalies` flag for `labeille bench show` to display measurement anomaly report.
+- Anomaly summary in `labeille bench compare` output when anomalies are detected.
+- `## Anomalies` section in Markdown export when anomalies are present.
 - `ft/compare.py` module with `PackageTransition`, `FTComparisonResult` dataclasses and `compare_ft_runs()` for cross-run comparison: category transitions, pass rate changes, new/resolved crashes, aggregate deltas.
 - `ft/export.py` module with `export_csv()`, `export_json()`, and `generate_report()` for CSV, JSON, and markdown report export of free-threading results.
 - `ft/display.py` module with terminal formatting for free-threading results: compatibility summaries, package tables, flakiness profiles, triage lists, GIL comparison reports, and progress output.
