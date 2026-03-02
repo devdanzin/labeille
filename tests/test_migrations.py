@@ -22,6 +22,8 @@ from labeille.migrations import (
     get_migration,
     has_been_applied,
     list_migrations,
+    migrate_recover_no_repo,
+    migrate_recover_no_tests,
     migrate_skip_to_skip_versions,
     read_migration_log,
 )
@@ -579,6 +581,112 @@ class TestMigrateCLI(unittest.TestCase):
         )
         self.assertEqual(result.exit_code, 0, result.output)
         self.assertIn("applied on 2026-02-23T14:00:00Z", result.output)
+
+
+class TestRecoverNoTestsMigration(unittest.TestCase):
+    """Tests for the recover-no-tests-found migration."""
+
+    def test_registered(self) -> None:
+        spec = get_migration("recover-no-tests-found")
+        self.assertIsNotNone(spec)
+
+    def test_resets_matching_package(self) -> None:
+        data: dict[str, object] = {
+            "package": "vine",
+            "skip": True,
+            "skip_reason": "No test directory found in repository",
+            "enriched": True,
+            "notes": "Auto-enriched: no tests found",
+        }
+        result = migrate_recover_no_tests(Path("vine.yaml"), data)
+        self.assertTrue(result.modified)
+        self.assertFalse(data["skip"])
+        self.assertIsNone(data["skip_reason"])
+        self.assertFalse(data["enriched"])
+
+    def test_skips_non_matching_reason(self) -> None:
+        data: dict[str, object] = {
+            "package": "mypkg",
+            "skip": True,
+            "skip_reason": "Tests require running MySQL server",
+        }
+        result = migrate_recover_no_tests(Path("mypkg.yaml"), data)
+        self.assertFalse(result.modified)
+        self.assertTrue(data["skip"])
+
+    def test_skips_non_skipped(self) -> None:
+        data: dict[str, object] = {"package": "mypkg", "skip": False}
+        result = migrate_recover_no_tests(Path("mypkg.yaml"), data)
+        self.assertFalse(result.modified)
+
+    def test_execution_dry_run(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            registry_dir = Path(tmpdir)
+            _write_package(
+                registry_dir,
+                "testpkg",
+                skip=True,
+                skip_reason="No test directory found in repository",
+            )
+            _write_package(registry_dir, "otherpkg", skip=False)
+            spec = get_migration("recover-no-tests-found")
+            assert spec is not None
+            preview = execute_migration(spec, registry_dir, dry_run=True)
+            self.assertIsInstance(preview, MigrationDryRun)
+            self.assertEqual(preview.affected_count, 1)
+
+
+class TestRecoverNoRepoMigration(unittest.TestCase):
+    """Tests for the recover-no-repo-url migration."""
+
+    def test_registered(self) -> None:
+        spec = get_migration("recover-no-repo-url")
+        self.assertIsNotNone(spec)
+
+    def test_resets_matching_package(self) -> None:
+        data: dict[str, object] = {
+            "package": "coloredlogs",
+            "skip": True,
+            "skip_reason": "No source repository URL available on PyPI.",
+            "enriched": True,
+            "notes": "Auto-triaged: no_repo",
+        }
+        result = migrate_recover_no_repo(Path("coloredlogs.yaml"), data)
+        self.assertTrue(result.modified)
+        self.assertFalse(data["skip"])
+        self.assertIsNone(data["skip_reason"])
+        self.assertFalse(data["enriched"])
+
+    def test_skips_non_matching_reason(self) -> None:
+        data: dict[str, object] = {
+            "package": "mypkg",
+            "skip": True,
+            "skip_reason": "Type stub package with no test suite.",
+        }
+        result = migrate_recover_no_repo(Path("mypkg.yaml"), data)
+        self.assertFalse(result.modified)
+        self.assertTrue(data["skip"])
+
+    def test_skips_non_skipped(self) -> None:
+        data: dict[str, object] = {"package": "mypkg", "skip": False}
+        result = migrate_recover_no_repo(Path("mypkg.yaml"), data)
+        self.assertFalse(result.modified)
+
+    def test_execution_dry_run(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            registry_dir = Path(tmpdir)
+            _write_package(
+                registry_dir,
+                "testpkg",
+                skip=True,
+                skip_reason="No source repository URL available on PyPI.",
+            )
+            _write_package(registry_dir, "otherpkg", skip=False)
+            spec = get_migration("recover-no-repo-url")
+            assert spec is not None
+            preview = execute_migration(spec, registry_dir, dry_run=True)
+            self.assertIsInstance(preview, MigrationDryRun)
+            self.assertEqual(preview.affected_count, 1)
 
 
 if __name__ == "__main__":

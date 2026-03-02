@@ -47,6 +47,9 @@ _REPO_KEYS = [
     "repository",
     "github",
     "code",
+    "repo",
+    "git",
+    "vcs",
 ]
 # Secondary keys that may contain repo-adjacent URLs (issue trackers, changelogs).
 # We only use these after all primary keys and homepage fallback have failed.
@@ -55,14 +58,34 @@ _SECONDARY_KEYS = [
     "issues",
     "issue tracker",
     "changelog",
+    "tracker",
 ]
 # "Homepage" is only accepted when it points to a known forge.
-_FORGE_HOSTS = ("github.com", "gitlab.com")
+_FORGE_HOSTS = ("github.com", "gitlab.com", "bitbucket.org", "codeberg.org")
 
 # Regex to extract the ``owner/repo`` from a GitHub URL, stripping paths like
 # ``/issues``, ``/tree/main``, ``/blob/master/...``, ``/wiki``, etc.
 _GITHUB_REPO_RE = re.compile(
     r"https?://github\.com/(?P<owner>[^/]+)/(?P<repo>[^/]+?)(?:\.git)?(?:/.*)?$",
+    re.IGNORECASE,
+)
+# GitLab uses ``/-/`` as a separator for project-internal paths.
+_GITLAB_REPO_RE = re.compile(
+    r"https?://gitlab\.com/(?P<owner>[^/]+)/(?P<repo>[^/]+?)(?:\.git)?(?:/-/.*|/.*)?$",
+    re.IGNORECASE,
+)
+_BITBUCKET_REPO_RE = re.compile(
+    r"https?://bitbucket\.org/(?P<owner>[^/]+)/(?P<repo>[^/]+?)(?:\.git)?(?:/.*)?$",
+    re.IGNORECASE,
+)
+_CODEBERG_REPO_RE = re.compile(
+    r"https?://codeberg\.org/(?P<owner>[^/]+)/(?P<repo>[^/]+?)(?:\.git)?(?:/.*)?$",
+    re.IGNORECASE,
+)
+
+# Pattern to find forge URLs embedded in free text (e.g. package descriptions).
+_FORGE_URL_RE = re.compile(
+    r"https?://(?:github\.com|gitlab\.com|bitbucket\.org|codeberg\.org)/[^\s)\]\"'>]+",
     re.IGNORECASE,
 )
 
@@ -82,6 +105,42 @@ def _normalize_github_url(url: str) -> str | None:
         if owner.lower() in ("orgs", "topics", "settings", "features"):
             return None
         return f"https://github.com/{owner}/{repo}"
+    return None
+
+
+def _normalize_forge_url(url: str) -> str | None:
+    """Derive the canonical repo URL from any supported forge URL.
+
+    Handles GitHub, GitLab, Bitbucket, and Codeberg URLs.
+    Returns the normalised ``https://{host}/{owner}/{repo}`` or ``None``.
+    """
+    url = url.strip()
+
+    # GitHub (most common).
+    result = _normalize_github_url(url)
+    if result:
+        return result
+
+    # GitLab.
+    m = _GITLAB_REPO_RE.match(url)
+    if m:
+        owner, repo = m.group("owner"), m.group("repo")
+        if owner.lower() not in ("explore", "help", "dashboard"):
+            return f"https://gitlab.com/{owner}/{repo}"
+
+    # Bitbucket.
+    m = _BITBUCKET_REPO_RE.match(url)
+    if m:
+        owner, repo = m.group("owner"), m.group("repo")
+        if owner.lower() not in ("product", "account"):
+            return f"https://bitbucket.org/{owner}/{repo}"
+
+    # Codeberg.
+    m = _CODEBERG_REPO_RE.match(url)
+    if m:
+        owner, repo = m.group("owner"), m.group("repo")
+        return f"https://codeberg.org/{owner}/{repo}"
+
     return None
 
 
@@ -266,10 +325,12 @@ def extract_repo_url(metadata: dict[str, Any]) -> str | None:
     1. Primary ``project_urls`` keys (source, repository, github, code, …).
     2. ``Homepage`` if it points to a known code forge.
     3. Secondary ``project_urls`` keys (bug tracker, issues, changelog) —
-       the URL is normalised via :func:`_normalize_github_url` to derive
-       the repo root.
-    4. Legacy ``info.home_page`` / ``info.download_url`` fields, also
-       normalised through :func:`_normalize_github_url`.
+       normalised via :func:`_normalize_forge_url` to derive the repo root.
+    4. Scan *all* ``project_urls`` values for forge URLs (catches non-standard
+       key names like ``"Documentation"`` pointing to a GitHub repo).
+    5. Legacy ``info.home_page`` / ``info.download_url`` fields, also
+       normalised through :func:`_normalize_forge_url`.
+    6. Scan ``info.description`` for embedded forge URLs (last resort).
 
     Args:
         metadata: The parsed PyPI JSON API response.
@@ -300,16 +361,31 @@ def extract_repo_url(metadata: dict[str, Any]) -> str | None:
         # 3. Try secondary keys (issue trackers, changelogs) and normalise.
         for key in _SECONDARY_KEYS:
             url = normalised.get(key, "")
-            if url and "github.com" in url.lower():
-                repo = _normalize_github_url(url)
+            if url and any(host in url.lower() for host in _FORGE_HOSTS):
+                repo = _normalize_forge_url(url)
                 if repo:
                     return repo
 
-    # 4. Legacy metadata fields.
+        # 4. Scan all project_urls values for forge URLs.
+        for url in normalised.values():
+            if url and any(host in url.lower() for host in _FORGE_HOSTS):
+                repo = _normalize_forge_url(url)
+                if repo:
+                    return repo
+
+    # 5. Legacy metadata fields.
     for field_name in ("home_page", "download_url"):
         legacy_url = info.get(field_name) or ""
         if legacy_url and any(host in legacy_url.lower() for host in _FORGE_HOSTS):
-            repo = _normalize_github_url(legacy_url)
+            repo = _normalize_forge_url(legacy_url)
+            if repo:
+                return repo
+
+    # 6. Scan description for embedded forge URLs (last resort).
+    description = info.get("description") or info.get("summary") or ""
+    if description:
+        for match in _FORGE_URL_RE.finditer(description):
+            repo = _normalize_forge_url(match.group())
             if repo:
                 return repo
 
