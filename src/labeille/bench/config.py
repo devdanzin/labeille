@@ -82,6 +82,9 @@ class BenchConfig:
     warm_vs_cold: bool = False  # Run both warm and cold cache, compare
     run_dangerously_as_root: bool = False  # Allow running as root (for containers)
 
+    # Installer backend
+    installer: str = "auto"
+
     # CLI provenance
     cli_args: list[str] = field(default_factory=list)
 
