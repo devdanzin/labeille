@@ -7,6 +7,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+- `tracking.py` module in `bench` subpackage with `TrackingSeries` and `TrackingRunEntry` dataclasses for longitudinal benchmark tracking.
+- `compute_config_fingerprint()` for comparing benchmark configurations across runs (ignores package list and system profile).
+- Series management: `init_series()`, `add_run_to_series()`, `pin_baseline()`, `unpin_baseline()`, `load_series()`, `save_series()`, `list_series()`.
+- `labeille bench track` CLI subgroup with `init`, `add`, `show`, `list`, `pin`, and `unpin` commands.
+- Symlink-based run storage within tracking directories to avoid data duplication.
 - `constraints.py` module in `bench` subpackage with `ResourceConstraints` dataclass and ulimit/taskset command wrapping.
 - Resource constraints as part of the condition abstraction: `--memory-limit`, `--cpu-affinity`, and `--cpu-time-limit` CLI flags for `labeille bench run`.
 - Per-condition constraint specification in YAML benchmark profiles.

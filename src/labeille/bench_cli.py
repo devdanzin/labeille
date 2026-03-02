@@ -724,3 +724,196 @@ def setup_cache_drop(show_script: bool) -> None:
         click.echo("Cache dropping is already configured and working.")
     else:
         click.echo(format_setup_instructions())
+
+
+# ---------------------------------------------------------------------------
+# bench track (subgroup)
+# ---------------------------------------------------------------------------
+
+
+@bench.group("track")
+def track() -> None:
+    """Manage benchmark tracking series for longitudinal comparison."""
+
+
+@track.command("init")
+@click.argument("series_name")
+@click.option("--description", "-d", default="", help="Series description.")
+@click.option(
+    "--tracking-dir",
+    type=click.Path(),
+    default="results/tracking",
+    help="Parent directory for tracking series.",
+)
+def track_init(series_name: str, description: str, tracking_dir: str) -> None:
+    """Create a new benchmark tracking series."""
+    from labeille.bench.tracking import init_series
+
+    try:
+        series = init_series(Path(tracking_dir), series_name, description=description)
+        click.echo(f"Created tracking series '{series.series_id}'.")
+    except ValueError as exc:
+        click.echo(f"Error: {exc}", err=True)
+        raise SystemExit(1) from exc
+
+
+@track.command("add")
+@click.argument("series_name")
+@click.argument("bench_run_dir", type=click.Path(exists=True))
+@click.option("--notes", "-n", default="", help="Notes for this run.")
+@click.option(
+    "--commit",
+    type=str,
+    multiple=True,
+    help="key=value commit info (repeatable).",
+)
+@click.option(
+    "--tracking-dir",
+    type=click.Path(),
+    default="results/tracking",
+    help="Parent directory for tracking series.",
+)
+def track_add(
+    series_name: str,
+    bench_run_dir: str,
+    notes: str,
+    commit: tuple[str, ...],
+    tracking_dir: str,
+) -> None:
+    """Add a benchmark run to a tracking series."""
+    from labeille.bench.tracking import add_run_to_series
+
+    commit_info: dict[str, str] = {}
+    for pair in commit:
+        if "=" in pair:
+            k, v = pair.split("=", 1)
+            commit_info[k] = v
+
+    series_dir = Path(tracking_dir) / series_name
+    try:
+        entry = add_run_to_series(
+            series_dir,
+            Path(bench_run_dir),
+            notes=notes,
+            commit_info=commit_info,
+        )
+        click.echo(f"Added run '{entry.bench_id}' to series '{series_name}'.")
+    except FileNotFoundError as exc:
+        click.echo(f"Error: {exc}", err=True)
+        raise SystemExit(1) from exc
+
+
+@track.command("show")
+@click.argument("series_name")
+@click.option("--last", "last_n", type=int, default=None, help="Show only last N runs.")
+@click.option(
+    "--tracking-dir",
+    type=click.Path(),
+    default="results/tracking",
+    help="Parent directory for tracking series.",
+)
+def track_show(series_name: str, last_n: int | None, tracking_dir: str) -> None:
+    """Show runs in a tracking series."""
+    from labeille.bench.tracking import load_series
+
+    series_dir = Path(tracking_dir) / series_name
+    try:
+        series = load_series(series_dir)
+    except FileNotFoundError:
+        click.echo(f"Series '{series_name}' not found.", err=True)
+        raise SystemExit(1)  # noqa: B904
+
+    click.echo(f"Series: {series.series_id}")
+    if series.description:
+        click.echo(f"  {series.description}")
+    click.echo(f"  Created: {series.created}")
+    click.echo(f"  Config fingerprint: {series.config_fingerprint or '(none yet)'}")
+    if series.pinned_baseline_id:
+        click.echo(f"  Pinned baseline: {series.pinned_baseline_id}")
+    click.echo()
+
+    runs = series.runs
+    if last_n and last_n < len(runs):
+        runs = runs[-last_n:]
+
+    if not runs:
+        click.echo("  No runs yet.")
+        return
+
+    # Table header.
+    click.echo(f"  {'#':>3}  {'Date':20s}  {'Bench ID':30s}  {'Pkgs':>5}  Notes")
+    click.echo(f"  {'---':>3}  {'----':20s}  {'--------':30s}  {'----':>5}  -----")
+    for i, run in enumerate(runs, 1):
+        date_str = run.timestamp[:19] if run.timestamp else "unknown"
+        baseline_marker = " *" if run.bench_id == series.pinned_baseline_id else ""
+        click.echo(
+            f"  {i:3d}  {date_str:20s}  {run.bench_id:30s}  "
+            f"{run.packages_completed:5d}  {run.notes}{baseline_marker}"
+        )
+
+
+@track.command("pin")
+@click.argument("series_name")
+@click.argument("bench_id")
+@click.option(
+    "--tracking-dir",
+    type=click.Path(),
+    default="results/tracking",
+    help="Parent directory for tracking series.",
+)
+def track_pin(series_name: str, bench_id: str, tracking_dir: str) -> None:
+    """Pin a run as the baseline for trend analysis."""
+    from labeille.bench.tracking import pin_baseline
+
+    series_dir = Path(tracking_dir) / series_name
+    try:
+        pin_baseline(series_dir, bench_id)
+        click.echo(f"Pinned '{bench_id}' as baseline for series '{series_name}'.")
+    except (FileNotFoundError, ValueError) as exc:
+        click.echo(f"Error: {exc}", err=True)
+        raise SystemExit(1) from exc
+
+
+@track.command("unpin")
+@click.argument("series_name")
+@click.option(
+    "--tracking-dir",
+    type=click.Path(),
+    default="results/tracking",
+    help="Parent directory for tracking series.",
+)
+def track_unpin(series_name: str, tracking_dir: str) -> None:
+    """Remove the pinned baseline."""
+    from labeille.bench.tracking import unpin_baseline
+
+    series_dir = Path(tracking_dir) / series_name
+    try:
+        unpin_baseline(series_dir)
+        click.echo(f"Unpinned baseline for series '{series_name}'.")
+    except FileNotFoundError as exc:
+        click.echo(f"Error: {exc}", err=True)
+        raise SystemExit(1) from exc
+
+
+@track.command("list")
+@click.option(
+    "--tracking-dir",
+    type=click.Path(),
+    default="results/tracking",
+    help="Parent directory for tracking series.",
+)
+def track_list(tracking_dir: str) -> None:
+    """List all tracking series."""
+    from labeille.bench.tracking import list_series
+
+    all_series = list_series(Path(tracking_dir))
+    if not all_series:
+        click.echo("No tracking series found.")
+        return
+
+    click.echo(f"{'Name':25s}  {'Runs':>5}  {'Date Range':43s}  Description")
+    click.echo(f"{'----':25s}  {'----':>5}  {'----------':43s}  -----------")
+    for s in all_series:
+        dr = s.date_range
+        date_str = f"{dr[0][:19]} .. {dr[1][:19]}" if dr else "no runs"
+        click.echo(f"{s.series_id:25s}  {s.n_runs:5d}  {date_str:43s}  {s.description}")
