@@ -7,6 +7,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+- `constraints.py` module in `bench` subpackage with `ResourceConstraints` dataclass and ulimit/taskset command wrapping.
+- Resource constraints as part of the condition abstraction: `--memory-limit`, `--cpu-affinity`, and `--cpu-time-limit` CLI flags for `labeille bench run`.
+- Per-condition constraint specification in YAML benchmark profiles.
+- Inline condition constraint parsing (e.g. `--condition "constrained:memory_limit=1024,cpu_affinity=0+1"`).
+- OOM detection via `detect_oom_from_result()` with new `"oom"` iteration status.
+- `constraints_applied` and `oom_detected` fields on `BenchIteration`.
+- `constraints` field on `ConditionDef` for per-condition resource limits.
 - `cache.py` module in `bench` subpackage for filesystem cache management during benchmarks.
 - `--drop-caches` flag for `labeille bench run` to drop filesystem caches between iterations for cold-cache benchmarking.
 - `--warm-vs-cold` flag to automatically compare warm-cache and cold-cache performance.
@@ -62,6 +69,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - New crash summary statistics in compare output showing repo unchanged/changed/unknown counts.
 
 ### Enhanced
+- `BenchRunner._run_iteration()` applies resource constraints via command wrapping before execution.
 - `BenchRunner.run()` now checks for root execution and refuses unless `--run-dangerously-as-root` is passed.
 - macOS support for system profiling: CPU info from `sysctl`, memory from `vm_stat`, OS from `sw_vers`, disk type from `diskutil`. All existing Linux code paths preserved unchanged.
 - `check_stability()` and `SystemSnapshot.capture()` now use cross-platform `_get_available_ram_gb()` helper instead of Linux-only `/proc/meminfo`.

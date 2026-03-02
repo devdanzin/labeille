@@ -172,6 +172,24 @@ def bench() -> None:
     help="Capture per-test timing via pytest --durations=0.",
 )
 @click.option(
+    "--memory-limit",
+    type=int,
+    default=None,
+    help="Memory limit in MB for all conditions (ulimit -v).",
+)
+@click.option(
+    "--cpu-affinity",
+    type=str,
+    default=None,
+    help="CPU core list (e.g. '0,1') for all conditions (taskset).",
+)
+@click.option(
+    "--cpu-time-limit",
+    type=int,
+    default=None,
+    help="CPU time limit in seconds for all conditions (ulimit -t).",
+)
+@click.option(
     "--drop-caches",
     is_flag=True,
     default=False,
@@ -213,6 +231,9 @@ def run(  # noqa: PLR0913
     wait_for_stability: bool,
     quick: bool,
     per_test_timing: bool,
+    memory_limit: int | None,
+    cpu_affinity: str | None,
+    cpu_time_limit: int | None,
     drop_caches: bool,
     warm_vs_cold: bool,
     run_dangerously_as_root: bool,
@@ -320,6 +341,17 @@ def run(  # noqa: PLR0913
     config.drop_caches = drop_caches or warm_vs_cold  # warm-vs-cold implies drop-caches
     config.warm_vs_cold = warm_vs_cold
     config.run_dangerously_as_root = run_dangerously_as_root
+
+    if memory_limit or cpu_affinity or cpu_time_limit:
+        from labeille.bench.constraints import ResourceConstraints
+
+        affinity_list = [int(c.strip()) for c in cpu_affinity.split(",")] if cpu_affinity else None
+        config.default_constraints = ResourceConstraints(
+            memory_limit_mb=memory_limit,
+            cpu_affinity=affinity_list,
+            cpu_time_limit_s=cpu_time_limit,
+        )
+
     config.cli_args = sys.argv[1:]
 
     if quick:
