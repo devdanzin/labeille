@@ -26,6 +26,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from labeille.bench.constraints import ResourceConstraints
 from labeille.bench.stats import DescriptiveStats, describe, detect_outliers
 from labeille.bench.system import PythonProfile, SystemProfile
 from labeille.bench.timing import PerTestTimings
@@ -55,6 +56,8 @@ class BenchIteration:
     load_avg_end: float = 0.0
     ram_available_start_gb: float = 0.0
     caches_dropped: bool = False  # Whether caches were dropped before this iteration
+    constraints_applied: bool = False  # Whether resource constraints were active
+    oom_detected: bool = False  # Whether OOM was detected for this iteration
     per_test_timings: PerTestTimings | None = None
 
     def to_dict(self) -> dict[str, Any]:
@@ -75,6 +78,10 @@ class BenchIteration:
         }
         if self.caches_dropped:
             d["caches_dropped"] = True
+        if self.constraints_applied:
+            d["constraints_applied"] = True
+        if self.oom_detected:
+            d["oom_detected"] = True
         if self.per_test_timings is not None:
             d["per_test_timings"] = self.per_test_timings.to_dict()
         return d
@@ -247,6 +254,7 @@ class ConditionDef:
     test_command_prefix: str | None = None
     test_command_suffix: str | None = None
     install_command: str | None = None
+    constraints: ResourceConstraints | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize to a JSON-compatible dict (sparse: omits defaults)."""
@@ -267,11 +275,19 @@ class ConditionDef:
             d["test_command_suffix"] = self.test_command_suffix
         if self.install_command:
             d["install_command"] = self.install_command
+        if self.constraints is not None and self.constraints.has_any:
+            d["constraints"] = self.constraints.to_dict()
         return d
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ConditionDef:
         """Deserialize from a dict."""
+        constraints_data = data.get("constraints")
+        constraints = (
+            ResourceConstraints.from_dict(constraints_data)
+            if constraints_data and isinstance(constraints_data, dict)
+            else None
+        )
         return cls(
             name=data["name"],
             description=data.get("description", ""),
@@ -282,6 +298,7 @@ class ConditionDef:
             test_command_prefix=data.get("test_command_prefix"),
             test_command_suffix=data.get("test_command_suffix"),
             install_command=data.get("install_command"),
+            constraints=constraints,
         )
 
 

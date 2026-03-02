@@ -29,6 +29,7 @@ from typing import Any
 
 from labeille.bench.config import (
     BenchConfig,
+    resolve_constraints,
     resolve_env,
     resolve_extra_deps,
     resolve_target_python,
@@ -52,6 +53,11 @@ from labeille.bench.system import (
     format_system_profile,
 )
 from labeille.bench.cache import check_cache_drop_available, check_not_root, drop_caches
+from labeille.bench.constraints import (
+    apply_constraints_to_command,
+    check_constraints_available,
+    detect_oom_from_result,
+)
 from labeille.bench.timing import (
     parse_pytest_durations,
     prepare_per_test_command,
@@ -211,6 +217,14 @@ class BenchRunner:
             if not status.available:
                 raise SystemExit(status.message)
             log.info("Cache dropping enabled.")
+
+        # Phase 3c: Validate resource constraints.
+        for cond_name, cond in self.config.conditions.items():
+            resolved = resolve_constraints(cond, self.config.default_constraints)
+            if resolved and resolved.has_any:
+                constraint_warnings = check_constraints_available(resolved)
+                for cw in constraint_warnings:
+                    log.warning("Constraints [%s]: %s", cond_name, cw)
 
         # Phase 4: Prepare output directory and metadata.
         output_dir = self.config.output_dir
@@ -661,6 +675,12 @@ class BenchRunner:
             test_framework = getattr(pkg, "test_framework", "") or ""
             test_cmd, per_test_enabled = prepare_per_test_command(test_cmd, test_framework)
 
+        # Apply resource constraints.
+        constraints = resolve_constraints(cond, self.config.default_constraints)
+        constraints_applied = constraints is not None and constraints.has_any
+        if constraints_applied:
+            test_cmd = apply_constraints_to_command(test_cmd, constraints)
+
         # Build environment.
         env = resolve_env(cond, self.config.default_env)
         env.setdefault("PYTHONFAULTHANDLER", "1")
@@ -700,6 +720,11 @@ class BenchRunner:
         else:
             status = "fail"
 
+        # OOM detection.
+        oom_detected = detect_oom_from_result(timed.exit_code, timed.stderr, constraints)
+        if oom_detected:
+            status = "oom"
+
         # Parse per-test timings if enabled.
         per_test_timings = None
         if per_test_enabled:
@@ -718,6 +743,8 @@ class BenchRunner:
             load_avg_end=snap_after.load_avg_1m,
             ram_available_start_gb=snap_before.ram_available_gb,
             caches_dropped=caches_dropped,
+            constraints_applied=constraints_applied,
+            oom_detected=oom_detected,
             per_test_timings=per_test_timings,
         )
 

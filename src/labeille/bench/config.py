@@ -16,6 +16,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from labeille.bench.constraints import ResourceConstraints
 from labeille.bench.results import ConditionDef
 
 log = logging.getLogger("labeille")
@@ -72,6 +73,9 @@ class BenchConfig:
 
     # Per-test timing
     per_test_timing: bool = False  # Capture per-test timing via pytest --durations=0
+
+    # Resource constraints
+    default_constraints: ResourceConstraints | None = None
 
     # Cache control
     drop_caches: bool = False  # Drop filesystem caches between iterations
@@ -329,6 +333,13 @@ def config_from_profile(
                 f"Condition '{name}' must be a mapping, got {type(cond_data).__name__}"
             )
 
+        constraints_data = cond_data.get("constraints")
+        cond_constraints = (
+            ResourceConstraints.from_dict(constraints_data)
+            if constraints_data and isinstance(constraints_data, dict)
+            else None
+        )
+
         config.conditions[name] = ConditionDef(
             name=name,
             description=cond_data.get("description", ""),
@@ -339,6 +350,7 @@ def config_from_profile(
             test_command_prefix=cond_data.get("test_command_prefix"),
             test_command_suffix=cond_data.get("test_command_suffix"),
             install_command=cond_data.get("install_command"),
+            constraints=cond_constraints,
         )
 
     # Apply CLI path overrides.
@@ -368,6 +380,11 @@ def config_from_profile(
         config.alternate = cli["alternate"]
     if cli.get("interleave"):
         config.interleave = True
+
+    # Default constraints from profile.
+    default_constraints_data = profile_data.get("constraints")
+    if default_constraints_data and isinstance(default_constraints_data, dict):
+        config.default_constraints = ResourceConstraints.from_dict(default_constraints_data)
 
     # Cache control — drop_caches is allowed in profiles.
     if profile_data.get("drop_caches"):
@@ -442,11 +459,24 @@ def parse_inline_condition(spec: str) -> ConditionDef:
         elif key.startswith("env."):
             env_key = key[4:]
             cond.env[env_key] = value
+        elif key == "memory_limit":
+            if cond.constraints is None:
+                cond.constraints = ResourceConstraints()
+            cond.constraints.memory_limit_mb = int(value)
+        elif key == "cpu_affinity":
+            if cond.constraints is None:
+                cond.constraints = ResourceConstraints()
+            cond.constraints.cpu_affinity = [int(c.strip()) for c in value.split("+")]
+        elif key == "cpu_time_limit":
+            if cond.constraints is None:
+                cond.constraints = ResourceConstraints()
+            cond.constraints.cpu_time_limit_s = int(value)
         else:
             raise ValueError(
                 f"Unknown condition key '{key}' in condition '{name}'. "
                 f"Valid keys: target_python, extra_deps, test_command_override, "
-                f"test_prefix, test_suffix, install_command, description, env.KEY"
+                f"test_prefix, test_suffix, install_command, description, env.KEY, "
+                f"memory_limit, cpu_affinity, cpu_time_limit"
             )
 
     return cond
@@ -578,3 +608,13 @@ def resolve_extra_deps(
             seen.add(dep)
             result.append(dep)
     return result
+
+
+def resolve_constraints(
+    condition: ConditionDef,
+    default: ResourceConstraints | None,
+) -> ResourceConstraints | None:
+    """Resolve constraints for a condition (condition overrides default)."""
+    if condition.constraints is not None:
+        return condition.constraints
+    return default
