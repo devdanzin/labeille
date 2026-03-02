@@ -706,14 +706,98 @@ def compare_with_install_command(
 # ---------------------------------------------------------------------------
 
 
-def _auto_detect_test_dirs(repo_root: Path) -> list[Path]:
-    """Auto-detect test directories by looking for common names."""
-    candidates = ["tests", "test", "testing", "Tests"]
+def _auto_detect_test_dirs(repo_root: Path, package_name: str = "") -> list[Path]:
+    """Auto-detect test directories using tiered detection.
+
+    Uses a priority-based approach — returns as soon as a tier finds results:
+
+    1. Standard root-level directories (tests, test, testing, t, spec, …).
+    2. Package-named test directories (``<pkg>_tests/``) and package-internal
+       test subdirectories (``<pkg>/_test/``, ``<pkg>/tests/``, …).
+    3. Monorepo subdirectories (``python/tests/``, ``py/tests/``, …).
+    4. Root-level test files (``test_*.py``, ``*_test.py``).
+    5. Scattered test files inside the package source tree.
+
+    Args:
+        repo_root: Path to the cloned repository root.
+        package_name: PyPI package name (used for package-aware tiers).
+
+    Returns:
+        A list of directories to scan for tests. May return ``[repo_root]``
+        when only individual test files are found (tiers 4–5).
+    """
+    # Tier 1: Standard root-level directories.
+    standard = ["tests", "test", "testing", "Tests", "t", "spec", "specs"]
     found: list[Path] = []
-    for name in candidates:
+    for name in standard:
         d = repo_root / name
         if d.is_dir():
             found.append(d)
+    if found:
+        return found
+
+    # Tier 2: Package-named and package-internal test directories.
+    pkg_norm = package_name.replace("-", "_").replace(".", "_") if package_name else ""
+
+    # 2a: Root-level dirs ending in _test or _tests (e.g. portalocker_tests/).
+    try:
+        for d in repo_root.iterdir():
+            if d.is_dir() and (d.name.endswith("_test") or d.name.endswith("_tests")):
+                found.append(d)
+    except OSError:
+        pass
+
+    # 2b: Test subdirs inside the package directory.
+    if pkg_norm:
+        _internal_test_names = ["_test", "_tests", "tests", "test"]
+        for prefix in [repo_root, repo_root / "src"]:
+            pkg_dir = prefix / pkg_norm
+            if pkg_dir.is_dir():
+                for subname in _internal_test_names:
+                    sub = pkg_dir / subname
+                    if sub.is_dir():
+                        found.append(sub)
+
+    if found:
+        return found
+
+    # Tier 3: Monorepo subdirectories.
+    _monorepo_prefixes = ["python", "py", "src"]
+    _monorepo_test_names = ["tests", "test", "testing"]
+    for prefix_name in _monorepo_prefixes:
+        prefix = repo_root / prefix_name
+        if prefix.is_dir():
+            for test_name in _monorepo_test_names:
+                d = prefix / test_name
+                if d.is_dir():
+                    found.append(d)
+    if found:
+        return found
+
+    # Tier 4: Root-level test files (no dedicated directory).
+    root_test_files = (
+        list(repo_root.glob("test_*.py"))
+        + list(repo_root.glob("*_test.py"))
+        + list(repo_root.glob("*_tests.py"))
+    )
+    if root_test_files:
+        log.info("Found %d root-level test files, scanning repo root", len(root_test_files))
+        return [repo_root]
+
+    # Tier 5: Scattered test files inside the package source tree.
+    if pkg_norm:
+        for prefix in [repo_root, repo_root / "src"]:
+            pkg_dir = prefix / pkg_norm
+            if pkg_dir.is_dir():
+                scattered = list(pkg_dir.rglob("*_test.py")) + list(pkg_dir.rglob("test_*.py"))
+                if scattered:
+                    log.info(
+                        "Found %d scattered test files in %s",
+                        len(scattered),
+                        pkg_dir.relative_to(repo_root),
+                    )
+                    return [pkg_dir]
+
     return found
 
 
@@ -786,7 +870,7 @@ def scan_package_deps(
             else:
                 log.warning("Test directory %s does not exist, skipping", d)
     else:
-        dirs_to_scan = _auto_detect_test_dirs(repo_root)
+        dirs_to_scan = _auto_detect_test_dirs(repo_root, package_name)
 
     if scan_source:
         src = repo_root / "src"

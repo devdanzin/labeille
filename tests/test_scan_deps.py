@@ -15,6 +15,7 @@ from labeille.registry import PackageEntry
 from labeille.scan_deps import (
     ImportInfo,
     ResolvedDep,
+    _auto_detect_test_dirs,
     _normalize_pip_command,
     _parse_install_packages,
     build_scan_result,
@@ -919,6 +920,164 @@ class TestParseInstallPackages(unittest.TestCase):
     def test_complex_specifier(self) -> None:
         pkgs, extras = _parse_install_packages("pip install baz[extra]>=2.0,<3.0")
         self.assertEqual(pkgs, ["baz"])
+
+
+class TestAutoDetectTestDirs(unittest.TestCase):
+    """Tests for _auto_detect_test_dirs tiered detection."""
+
+    def setUp(self) -> None:
+        self._tmpdir = tempfile.TemporaryDirectory()
+        self.repo = Path(self._tmpdir.name) / "repo"
+        self.repo.mkdir()
+
+    def tearDown(self) -> None:
+        self._tmpdir.cleanup()
+
+    # -- Tier 1: standard root-level directories --
+
+    def test_standard_tests_dir(self) -> None:
+        (self.repo / "tests").mkdir()
+        result = _auto_detect_test_dirs(self.repo)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, "tests")
+
+    def test_standard_test_singular(self) -> None:
+        (self.repo / "test").mkdir()
+        result = _auto_detect_test_dirs(self.repo)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, "test")
+
+    def test_t_directory(self) -> None:
+        """Celery-ecosystem 't' directory is detected."""
+        (self.repo / "t").mkdir()
+        result = _auto_detect_test_dirs(self.repo)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, "t")
+
+    def test_spec_directory(self) -> None:
+        (self.repo / "spec").mkdir()
+        result = _auto_detect_test_dirs(self.repo)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, "spec")
+
+    def test_standard_takes_priority(self) -> None:
+        """When standard dir exists, lower tiers don't run."""
+        (self.repo / "tests").mkdir()
+        (self.repo / "mypackage_tests").mkdir()
+        result = _auto_detect_test_dirs(self.repo, "mypackage")
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, "tests")
+
+    # -- Tier 2: package-named and internal dirs --
+
+    def test_package_named_test_dir(self) -> None:
+        """Finds 'portalocker_tests' style directory."""
+        (self.repo / "portalocker_tests").mkdir()
+        result = _auto_detect_test_dirs(self.repo, "portalocker")
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, "portalocker_tests")
+
+    def test_package_internal_test_dir(self) -> None:
+        """Finds <pkg>/_test inside package."""
+        pkg = self.repo / "automat"
+        (pkg / "_test").mkdir(parents=True)
+        result = _auto_detect_test_dirs(self.repo, "automat")
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, "_test")
+
+    def test_package_internal_tests_dir(self) -> None:
+        """Finds <pkg>/tests inside package."""
+        pkg = self.repo / "mypackage"
+        (pkg / "tests").mkdir(parents=True)
+        result = _auto_detect_test_dirs(self.repo, "mypackage")
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, "tests")
+
+    def test_src_layout_internal_tests(self) -> None:
+        """Finds src/<pkg>/_test for src-layout packages."""
+        pkg = self.repo / "src" / "automat"
+        (pkg / "_test").mkdir(parents=True)
+        result = _auto_detect_test_dirs(self.repo, "automat")
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, "_test")
+
+    def test_hyphenated_package_name(self) -> None:
+        """Hyphenated names are normalized to underscores."""
+        pkg = self.repo / "my_package"
+        (pkg / "tests").mkdir(parents=True)
+        result = _auto_detect_test_dirs(self.repo, "my-package")
+        self.assertEqual(len(result), 1)
+
+    # -- Tier 3: monorepo subdirectories --
+
+    def test_monorepo_python_subdir(self) -> None:
+        """Finds python/tests/ in monorepo style."""
+        (self.repo / "python" / "tests").mkdir(parents=True)
+        result = _auto_detect_test_dirs(self.repo)
+        self.assertEqual(len(result), 1)
+
+    def test_monorepo_py_subdir(self) -> None:
+        (self.repo / "py" / "test").mkdir(parents=True)
+        result = _auto_detect_test_dirs(self.repo)
+        self.assertEqual(len(result), 1)
+
+    # -- Tier 4: root-level test files --
+
+    def test_root_test_files(self) -> None:
+        """Detects root-level test_*.py files, returns repo root."""
+        (self.repo / "test_main.py").write_text("def test_x(): pass\n")
+        result = _auto_detect_test_dirs(self.repo)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0], self.repo)
+
+    def test_root_suffix_test_files(self) -> None:
+        """Detects root-level *_test.py files."""
+        (self.repo / "core_test.py").write_text("def test_x(): pass\n")
+        result = _auto_detect_test_dirs(self.repo)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0], self.repo)
+
+    # -- Tier 5: scattered test files in package --
+
+    def test_scattered_test_files(self) -> None:
+        """Detects *_test.py inside package (google-pasta pattern)."""
+        pkg = self.repo / "pasta" / "base"
+        pkg.mkdir(parents=True)
+        (pkg / "codegen_test.py").write_text("def test_x(): pass\n")
+        result = _auto_detect_test_dirs(self.repo, "pasta")
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, "pasta")
+
+    def test_scattered_test_prefix_files(self) -> None:
+        """Detects test_*.py inside package."""
+        pkg = self.repo / "mypackage" / "sub"
+        pkg.mkdir(parents=True)
+        (pkg / "test_core.py").write_text("def test_x(): pass\n")
+        result = _auto_detect_test_dirs(self.repo, "mypackage")
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, "mypackage")
+
+    # -- Edge cases --
+
+    def test_no_tests_found(self) -> None:
+        """Returns empty list when no tests found."""
+        (self.repo / "src" / "mypackage").mkdir(parents=True)
+        result = _auto_detect_test_dirs(self.repo, "mypackage")
+        self.assertEqual(len(result), 0)
+
+    def test_no_package_name(self) -> None:
+        """Without package_name, only standard and monorepo tiers run."""
+        (self.repo / "src" / "mypackage" / "tests").mkdir(parents=True)
+        result = _auto_detect_test_dirs(self.repo)
+        # Tier 3 checks src/tests, not src/mypackage/tests
+        self.assertEqual(len(result), 0)
+
+    def test_multiple_standard_dirs(self) -> None:
+        """Multiple standard dirs are all returned."""
+        (self.repo / "tests").mkdir()
+        (self.repo / "test").mkdir()
+        result = _auto_detect_test_dirs(self.repo)
+        self.assertEqual(len(result), 2)
 
 
 if __name__ == "__main__":

@@ -11,6 +11,7 @@ import requests
 from labeille.registry import PackageEntry, load_index, load_package, save_package
 from labeille.resolve import (
     PackageInput,
+    _normalize_forge_url,
     _normalize_github_url,
     extract_repo_url,
     fetch_pypi_metadata,
@@ -576,6 +577,166 @@ class TestResolveAllParallel(unittest.TestCase):
         results, summary = resolve_all(packages, self.registry, workers=2)
         self.assertEqual(summary.failed, 1)
         self.assertEqual(summary.resolved, 1)
+
+
+class TestNormalizeForgeUrl(unittest.TestCase):
+    """Tests for _normalize_forge_url (multi-forge normalizer)."""
+
+    def test_github_plain(self) -> None:
+        self.assertEqual(
+            _normalize_forge_url("https://github.com/user/repo"),
+            "https://github.com/user/repo",
+        )
+
+    def test_github_with_path(self) -> None:
+        self.assertEqual(
+            _normalize_forge_url("https://github.com/user/repo/tree/main/src"),
+            "https://github.com/user/repo",
+        )
+
+    def test_gitlab_plain(self) -> None:
+        self.assertEqual(
+            _normalize_forge_url("https://gitlab.com/user/repo"),
+            "https://gitlab.com/user/repo",
+        )
+
+    def test_gitlab_issues(self) -> None:
+        self.assertEqual(
+            _normalize_forge_url("https://gitlab.com/user/repo/-/issues"),
+            "https://gitlab.com/user/repo",
+        )
+
+    def test_gitlab_blob(self) -> None:
+        self.assertEqual(
+            _normalize_forge_url("https://gitlab.com/user/repo/-/blob/main/README.md"),
+            "https://gitlab.com/user/repo",
+        )
+
+    def test_bitbucket_plain(self) -> None:
+        self.assertEqual(
+            _normalize_forge_url("https://bitbucket.org/user/repo"),
+            "https://bitbucket.org/user/repo",
+        )
+
+    def test_bitbucket_src(self) -> None:
+        self.assertEqual(
+            _normalize_forge_url("https://bitbucket.org/user/repo/src/main/"),
+            "https://bitbucket.org/user/repo",
+        )
+
+    def test_codeberg_plain(self) -> None:
+        self.assertEqual(
+            _normalize_forge_url("https://codeberg.org/user/repo"),
+            "https://codeberg.org/user/repo",
+        )
+
+    def test_non_forge_returns_none(self) -> None:
+        self.assertIsNone(_normalize_forge_url("https://example.com/docs"))
+
+    def test_readthedocs_returns_none(self) -> None:
+        self.assertIsNone(_normalize_forge_url("https://mypackage.readthedocs.io/"))
+
+
+class TestExtractRepoUrlExpanded(unittest.TestCase):
+    """Tests for the expanded extract_repo_url functionality."""
+
+    def test_repo_key(self) -> None:
+        meta = _make_pypi_response(project_urls={"Repo": "https://github.com/user/repo"})
+        self.assertEqual(extract_repo_url(meta), "https://github.com/user/repo")
+
+    def test_git_key(self) -> None:
+        meta = _make_pypi_response(project_urls={"Git": "https://github.com/user/repo"})
+        self.assertEqual(extract_repo_url(meta), "https://github.com/user/repo")
+
+    def test_vcs_key(self) -> None:
+        meta = _make_pypi_response(project_urls={"VCS": "https://github.com/user/repo"})
+        self.assertEqual(extract_repo_url(meta), "https://github.com/user/repo")
+
+    def test_bitbucket_homepage(self) -> None:
+        meta = _make_pypi_response(project_urls={"Homepage": "https://bitbucket.org/user/repo"})
+        self.assertEqual(extract_repo_url(meta), "https://bitbucket.org/user/repo")
+
+    def test_codeberg_homepage(self) -> None:
+        meta = _make_pypi_response(project_urls={"Homepage": "https://codeberg.org/user/repo"})
+        self.assertEqual(extract_repo_url(meta), "https://codeberg.org/user/repo")
+
+    def test_secondary_gitlab_normalized(self) -> None:
+        """GitLab issue tracker URL is normalized via _normalize_forge_url."""
+        meta = _make_pypi_response(
+            project_urls={"Bug Tracker": "https://gitlab.com/user/repo/-/issues"}
+        )
+        self.assertEqual(extract_repo_url(meta), "https://gitlab.com/user/repo")
+
+    def test_secondary_bitbucket_normalized(self) -> None:
+        meta = _make_pypi_response(
+            project_urls={"Issues": "https://bitbucket.org/user/repo/issues"}
+        )
+        self.assertEqual(extract_repo_url(meta), "https://bitbucket.org/user/repo")
+
+    def test_scan_all_urls_fallback(self) -> None:
+        """Non-standard key with forge URL is found by scanning all values."""
+        meta = _make_pypi_response(project_urls={"My Custom Key": "https://github.com/user/repo"})
+        self.assertEqual(extract_repo_url(meta), "https://github.com/user/repo")
+
+    def test_scan_all_urls_documentation_github(self) -> None:
+        """Documentation key pointing to GitHub repo."""
+        meta = _make_pypi_response(
+            project_urls={"Documentation": "https://github.com/user/repo/wiki"}
+        )
+        self.assertEqual(extract_repo_url(meta), "https://github.com/user/repo")
+
+    def test_description_fallback(self) -> None:
+        """Forge URL found in package description."""
+        meta: dict[str, object] = {
+            "info": {
+                "name": "testpkg",
+                "project_urls": {},
+                "description": "See https://github.com/user/repo for details.",
+            },
+            "urls": [],
+        }
+        self.assertEqual(extract_repo_url(meta), "https://github.com/user/repo")
+
+    def test_description_badge_url(self) -> None:
+        """GitHub URL extracted from CI badge markdown in description."""
+        meta: dict[str, object] = {
+            "info": {
+                "name": "testpkg",
+                "project_urls": {},
+                "description": (
+                    "[![Build](https://travis-ci.org/user/repo.svg)](https://github.com/user/repo)"
+                ),
+            },
+            "urls": [],
+        }
+        self.assertEqual(extract_repo_url(meta), "https://github.com/user/repo")
+
+    def test_description_not_used_when_urls_exist(self) -> None:
+        """Description scan doesn't override project_urls."""
+        meta: dict[str, object] = {
+            "info": {
+                "name": "testpkg",
+                "project_urls": {"Source": "https://github.com/user/primary"},
+                "description": "See https://github.com/user/secondary for details.",
+            },
+            "urls": [],
+        }
+        self.assertEqual(extract_repo_url(meta), "https://github.com/user/primary")
+
+    def test_non_forge_urls_not_matched_in_scan(self) -> None:
+        """Non-forge URLs in project_urls are not returned."""
+        meta = _make_pypi_response(
+            project_urls={
+                "Homepage": "https://mypackage.readthedocs.io/",
+                "Documentation": "https://docs.example.com/",
+            }
+        )
+        self.assertIsNone(extract_repo_url(meta))
+
+    def test_tracker_key(self) -> None:
+        """The 'tracker' secondary key works."""
+        meta = _make_pypi_response(project_urls={"Tracker": "https://github.com/user/repo/issues"})
+        self.assertEqual(extract_repo_url(meta), "https://github.com/user/repo")
 
 
 if __name__ == "__main__":

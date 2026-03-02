@@ -7,6 +7,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+- 5-tier test directory detection in `_auto_detect_test_dirs()`: standard dirs (`t/`, `spec/`), package-named/internal dirs, monorepo subdirs, root-level test files, and scattered test files in package source.
+- Multi-forge URL normalization via `_normalize_forge_url()` supporting GitHub, GitLab, Bitbucket, and Codeberg.
+- Expanded `extract_repo_url()` with all-values `project_urls` scan and `description` field scanning as last resort.
+- `recover-no-tests-found` and `recover-no-repo-url` registry migrations for recovering falsely skipped packages.
 - `trends.py` module in `bench` subpackage with `PackageTrend`, `RegressionAlert`, and `SeriesTrend` dataclasses for longitudinal benchmark analysis.
 - `compute_package_trend()` with configurable regression/trend thresholds and sustained-change detection.
 - `analyze_series_trends()` for full series analysis: loads all runs, computes per-package trends, generates regression alerts.

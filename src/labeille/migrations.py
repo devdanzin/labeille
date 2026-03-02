@@ -389,3 +389,85 @@ def migrate_skip_to_skip_versions(
         modified=True,
         description=f'skip:true -> skip_versions["3.15"]: {desc}',
     )
+
+
+# ---------------------------------------------------------------------------
+# Built-in migration: recover-no-tests-found
+# ---------------------------------------------------------------------------
+
+
+@register_migration(
+    "recover-no-tests-found",
+    "Reset packages falsely skipped as 'No test directory found' for re-enrichment",
+)
+def migrate_recover_no_tests(
+    file_path: Path,
+    data: dict[str, Any],
+) -> MigrationResult:
+    """Reset packages skipped due to missed test directory detection.
+
+    Targets packages where ``skip_reason`` mentions "No test directory found".
+    Sets ``enriched`` to False so improved detection can re-enrich them.
+    """
+    package = data.get("package", file_path.stem)
+
+    if not data.get("skip", False):
+        return MigrationResult(package=package, modified=False, description="not skipped")
+
+    reason = data.get("skip_reason", "") or ""
+    if "No test directory found" not in reason:
+        return MigrationResult(
+            package=package, modified=False, description="different skip reason"
+        )
+
+    data["skip"] = False
+    data["skip_reason"] = None
+    data["enriched"] = False
+    data["notes"] = "Reset for re-enrichment (improved test directory detection)"
+
+    return MigrationResult(
+        package=package,
+        modified=True,
+        description="reset: was falsely skipped as no-tests-found",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Built-in migration: recover-no-repo-url
+# ---------------------------------------------------------------------------
+
+
+@register_migration(
+    "recover-no-repo-url",
+    "Reset packages falsely skipped as 'No source repository URL' for re-resolution",
+)
+def migrate_recover_no_repo(
+    file_path: Path,
+    data: dict[str, Any],
+) -> MigrationResult:
+    """Reset packages skipped due to missed repo URL extraction.
+
+    Targets packages where ``skip_reason`` mentions "No source repository URL".
+    Sets ``enriched`` to False so improved resolution can find their repos.
+    """
+    package = data.get("package", file_path.stem)
+
+    if not data.get("skip", False):
+        return MigrationResult(package=package, modified=False, description="not skipped")
+
+    reason = data.get("skip_reason", "") or ""
+    if "No source repository URL" not in reason:
+        return MigrationResult(
+            package=package, modified=False, description="different skip reason"
+        )
+
+    data["skip"] = False
+    data["skip_reason"] = None
+    data["enriched"] = False
+    data["notes"] = "Reset for re-resolution (improved repo URL detection)"
+
+    return MigrationResult(
+        package=package,
+        modified=True,
+        description="reset: was falsely skipped as no-repo-url",
+    )
