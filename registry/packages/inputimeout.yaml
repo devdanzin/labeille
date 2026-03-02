@@ -1,0 +1,18 @@
+package: inputimeout
+repo: http://github.com/johejo/inutimeout
+pypi_url: https://pypi.org/project/inputimeout/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: "Broken repo URL (typo in PyPI metadata)."
+skip_versions: {}
+notes: "Auto-triaged: monorepo/clone-fail"
+enriched: true
+clone_depth: null
+import_name: null

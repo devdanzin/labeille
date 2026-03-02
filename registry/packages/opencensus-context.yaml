@@ -1,0 +1,18 @@
+package: opencensus-context
+repo: https://github.com/census-instrumentation/opencensus-python/tree/master/context/opencensus-context
+pypi_url: https://pypi.org/project/opencensus-context/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: "Monorepo subpackage (census-instrumentation/opencensus-python)."
+skip_versions: {}
+notes: "Auto-triaged: monorepo/clone-fail"
+enriched: true
+clone_depth: null
+import_name: null

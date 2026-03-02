@@ -1,0 +1,18 @@
+package: pinecone-plugin-assistant
+repo: null
+pypi_url: https://pypi.org/project/pinecone-plugin-assistant/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: No source repository URL available on PyPI.
+skip_versions: {}
+notes: 'Confirmed: no repo available after improved URL detection'
+enriched: true
+clone_depth: null
+import_name: null

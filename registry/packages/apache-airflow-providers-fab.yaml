@@ -1,0 +1,18 @@
+package: apache-airflow-providers-fab
+repo: https://github.com/apache/airflow
+pypi_url: https://pypi.org/project/apache-airflow-providers-fab/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: "Subpackage of apache/airflow monorepo. Requires full Airflow installation."
+skip_versions: {}
+notes: "Auto-triaged: monorepo_airflow"
+enriched: true
+clone_depth: null
+import_name: null

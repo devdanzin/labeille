@@ -1,0 +1,18 @@
+package: requests-cache
+repo: https://github.com/requests-cache/requests-cache
+pypi_url: https://pypi.org/project/requests-cache/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e .
+test_command: python -m pytest tests -p no:xdist
+test_framework: pytest
+uses_xdist: true
+timeout: null
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: "xdist disabled for JIT testing"
+enriched: true
+clone_depth: null
+import_name: null

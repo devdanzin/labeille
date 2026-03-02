@@ -11,8 +11,8 @@ Development of labeille depends heavily on AI for planning, architecture, and co
 
 * **Claude Opus:** AI partner for project planning, architectural design, and prompt
   writing.
-* **Claude Code:** Main agentic collaborator for implementation, testing, and code
-  review.
+* **Claude Code:** Main agentic collaborator for implementation, testing, code
+  review, and registry enrichment.
 * **Gemini (Google):** Implementation review.
 
 [Anthropic](https://www.anthropic.com/) provided financial support that enabled access

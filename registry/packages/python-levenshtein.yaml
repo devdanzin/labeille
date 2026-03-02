@@ -1,0 +1,19 @@
+package: python-levenshtein
+repo: https://github.com/rapidfuzz/python-Levenshtein.git
+pypi_url: https://pypi.org/project/python-levenshtein/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: null
+test_command: null
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': C extension (Levenshtein)
+notes: 'Re-enriched: C extension (Levenshtein)'
+enriched: true
+clone_depth: null
+import_name: null

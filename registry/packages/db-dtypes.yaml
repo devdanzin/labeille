@@ -1,0 +1,18 @@
+package: db-dtypes
+repo: https://github.com/googleapis/python-db-dtypes-pandas
+pypi_url: https://pypi.org/project/db-dtypes/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: "Subpackage of googleapis/google-cloud-python monorepo. Complex monorepo testing setup."
+skip_versions: {}
+notes: "Auto-triaged: monorepo_google"
+enriched: true
+clone_depth: null
+import_name: null

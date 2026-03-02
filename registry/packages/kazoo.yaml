@@ -1,0 +1,21 @@
+package: kazoo
+repo: https://github.com/python-zk/kazoo
+pypi_url: https://pypi.org/project/kazoo/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-timeout pyopenssl pyjks objgraph
+test_command: python -m pytest kazoo/tests/test_exceptions.py kazoo/tests/test_paths.py
+  kazoo/tests/test_hosts.py kazoo/tests/test_utils.py kazoo/tests/test_retry.py
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: "Most tests require a running Zookeeper cluster (KazooTestCase). Only pure unit
+  tests can run without ZK. pyopenssl and pyjks needed for kazoo.testing.common import
+  chain."
+enriched: true
+clone_depth: null
+import_name: null

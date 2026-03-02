@@ -1,0 +1,18 @@
+package: aiohttp-cors
+repo: https://github.com/aio-libs/aiohttp-cors
+pypi_url: https://pypi.org/project/aiohttp-cors/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install -r requirements-dev.txt && pip install pytest
+test_command: python -m pytest tests -o "addopts="
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: "addopts cleared (refs: pytest-cov)"
+enriched: true
+clone_depth: null
+import_name: null

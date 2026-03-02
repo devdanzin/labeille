@@ -1,0 +1,20 @@
+package: click-didyoumean
+repo: https://github.com/click-contrib/click-didyoumean
+pypi_url: https://pypi.org/project/click-didyoumean/
+extension_type: pure
+python_versions:
+- '3.15'
+- '3.14'
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: Click extension for 'did you mean' suggestions. Poetry build, src/ layout.
+enriched: true
+clone_depth: null
+import_name: click_didyoumean

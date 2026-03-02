@@ -1,0 +1,18 @@
+package: nvidia-curand-cu12
+repo: null
+pypi_url: https://pypi.org/project/nvidia-curand-cu12/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: No source repository URL available on PyPI.
+skip_versions: {}
+notes: 'Confirmed: no repo available after improved URL detection'
+enriched: true
+clone_depth: null
+import_name: null

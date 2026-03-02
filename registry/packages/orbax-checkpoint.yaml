@@ -1,0 +1,19 @@
+package: orbax-checkpoint
+repo: http://github.com/google/orbax
+pypi_url: https://pypi.org/project/orbax-checkpoint/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: null
+test_command: null
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': Depends on jax/numpy C extensions
+notes: 'Re-enriched: Depends on jax/numpy C extensions'
+enriched: true
+clone_depth: null
+import_name: null

@@ -1,0 +1,20 @@
+package: click-default-group
+repo: https://github.com/click-contrib/click-default-group
+pypi_url: https://pypi.org/project/click-default-group/
+extension_type: pure
+python_versions:
+- '3.15'
+- '3.14'
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest test.py
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: Click extension for default subcommand groups. Single test.py at root.
+enriched: true
+clone_depth: null
+import_name: click_default_group

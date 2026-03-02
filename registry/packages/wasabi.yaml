@@ -1,0 +1,18 @@
+package: wasabi
+repo: https://github.com/explosion/wasabi
+pypi_url: https://pypi.org/project/wasabi/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e .
+test_command: python -m pytest wasabi/tests
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: "Auto-enriched"
+enriched: true
+clone_depth: null
+import_name: null

@@ -1,0 +1,21 @@
+package: hexbytes
+repo: https://github.com/ethereum/hexbytes
+pypi_url: https://pypi.org/project/hexbytes/
+extension_type: pure
+python_versions:
+- '3.15'
+- '3.14'
+install_method: pip
+install_command: pip install -e . && pip install pytest hypothesis pytest-xdist
+test_command: python -m pytest tests/core/test_import_and_version.py -p no:xdist
+test_framework: pytest
+uses_xdist: true
+timeout: null
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': "Core test file imports eth_utils which depends on pydantic-core (PyO3). Won't build on 3.15."
+notes: "Hex bytes handling library (Ethereum ecosystem). Uses hypothesis for property testing. xdist in test extras. Skipping eth_utils tests (pulls pydantic-core via PyO3, won't build on 3.15)."
+enriched: true
+clone_depth: null
+import_name: null

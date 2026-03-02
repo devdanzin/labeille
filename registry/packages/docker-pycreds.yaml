@@ -1,0 +1,19 @@
+package: docker-pycreds
+repo: https://github.com/shin-/dockerpy-creds
+pypi_url: https://pypi.org/project/docker-pycreds/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install -r test-requirements.txt
+test_command: python -m pytest tests
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': "Uses distutils (removed from stdlib in 3.12+)"
+notes: "Auto-enriched"
+enriched: true
+clone_depth: null
+import_name: dockerpycreds

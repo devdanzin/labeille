@@ -1,0 +1,20 @@
+package: alabaster
+repo: https://github.com/sphinx-doc/alabaster
+pypi_url: https://pypi.org/project/alabaster/
+extension_type: pure
+python_versions:
+- '3.15'
+- '3.14'
+install_method: pip
+install_command: pip install -e .
+test_command: 
+test_framework: custom
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Sphinx theme with no traditional test suite. Testing is via Sphinx doc builds, not unit tests.
+skip_versions: {}
+notes: Sphinx theme package. No tests/ directory. CI tests via Sphinx doc builds.
+enriched: true
+clone_depth: null
+import_name: null

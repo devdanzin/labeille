@@ -1,0 +1,22 @@
+package: elastic-transport
+repo: https://github.com/elastic/elastic-transport-python
+pypi_url: https://pypi.org/project/elastic-transport/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-mock pytest-asyncio
+  pytest-httpserver trustme respx opentelemetry-api opentelemetry-sdk
+test_command: python -m pytest tests/ -o "addopts=" --ignore=tests/test_httpbin.py
+test_framework: pytest
+uses_xdist: false
+timeout: 300
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: "conftest.py imports trustme and pytest_httpserver at top level, must be installed.
+  setup.cfg addopts has --cov, cleared. test_httpbin.py needs pytest-httpbin with
+  live server, skip it. Needs pytest-mock, pytest-asyncio, respx, opentelemetry for
+  various tests."
+enriched: true
+clone_depth: null
+import_name: null

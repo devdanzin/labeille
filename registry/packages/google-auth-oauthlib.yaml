@@ -10,8 +10,8 @@ test_command: python -m pytest tests/ -p no:xdist
 test_framework: pytest
 uses_xdist: false
 timeout: 120
-skip: false
-skip_reason: null
+skip: true
+skip_reason: "Monorepo subpackage - no pyproject.toml in cloned dir"
 notes: 'OAuthlib integration for google-auth. Unit tests cover OAuth2 flows without
   live services. Repo: googleapis/google-auth-library-python-oauthlib.'
 enriched: true

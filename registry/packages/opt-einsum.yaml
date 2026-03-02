@@ -1,0 +1,18 @@
+package: opt-einsum
+repo: https://github.com/dgasmith/opt_einsum
+pypi_url: https://pypi.org/project/opt-einsum/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: git fetch --tags --depth 1 && pip install -e . && pip install pytest
+test_command: python -m pytest opt_einsum/tests -p no:xdist
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: Repo found by improved URL detection. Tests in opt_einsum/tests/
+enriched: true
+clone_depth: null
+import_name: null

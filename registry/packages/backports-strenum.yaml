@@ -1,0 +1,23 @@
+package: backports-strenum
+repo: https://github.com/clbarnes/backports.strenum
+pypi_url: https://pypi.org/project/backports-strenum/
+extension_type: pure
+python_versions:
+- '3.10'
+- '3.9'
+- '3.8'
+install_method: pip
+install_command: pip install -e .
+test_command: python -m unittest discover tests -v
+test_framework: unittest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': "Backport of StrEnum for Python <3.11. Package requires Python <3.11,>=3.8.6."
+  '3.14': "Backport of StrEnum for Python <3.11. Package requires Python <3.11,>=3.8.6."
+notes: "Backport of Python 3.11 StrEnum. Poetry build, src/ layout. Namespace package: backports.strenum."
+enriched: true
+clone_depth: null
+import_name: "backports.strenum"

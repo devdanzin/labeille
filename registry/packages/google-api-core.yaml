@@ -10,8 +10,8 @@ test_command: python -m pytest tests/unit/ -p no:xdist
 test_framework: pytest
 uses_xdist: false
 timeout: 300
-skip: false
-skip_reason: null
+skip: true
+skip_reason: "Monorepo subpackage - no pyproject.toml in cloned dir"
 notes: 'Core Google API client library. Has unit tests in tests/unit/ that work without
   credentials. Standalone repo: googleapis/python-api-core.'
 enriched: true

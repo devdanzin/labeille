@@ -1,0 +1,19 @@
+package: firebase-admin
+repo: https://github.com/firebase/firebase-admin-python
+pypi_url: https://pypi.org/project/firebase-admin/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest tests
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': "Install times out (heavy dependency tree)"
+notes: "Auto-enriched"
+enriched: true
+clone_depth: null
+import_name: null

@@ -1,0 +1,18 @@
+package: dbt-semantic-interfaces
+repo: https://github.com/psf/black
+pypi_url: https://pypi.org/project/dbt-semantic-interfaces/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: git fetch --tags --depth 1 && pip install -e . && pip install pytest
+test_command: python -m pytest tests -p no:xdist -o "addopts="
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: Repo found by improved URL detection. Tests in tests/
+enriched: true
+clone_depth: null
+import_name: null

@@ -1,0 +1,19 @@
+package: sentencepiece
+repo: https://github.com/google/sentencepiece
+pypi_url: https://pypi.org/project/sentencepiece/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: null
+test_command: null
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': C extension build
+notes: 'Re-enriched: C extension build'
+enriched: true
+clone_depth: null
+import_name: null

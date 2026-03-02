@@ -1,0 +1,20 @@
+package: astroid
+repo: https://github.com/pylint-dev/astroid
+pypi_url: https://pypi.org/project/astroid/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install setuptools>=77 && pip install -e . && pip install pytest
+test_command: python -m pytest tests -o "addopts=" -m "not acceptance"
+test_framework: pytest
+uses_xdist: false
+timeout: 300
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: "AST library for pylint. Requires setuptools>=77 as build dependency, pre-install
+  it. pyproject.toml addopts has -m 'not acceptance', must be passed explicitly since
+  we clear addopts. filterwarnings=error in pyproject may cause issues."
+enriched: true
+clone_depth: null
+import_name: null

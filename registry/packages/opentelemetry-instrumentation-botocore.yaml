@@ -1,0 +1,18 @@
+package: opentelemetry-instrumentation-botocore
+repo: https://github.com/open-telemetry/opentelemetry-python-contrib
+pypi_url: https://pypi.org/project/opentelemetry-instrumentation-botocore/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: "Subpackage of open-telemetry/opentelemetry-python-contrib monorepo."
+skip_versions: {}
+notes: "Auto-triaged: monorepo_otel"
+enriched: true
+clone_depth: null
+import_name: null

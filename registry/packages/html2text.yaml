@@ -1,0 +1,18 @@
+package: html2text
+repo: https://github.com/Alir3z4/html2text/
+pypi_url: https://pypi.org/project/html2text/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: git fetch --tags --depth 1 && pip install -e . && pip install pytest
+test_command: python -m pytest test
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: "Uses setuptools-scm (needs git tags)"
+enriched: true
+clone_depth: 50
+import_name: null

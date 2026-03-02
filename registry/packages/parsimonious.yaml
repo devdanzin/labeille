@@ -1,0 +1,20 @@
+package: parsimonious
+repo: https://github.com/erikrose/parsimonious
+pypi_url: https://pypi.org/project/parsimonious/
+extension_type: pure
+python_versions:
+- '3.15'
+- '3.14'
+install_method: pip
+install_command: git fetch --tags --depth 1 && pip install -e ".[testing]"
+test_command: python -m pytest parsimonious/tests/
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: PEG parser library. Uses setuptools_scm (needs git tags). Tests in parsimonious/tests/.
+enriched: true
+clone_depth: 50
+import_name: null

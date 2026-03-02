@@ -1,0 +1,18 @@
+package: async-generator
+repo: https://github.com/python-trio/async_generator
+pypi_url: https://pypi.org/project/async-generator/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest async_generator/_tests -p no:xdist
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: Re-enriched with improved test detection. Tests in async_generator/_tests/
+enriched: true
+clone_depth: null
+import_name: null

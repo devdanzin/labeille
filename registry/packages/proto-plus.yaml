@@ -9,8 +9,8 @@ test_command: python -m pytest tests/ -p no:xdist
 test_framework: pytest
 uses_xdist: false
 timeout: 180
-skip: false
-skip_reason: null
+skip: true
+skip_reason: "Monorepo subpackage - no pyproject.toml in cloned dir"
 notes: 'Pythonic protobuf wrapper. Has unit tests that exercise proto message wrapping
   without live services. Repo: googleapis/proto-plus-python.'
 enriched: true

@@ -1,0 +1,18 @@
+package: nose
+repo: https://github.com/nose-devs/nose
+pypi_url: https://pypi.org/project/nose/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest functional_tests -p no:xdist
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: Repo found by improved URL detection. Tests in functional_tests/
+enriched: true
+clone_depth: null
+import_name: null

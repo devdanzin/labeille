@@ -1,0 +1,19 @@
+package: keras
+repo: https://github.com/keras-team/keras
+pypi_url: https://pypi.org/project/keras/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: null
+test_command: null
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': Depends on tensorflow C extensions
+notes: 'Re-enriched: Depends on tensorflow C extensions'
+enriched: true
+clone_depth: null
+import_name: null

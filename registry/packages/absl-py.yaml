@@ -1,0 +1,20 @@
+package: absl-py
+repo: https://github.com/abseil/abseil-py
+pypi_url: https://pypi.org/project/absl-py/
+extension_type: pure
+python_versions:
+- '3.15'
+- '3.14'
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest absl/ -p no:xdist --ignore=absl/logging/tests/verbosity_flag_test.py
+test_framework: pytest
+uses_xdist: false
+timeout: 300
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: "Google Abseil Python library. Tests use absltest (unittest-based). Uses hatchling build system. verbosity_flag_test.py conflicts with pytest's -v flag, ignored."
+enriched: true
+clone_depth: null
+import_name: absl

@@ -1,0 +1,19 @@
+package: fastparquet
+repo: https://github.com/dask/fastparquet/
+pypi_url: https://pypi.org/project/fastparquet/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: git fetch --tags --depth 1 && pip install -e . && pip install pytest
+test_command: python -m pytest fastparquet/test
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': "C extension, build fails on 3.15"
+notes: "Uses setuptools-scm (needs git tags)"
+enriched: true
+clone_depth: 50
+import_name: null

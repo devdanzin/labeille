@@ -1,0 +1,18 @@
+package: rfc3986
+repo: https://github.com/python-hyper/rfc3986
+pypi_url: https://pypi.org/project/rfc3986/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest tests -p no:xdist -o "addopts="
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: Repo found by improved URL detection. Tests in tests/
+enriched: true
+clone_depth: null
+import_name: null

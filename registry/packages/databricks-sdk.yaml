@@ -8,7 +8,7 @@ install_command: pip install -e . && pip install pytest pytest-mock pyfakefs req
 test_command: python -m pytest tests/ --ignore=tests/integration -p no:xdist
 test_framework: pytest
 uses_xdist: false
-timeout: null
+timeout: 600
 skip: false
 skip_reason: null
 skip_versions: {}

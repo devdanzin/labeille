@@ -1,0 +1,18 @@
+package: mkdocs-autorefs
+repo: https://github.com/mkdocstrings/autorefs
+pypi_url: https://pypi.org/project/mkdocs-autorefs/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest griffe "mkdocstrings[python]"
+test_command: python -m pytest tests -p no:xdist
+test_framework: pytest
+uses_xdist: true
+timeout: null
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: "Tests import griffe and mkdocstrings (test_api.py). xdist disabled for JIT testing."
+enriched: true
+clone_depth: null
+import_name: null
