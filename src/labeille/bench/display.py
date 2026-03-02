@@ -11,7 +11,7 @@ import math
 import statistics as _stats
 
 from labeille.bench.anomaly import AnomalyReport
-from labeille.bench.compare import ComparisonReport, compare_conditions
+from labeille.bench.compare import ComparisonReport, TestOverhead, compare_conditions
 from labeille.bench.results import (
     BenchMeta,
     BenchPackageResult,
@@ -19,6 +19,7 @@ from labeille.bench.results import (
 from labeille.bench.stats import (
     compute_overhead,
 )
+from labeille.bench.timing import PerTestTimings
 
 
 # ---------------------------------------------------------------------------
@@ -388,6 +389,103 @@ def format_comparison_report(report: ComparisonReport) -> str:
             lines.append(f"    High CV (>10%):        {report.high_cv_count} packages")
         if report.status_mismatch_count:
             lines.append(f"    Status mismatch:       {report.status_mismatch_count} packages")
+
+    return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# Per-test timing display
+# ---------------------------------------------------------------------------
+
+
+def format_per_test_comparison(
+    overheads: list[TestOverhead],
+    *,
+    top_n: int = 20,
+) -> str:
+    """Format per-test overhead comparison as a table.
+
+    Shows top N tests by overhead percentage. Columns:
+    Test | Baseline (s) | Treatment (s) | Overhead
+
+    Args:
+        overheads: List of TestOverhead from compare_per_test().
+        top_n: Maximum number of tests to show.
+
+    Returns:
+        Formatted string.
+    """
+    if not overheads:
+        return "No per-test comparison data available."
+
+    lines: list[str] = []
+    lines.append("Per-Test Overhead Comparison")
+    lines.append("\u2500" * 27)
+
+    header = f"  {'Test':<50s} {'Baseline':>10s} {'Treatment':>10s} {'Overhead':>10s}"
+    lines.append(header)
+    lines.append("  " + "\u2500" * (len(header) - 2))
+
+    for oh in overheads[:top_n]:
+        test_name = oh.test_id
+        if len(test_name) > 50:
+            test_name = "..." + test_name[-47:]
+        sign = "+" if oh.overhead_pct >= 0 else ""
+        lines.append(
+            f"  {test_name:<50s} "
+            f"{oh.baseline_median_s:>9.4f}s "
+            f"{oh.treatment_median_s:>9.4f}s "
+            f"{sign}{oh.overhead_pct:>8.1f}%"
+        )
+
+    total = len(overheads)
+    if total > top_n:
+        lines.append(f"  ... and {total - top_n} more tests")
+
+    return "\n".join(lines)
+
+
+def format_per_test_summary(
+    timings: PerTestTimings,
+    *,
+    top_n: int = 10,
+) -> str:
+    """Format per-test timing summary for a single run.
+
+    Shows top N slowest tests with their call durations. Also
+    shows total test count and total test time.
+
+    Args:
+        timings: Per-test timings from an iteration.
+        top_n: Number of slowest tests to show.
+
+    Returns:
+        Formatted string.
+    """
+    if not timings.timings:
+        return "No per-test timing data available."
+
+    lines: list[str] = []
+    lines.append("Per-Test Timing Summary")
+    lines.append("\u2500" * 22)
+    lines.append(f"  Tests: {timings.test_count}")
+    lines.append(f"  Total test time: {timings.total_test_time_s:.2f}s")
+
+    if not timings.parse_success:
+        lines.append("  (Warning: durations output was partially parsed)")
+
+    slowest = timings.slowest_tests
+    if slowest:
+        lines.append("")
+        lines.append(f"  {'Slowest tests:':<50s} {'Duration':>10s}")
+        lines.append("  " + "\u2500" * 62)
+        for test_id, duration in slowest[:top_n]:
+            name = test_id
+            if len(name) > 50:
+                name = "..." + name[-47:]
+            lines.append(f"  {name:<50s} {duration:>9.4f}s")
+        if len(slowest) > top_n:
+            lines.append(f"  ... and {len(slowest) - top_n} more tests")
 
     return "\n".join(lines)
 

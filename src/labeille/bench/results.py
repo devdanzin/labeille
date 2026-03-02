@@ -28,6 +28,7 @@ from typing import Any
 
 from labeille.bench.stats import DescriptiveStats, describe, detect_outliers
 from labeille.bench.system import PythonProfile, SystemProfile
+from labeille.bench.timing import PerTestTimings
 
 log = logging.getLogger("labeille")
 
@@ -53,10 +54,11 @@ class BenchIteration:
     load_avg_start: float = 0.0
     load_avg_end: float = 0.0
     ram_available_start_gb: float = 0.0
+    per_test_timings: PerTestTimings | None = None
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize to a JSON-compatible dict."""
-        return {
+        d: dict[str, Any] = {
             "index": self.index,
             "warmup": self.warmup,
             "wall_time_s": round(self.wall_time_s, 6),
@@ -70,13 +72,20 @@ class BenchIteration:
             "load_avg_end": self.load_avg_end,
             "ram_available_start_gb": self.ram_available_start_gb,
         }
+        if self.per_test_timings is not None:
+            d["per_test_timings"] = self.per_test_timings.to_dict()
+        return d
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> BenchIteration:
         """Deserialize from a dict, ignoring unknown fields."""
+        per_test_data = data.pop("per_test_timings", None)
         known = {f.name for f in cls.__dataclass_fields__.values()}
         filtered = {k: v for k, v in data.items() if k in known}
-        return cls(**filtered)
+        instance = cls(**filtered)
+        if per_test_data is not None:
+            instance.per_test_timings = PerTestTimings.from_dict(per_test_data)
+        return instance
 
 
 # ---------------------------------------------------------------------------

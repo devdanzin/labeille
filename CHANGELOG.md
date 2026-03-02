@@ -7,6 +7,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+- Per-test timing capture via pytest `--durations=0` output, enabled with `--per-test-timing` flag on `labeille bench run`.
+- `TestTiming` and `PerTestTimings` dataclasses in `bench/timing.py` with pytest output parser.
+- `compare_per_test()` in `bench/compare.py` for per-test overhead analysis between conditions.
+- `--per-test <package>` option for `labeille bench show` and `labeille bench compare` to display per-test timing breakdown.
 - `anomaly.py` module in `bench` subpackage with `PackageAnomaly` and `AnomalyReport` dataclasses for proactive measurement-quality assessment.
 - `detect_anomalies()` with five anomaly types: `high_cv`, `bimodal`, `outlier_heavy`, `status_mixed`, and `trend`.
 - `is_bimodal()` gap-analysis heuristic and `has_monotonic_trend()` Spearman rank correlation for pure-Python distribution analysis.
