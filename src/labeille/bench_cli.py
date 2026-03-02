@@ -171,6 +171,24 @@ def bench() -> None:
     default=False,
     help="Capture per-test timing via pytest --durations=0.",
 )
+@click.option(
+    "--drop-caches",
+    is_flag=True,
+    default=False,
+    help="Drop filesystem caches between iterations (requires setup, see docs).",
+)
+@click.option(
+    "--warm-vs-cold",
+    is_flag=True,
+    default=False,
+    help="Run with and without cache dropping, compare results.",
+)
+@click.option(
+    "--run-dangerously-as-root",
+    is_flag=True,
+    default=False,
+    help="Allow running as root (for containers). Not recommended.",
+)
 @click.option("-v", "--verbose", is_flag=True, default=False)
 def run(  # noqa: PLR0913
     profile_path: str | None,
@@ -195,6 +213,9 @@ def run(  # noqa: PLR0913
     wait_for_stability: bool,
     quick: bool,
     per_test_timing: bool,
+    drop_caches: bool,
+    warm_vs_cold: bool,
+    run_dangerously_as_root: bool,
     env_pairs: tuple[str, ...],
     verbose: bool,
 ) -> None:
@@ -296,6 +317,9 @@ def run(  # noqa: PLR0913
     config.check_stability = check_stability
     config.wait_for_stability = wait_for_stability
     config.per_test_timing = per_test_timing
+    config.drop_caches = drop_caches or warm_vs_cold  # warm-vs-cold implies drop-caches
+    config.warm_vs_cold = warm_vs_cold
+    config.run_dangerously_as_root = run_dangerously_as_root
     config.cli_args = sys.argv[1:]
 
     if quick:
@@ -633,3 +657,38 @@ def export(result_dir: str, fmt: str, output: str | None) -> None:
         click.echo(f"Exported to {output}")
     else:
         click.echo(text)
+
+
+# ---------------------------------------------------------------------------
+# bench setup-cache-drop
+# ---------------------------------------------------------------------------
+
+
+@bench.command("setup-cache-drop")
+@click.option(
+    "--show-script",
+    is_flag=True,
+    default=False,
+    help="Print the helper script contents (for piping to a file).",
+)
+def setup_cache_drop(show_script: bool) -> None:
+    """Show setup instructions for filesystem cache dropping.
+
+    Prints the helper script contents and sudoers configuration
+    needed for --drop-caches to work.
+    """
+    from labeille.bench.cache import (
+        check_cache_drop_available,
+        format_setup_instructions,
+        generate_drop_caches_script,
+    )
+
+    if show_script:
+        click.echo(generate_drop_caches_script(), nl=False)
+        return
+
+    status = check_cache_drop_available()
+    if status.available:
+        click.echo("Cache dropping is already configured and working.")
+    else:
+        click.echo(format_setup_instructions())

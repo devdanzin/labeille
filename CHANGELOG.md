@@ -7,6 +7,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+- `cache.py` module in `bench` subpackage for filesystem cache management during benchmarks.
+- `--drop-caches` flag for `labeille bench run` to drop filesystem caches between iterations for cold-cache benchmarking.
+- `--warm-vs-cold` flag to automatically compare warm-cache and cold-cache performance.
+- `--run-dangerously-as-root` safety flag — labeille refuses to run as root without it.
+- `labeille bench setup-cache-drop` command showing setup instructions for the sudoers-based cache-dropping helper.
+- `generate_drop_caches_script()` and `format_setup_instructions()` helpers for cache-drop setup.
+- `caches_dropped` field on `BenchIteration` to record cache state per iteration.
 - Per-test timing capture via pytest `--durations=0` output, enabled with `--per-test-timing` flag on `labeille bench run`.
 - `TestTiming` and `PerTestTimings` dataclasses in `bench/timing.py` with pytest output parser.
 - `compare_per_test()` in `bench/compare.py` for per-test overhead analysis between conditions.
@@ -55,6 +62,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - New crash summary statistics in compare output showing repo unchanged/changed/unknown counts.
 
 ### Enhanced
+- `BenchRunner.run()` now checks for root execution and refuses unless `--run-dangerously-as-root` is passed.
 - macOS support for system profiling: CPU info from `sysctl`, memory from `vm_stat`, OS from `sw_vers`, disk type from `diskutil`. All existing Linux code paths preserved unchanged.
 - `check_stability()` and `SystemSnapshot.capture()` now use cross-platform `_get_available_ram_gb()` helper instead of Linux-only `/proc/meminfo`.
 - `format_system_profile()` no longer hardcodes "Linux" in the OS line; shows platform-appropriate output.

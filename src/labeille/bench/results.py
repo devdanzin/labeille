@@ -54,6 +54,7 @@ class BenchIteration:
     load_avg_start: float = 0.0
     load_avg_end: float = 0.0
     ram_available_start_gb: float = 0.0
+    caches_dropped: bool = False  # Whether caches were dropped before this iteration
     per_test_timings: PerTestTimings | None = None
 
     def to_dict(self) -> dict[str, Any]:
@@ -72,6 +73,8 @@ class BenchIteration:
             "load_avg_end": self.load_avg_end,
             "ram_available_start_gb": self.ram_available_start_gb,
         }
+        if self.caches_dropped:
+            d["caches_dropped"] = True
         if self.per_test_timings is not None:
             d["per_test_timings"] = self.per_test_timings.to_dict()
         return d

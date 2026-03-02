@@ -73,6 +73,11 @@ class BenchConfig:
     # Per-test timing
     per_test_timing: bool = False  # Capture per-test timing via pytest --durations=0
 
+    # Cache control
+    drop_caches: bool = False  # Drop filesystem caches between iterations
+    warm_vs_cold: bool = False  # Run both warm and cold cache, compare
+    run_dangerously_as_root: bool = False  # Allow running as root (for containers)
+
     # CLI provenance
     cli_args: list[str] = field(default_factory=list)
 
@@ -363,6 +368,10 @@ def config_from_profile(
         config.alternate = cli["alternate"]
     if cli.get("interleave"):
         config.interleave = True
+
+    # Cache control — drop_caches is allowed in profiles.
+    if profile_data.get("drop_caches"):
+        config.drop_caches = True
 
     return config
 
