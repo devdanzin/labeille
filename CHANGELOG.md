@@ -7,6 +7,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+- `labeille compat` command group for C extension compatibility surveys: `survey`, `show`, `diff`, and `patterns` subcommands.
+- ~30 built-in error classification patterns across 10+ categories (removed_c_api, cython_incompatible, pyo3_incompatible, numpy_c_api, missing_system_lib, etc.).
+- YAML-based custom error pattern support with override semantics.
+- Survey diff for tracking regressions and fixes between Python versions.
+- Markdown export for sharing compatibility survey results.
 - Optional uv integration for faster venv creation and package installation via `--installer` flag (auto/uv/pip).
 - `InstallerBackend` enum, `detect_uv()`, `resolve_installer()`, and `_rewrite_install_command()` in `runner.py`.
 - `install_with_fallback()` for automatic pip fallback when uv install fails.

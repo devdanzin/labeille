@@ -44,6 +44,10 @@ from labeille.ft_cli import ft as ft_group  # noqa: E402
 
 main.add_command(ft_group)
 
+from labeille.compat_cli import compat as compat_group  # noqa: E402
+
+main.add_command(compat_group)
+
 
 @main.command()
 @click.argument("packages", nargs=-1)
