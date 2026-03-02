@@ -917,3 +917,108 @@ def track_list(tracking_dir: str) -> None:
         dr = s.date_range
         date_str = f"{dr[0][:19]} .. {dr[1][:19]}" if dr else "no runs"
         click.echo(f"{s.series_id:25s}  {s.n_runs:5d}  {date_str:43s}  {s.description}")
+
+
+@track.command("trend")
+@click.argument("series_name")
+@click.option("--condition", type=str, default=None, help="Condition to analyze.")
+@click.option(
+    "--regression-threshold",
+    type=float,
+    default=0.02,
+    help="Per-run change threshold for regression (fraction, default 0.02).",
+)
+@click.option(
+    "--trend-threshold",
+    type=float,
+    default=0.05,
+    help="Overall slope threshold for classification (fraction, default 0.05).",
+)
+@click.option(
+    "--format",
+    "fmt",
+    type=click.Choice(["table", "csv", "markdown"]),
+    default="table",
+    help="Output format.",
+)
+@click.option(
+    "--tracking-dir",
+    type=click.Path(),
+    default="results/tracking",
+)
+def track_trend(
+    series_name: str,
+    condition: str | None,
+    regression_threshold: float,
+    trend_threshold: float,
+    fmt: str,
+    tracking_dir: str,
+) -> None:
+    """Analyze trends across runs in a tracking series."""
+    from labeille.bench.tracking import load_series
+    from labeille.bench.trends import analyze_series_trends
+
+    series_dir = Path(tracking_dir) / series_name
+    try:
+        series = load_series(series_dir)
+    except FileNotFoundError:
+        click.echo(f"Series '{series_name}' not found.", err=True)
+        raise SystemExit(1)  # noqa: B904
+
+    trend = analyze_series_trends(
+        series,
+        series_dir,
+        condition=condition,
+        regression_threshold=regression_threshold,
+        trend_threshold=trend_threshold,
+    )
+
+    if fmt == "table":
+        from labeille.bench.display import format_series_trend
+
+        click.echo(format_series_trend(trend))
+    elif fmt == "csv":
+        from labeille.bench.export import export_trend_csv
+
+        click.echo(export_trend_csv(trend))
+    else:
+        from labeille.bench.export import export_trend_markdown
+
+        click.echo(export_trend_markdown(trend))
+
+
+@track.command("alert")
+@click.argument("series_name")
+@click.option("--condition", type=str, default=None, help="Condition to analyze.")
+@click.option(
+    "--tracking-dir",
+    type=click.Path(),
+    default="results/tracking",
+)
+def track_alert(
+    series_name: str,
+    condition: str | None,
+    tracking_dir: str,
+) -> None:
+    """Show regression alerts for a tracking series.
+
+    Compares the latest run against the baseline and previous run.
+    Shows new regressions, sustained regressions, and recoveries.
+    """
+    from labeille.bench.display import format_regression_alerts
+    from labeille.bench.tracking import load_series
+    from labeille.bench.trends import analyze_series_trends
+
+    series_dir = Path(tracking_dir) / series_name
+    try:
+        series = load_series(series_dir)
+    except FileNotFoundError:
+        click.echo(f"Series '{series_name}' not found.", err=True)
+        raise SystemExit(1)  # noqa: B904
+
+    trend = analyze_series_trends(series, series_dir, condition=condition)
+
+    if trend.alerts:
+        click.echo(format_regression_alerts(trend.alerts))
+    else:
+        click.echo("No regression alerts.")
