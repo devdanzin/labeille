@@ -1,0 +1,19 @@
+package: mypy-protobuf
+repo: https://github.com/nipunn1313/mypy-protobuf
+pypi_url: https://pypi.org/project/mypy-protobuf/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install -r test_requirements.txt
+test_command: python -m pytest test
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': "Install timeout (heavy dependency tree)"
+notes: "Auto-enriched"
+enriched: true
+clone_depth: null
+import_name: null

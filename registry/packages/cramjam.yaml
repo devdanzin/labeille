@@ -1,0 +1,19 @@
+package: cramjam
+repo: https://github.com/milesgranger/pyrus-cramjam
+pypi_url: https://pypi.org/project/cramjam/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: null
+test_command: null
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': PyO3/Rust extension
+notes: 'Re-enriched: PyO3/Rust extension'
+enriched: true
+clone_depth: null
+import_name: null

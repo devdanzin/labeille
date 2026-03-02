@@ -1,0 +1,18 @@
+package: langchain-google-genai
+repo: https://github.com/langchain-ai/langchain-google/tree/master/libs/genai
+pypi_url: https://pypi.org/project/langchain-google-genai/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: "Monorepo subpackage (langchain-ai/langchain-google). Needs API keys."
+skip_versions: {}
+notes: "Auto-triaged: monorepo/clone-fail"
+enriched: true
+clone_depth: null
+import_name: null

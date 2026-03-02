@@ -1,0 +1,18 @@
+package: statsd
+repo: https://github.com/jsocol/pystatsd
+pypi_url: https://pypi.org/project/statsd/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: null
+test_command: null
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: No test directory or test files found in repository
+skip_versions: {}
+notes: Reset for re-enrichment (improved test directory detection)
+enriched: true
+clone_depth: null
+import_name: null

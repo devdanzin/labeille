@@ -1,0 +1,18 @@
+package: pip-tools
+repo: https://github.com/jazzband/pip-tools
+pypi_url: https://pypi.org/project/pip-tools/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: git fetch --tags --depth 1 && pip install -e ".[testing]"
+test_command: python -m pytest tests -p no:xdist
+test_framework: pytest
+uses_xdist: true
+timeout: null
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: "Uses setuptools-scm (needs git tags). xdist disabled for JIT testing"
+enriched: true
+clone_depth: 50
+import_name: piptools

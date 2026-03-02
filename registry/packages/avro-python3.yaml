@@ -1,0 +1,19 @@
+package: avro-python3
+repo: https://github.com/apache/avro
+pypi_url: https://pypi.org/project/avro-python3/
+extension_type: unknown
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': Monorepo (apache/avro), complex setup
+notes: Repo found by improved URL detection. Monorepo (apache/avro), complex setup
+enriched: true
+clone_depth: null
+import_name: null

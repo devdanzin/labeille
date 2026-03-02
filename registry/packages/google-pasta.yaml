@@ -1,0 +1,18 @@
+package: google-pasta
+repo: https://github.com/google/pasta
+pypi_url: https://pypi.org/project/google-pasta/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest six
+test_command: python -m pytest pasta/ -k "test" -p no:xdist
+test_framework: pytest
+uses_xdist: false
+timeout: 300
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: "AST-based Python refactoring. Tests use *_test.py pattern inside pasta/ source tree."
+enriched: true
+clone_depth: null
+import_name: pasta

@@ -1,0 +1,21 @@
+package: jira
+repo: https://github.com/pycontribs/jira.git
+pypi_url: https://pypi.org/project/jira/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: git fetch --tags --depth 1 && pip install -e . && pip install pytest requests-mock
+test_command: python -m pytest tests/test_unit.py tests/test_qsh.py tests/test_exceptions.py
+  tests/test_shell.py
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: "Uses setuptools-scm (needs git tags). Most tests require a running Jira server
+  (conftest.py connects). Only unit tests (test_unit, test_qsh, test_exceptions,
+  test_shell) can run without Jira credentials."
+enriched: true
+clone_depth: 50
+import_name: null

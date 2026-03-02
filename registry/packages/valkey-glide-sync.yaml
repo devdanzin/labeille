@@ -1,0 +1,19 @@
+package: valkey-glide-sync
+repo: https://github.com/valkey-io/valkey-glide
+pypi_url: https://pypi.org/project/valkey-glide-sync/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': Rust extension (PyO3)
+notes: Repo found by improved URL detection. Rust extension (PyO3)
+enriched: true
+clone_depth: null
+import_name: null

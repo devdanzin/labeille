@@ -1,0 +1,20 @@
+package: aiolimiter
+repo: https://github.com/mjpieters/aiolimiter
+pypi_url: https://pypi.org/project/aiolimiter/
+extension_type: pure
+python_versions:
+- '3.15'
+- '3.14'
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-asyncio pytest-cov dunamai typing_extensions
+test_command: python -m pytest -o "addopts="
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: "Async rate limiter with src/ layout. Uses uv-dynamic-versioning. addopts has --cov flags, clear them. Tests import dunamai for version testing."
+enriched: true
+clone_depth: null
+import_name: null

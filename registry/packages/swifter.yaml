@@ -1,0 +1,19 @@
+package: swifter
+repo: https://github.com/jmcarpenter2/swifter
+pypi_url: https://pypi.org/project/swifter/
+extension_type: unknown
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': "Depends on dask/pandas C extensions"
+notes: "Auto-triaged: skip_versions_315"
+enriched: true
+clone_depth: null
+import_name: null

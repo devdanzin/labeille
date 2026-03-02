@@ -1,0 +1,18 @@
+package: bazel-runfiles
+repo: https://github.com/bazel-contrib/rules_python
+pypi_url: https://pypi.org/project/bazel-runfiles/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e .
+test_command: python -m pytest tests
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: "Monorepo subpackage - no pyproject.toml in cloned dir"
+skip_versions: {}
+notes: "Auto-enriched"
+enriched: true
+clone_depth: null
+import_name: null

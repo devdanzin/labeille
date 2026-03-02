@@ -1,0 +1,20 @@
+package: a2wsgi
+repo: https://github.com/abersheeran/a2wsgi
+pypi_url: https://pypi.org/project/a2wsgi/
+extension_type: pure
+python_versions:
+- '3.15'
+- '3.14'
+install_method: pip
+install_command: pip install -e ".[test]"
+test_command: python -m pytest tests/ -o "addopts="
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: ASGI/WSGI conversion library. Uses PDM build. Test extras include pytest-asyncio, pytest-cov.
+enriched: true
+clone_depth: null
+import_name: null

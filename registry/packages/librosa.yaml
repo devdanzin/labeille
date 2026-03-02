@@ -1,0 +1,19 @@
+package: librosa
+repo: https://github.com/librosa/librosa
+pypi_url: https://pypi.org/project/librosa/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest tests -o "addopts="
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': "Transitive dependency on numpy (meson build failure on 3.15)"
+notes: "addopts cleared (refs: pytest-cov)"
+enriched: true
+clone_depth: null
+import_name: null

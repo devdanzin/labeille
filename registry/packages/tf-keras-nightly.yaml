@@ -1,0 +1,18 @@
+package: tf-keras-nightly
+repo: https://github.com/keras-team/tf-keras
+pypi_url: https://pypi.org/project/tf-keras-nightly/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: null
+test_command: null
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: No meaningful test suite available
+skip_versions: {}
+notes: Reset for re-enrichment (improved test directory detection)
+enriched: true
+clone_depth: null
+import_name: null

@@ -1,0 +1,19 @@
+package: schedule
+repo: https://github.com/dbader/schedule.git
+pypi_url: https://pypi.org/project/schedule/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install -r requirements-dev.txt && pip install pytest
+test_command: python -m pytest test_schedule.py
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': "Depends on typed-ast (C ext)"
+notes: "Auto-enriched"
+enriched: true
+clone_depth: null
+import_name: null

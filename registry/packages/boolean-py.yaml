@@ -1,0 +1,18 @@
+package: boolean-py
+repo: https://github.com/bastikr/boolean.py
+pypi_url: https://pypi.org/project/boolean-py/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest boolean -p no:xdist -o "addopts="
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: Re-enriched with improved test detection. Tests in boolean/
+enriched: true
+clone_depth: null
+import_name: boolean

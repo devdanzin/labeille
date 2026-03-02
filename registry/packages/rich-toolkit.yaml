@@ -1,0 +1,18 @@
+package: rich-toolkit
+repo: https://github.com/Textualize/rich
+pypi_url: https://pypi.org/project/rich-toolkit/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest tests -p no:xdist
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: Repo found by improved URL detection. Tests in tests/
+enriched: true
+clone_depth: null
+import_name: rich

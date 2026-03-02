@@ -1,0 +1,19 @@
+package: selenium
+repo: https://github.com/SeleniumHQ/Selenium
+pypi_url: https://pypi.org/project/selenium/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': Requires browser drivers
+notes: Repo found by improved URL detection. Requires browser drivers
+enriched: true
+clone_depth: null
+import_name: null

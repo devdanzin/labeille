@@ -1,0 +1,18 @@
+package: enum34
+repo: https://bitbucket.org/stoneleaf/enum34
+pypi_url: https://pypi.org/project/enum34/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Repository clone failed
+skip_versions: {}
+notes: Reset for re-resolution (improved repo URL detection)
+enriched: true
+clone_depth: null
+import_name: null

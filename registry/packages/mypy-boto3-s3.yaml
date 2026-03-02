@@ -1,0 +1,18 @@
+package: mypy-boto3-s3
+repo: https://github.com/youtype/mypy_boto3_builder
+pypi_url: https://pypi.org/project/mypy-boto3-s3/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: "Type stub package with no test suite."
+skip_versions: {}
+notes: "Auto-triaged: type_stubs"
+enriched: true
+clone_depth: null
+import_name: null

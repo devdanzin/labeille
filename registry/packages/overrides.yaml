@@ -1,0 +1,18 @@
+package: overrides
+repo: https://github.com/mkorpela/overrides
+pypi_url: https://pypi.org/project/overrides/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install -r requirements-dev.txt
+test_command: python -m unittest discover tests -v
+test_framework: unittest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: "Auto-enriched"
+enriched: true
+clone_depth: null
+import_name: null

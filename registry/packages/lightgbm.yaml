@@ -1,0 +1,19 @@
+package: lightgbm
+repo: https://github.com/microsoft/LightGBM.git
+pypi_url: https://pypi.org/project/lightgbm/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': "C++ gradient boosting library"
+notes: "Auto-triaged: extension with 3.15 build blocker"
+enriched: true
+clone_depth: null
+import_name: null

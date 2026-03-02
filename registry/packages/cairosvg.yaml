@@ -1,0 +1,19 @@
+package: cairosvg
+repo: https://github.com/Kozea/CairoSVG/
+pypi_url: https://pypi.org/project/cairosvg/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: null
+test_command: null
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': Depends on cairocffi C extension
+notes: 'Re-enriched: Depends on cairocffi C extension'
+enriched: true
+clone_depth: null
+import_name: null

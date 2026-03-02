@@ -1,0 +1,18 @@
+package: alibabacloud-tea-openapi
+repo: https://github.com/aliyun/darabonba-openapi
+pypi_url: https://pypi.org/project/alibabacloud-tea-openapi/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: "Subpackage of aliyun SDK monorepo."
+skip_versions: {}
+notes: "Auto-triaged: monorepo_alibaba"
+enriched: true
+clone_depth: null
+import_name: null

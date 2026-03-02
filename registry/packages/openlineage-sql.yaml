@@ -1,0 +1,19 @@
+package: openlineage-sql
+repo: https://github.com/OpenLineage/OpenLineage
+pypi_url: https://pypi.org/project/openlineage-sql/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': Rust extension
+notes: Repo found by improved URL detection. Rust extension
+enriched: true
+clone_depth: null
+import_name: null

@@ -1,0 +1,19 @@
+package: biopython
+repo: https://github.com/biopython/biopython/
+pypi_url: https://pypi.org/project/biopython/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: null
+test_command: null
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': C extension build fails on 3.15
+notes: 'Re-enriched: C extension build fails on 3.15'
+enriched: true
+clone_depth: null
+import_name: null

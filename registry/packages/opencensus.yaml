@@ -1,0 +1,20 @@
+package: opencensus
+repo: https://github.com/census-instrumentation/opencensus-python
+pypi_url: https://pypi.org/project/opencensus/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e context/opencensus-context && pip install -e . && pip install
+  pytest mock
+test_command: python -m pytest tests/unit
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: "Tests use standalone mock package. opencensus-context installed from context/ subdir.
+  Run unit tests only (system tests need credentials)."
+enriched: true
+clone_depth: null
+import_name: null
