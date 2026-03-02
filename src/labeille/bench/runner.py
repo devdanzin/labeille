@@ -51,6 +51,7 @@ from labeille.bench.system import (
     format_python_profile,
     format_system_profile,
 )
+from labeille.bench.cache import check_cache_drop_available, check_not_root, drop_caches
 from labeille.bench.timing import (
     parse_pytest_durations,
     prepare_per_test_command,
@@ -202,6 +203,14 @@ class BenchRunner:
                         "Use --wait-for-stability to wait, or "
                         "reduce --max-load threshold."
                     )
+
+        # Phase 3b: Root check and cache-drop validation.
+        check_not_root(allow_root=self.config.run_dangerously_as_root)
+        if self.config.drop_caches:
+            status = check_cache_drop_available()
+            if not status.available:
+                raise SystemExit(status.message)
+            log.info("Cache dropping enabled.")
 
         # Phase 4: Prepare output directory and metadata.
         output_dir = self.config.output_dir
@@ -657,6 +666,15 @@ class BenchRunner:
         env.setdefault("PYTHONFAULTHANDLER", "1")
         env.setdefault("PYTHONDONTWRITEBYTECODE", "1")
 
+        # Drop caches if enabled.
+        caches_dropped = False
+        if self.config.drop_caches:
+            caches_dropped = drop_caches(
+                allow_root=self.config.run_dangerously_as_root,
+            )
+            if not caches_dropped:
+                log.warning("Cache drop failed for iteration %d, continuing.", iter_index)
+
         # Capture pre-iteration system state.
         snap_before = SystemSnapshot.capture()
 
@@ -699,6 +717,7 @@ class BenchRunner:
             load_avg_start=snap_before.load_avg_1m,
             load_avg_end=snap_after.load_avg_1m,
             ram_available_start_gb=snap_before.ram_available_gb,
+            caches_dropped=caches_dropped,
             per_test_timings=per_test_timings,
         )
 
