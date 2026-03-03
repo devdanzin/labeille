@@ -192,6 +192,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Registry schema and data structures.
 
 ### Documentation
+- Standalone guides for resolve-run workflow, benchmarking, free-threaded testing, and compatibility analysis (doc/workflow.md, doc/benchmarking.md, doc/free-threaded.md, doc/compat.md).
+- README sections for benchmarking, free-threaded testing, and compatibility analysis features with command examples and links to standalone guides.
+- Updated README Status and Project Structure sections to reflect bench, ft, and compat features.
 - Added Anthropic support acknowledgment section to README.md.
 - Added security warnings to README.md, runner.py module docstring, and CLAUDE.md.
 - Added Gemini acknowledgment to CREDITS.md.
