@@ -10,7 +10,7 @@ test_framework: pytest
 uses_xdist: false
 timeout: null
 skip: true
-skip_reason: Requires Cython and OpenMP. Complex meson build.
+skip_reason: "Meson build system: 'Python dependency not found' on 3.15. Also requires Cython and OpenMP."
 notes: Machine learning library.
 enriched: true
 clone_depth: null

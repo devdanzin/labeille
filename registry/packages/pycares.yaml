@@ -9,10 +9,9 @@ test_command: python -m unittest discover tests -v
 test_framework: unittest
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
-skip_versions:
-  '3.15': "C extension build failure on 3.15"
+skip: true
+skip_reason: Requires CMake >= 3.5 to build (not a 3.15-specific issue).
+skip_versions: null
 notes: "Auto-enriched"
 enriched: true
 clone_depth: null

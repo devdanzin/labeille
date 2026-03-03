@@ -12,7 +12,7 @@ timeout: null
 skip: false
 skip_reason: null
 skip_versions:
-  '3.15': C extension build
+  '3.15': "Meson build system: 'Python dependency not found' on 3.15 (meson cannot find python3.15 sysconfig)."
 notes: Repo found by improved URL detection. C extension build
 enriched: true
 clone_depth: null

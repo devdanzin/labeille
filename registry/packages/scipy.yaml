@@ -10,7 +10,7 @@ test_framework: pytest
 uses_xdist: false
 timeout: null
 skip: true
-skip_reason: Requires Fortran compiler and complex C/C++ build chain.
+skip_reason: "Meson build system: 'Python dependency not found' on 3.15. Also requires Fortran compiler."
 notes: Scientific computing library.
 enriched: true
 clone_depth: null

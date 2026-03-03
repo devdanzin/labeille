@@ -1,4 +1,4 @@
-last_updated: '2026-03-02T07:58:07'
+last_updated: '2026-03-03T02:56:11'
 packages:
 - name: boto3
   download_count: 1577565199
@@ -322,8 +322,7 @@ packages:
   extension_type: extensions
   enriched: true
   skip: false
-  skip_versions_keys:
-  - '3.15'
+  skip_versions_keys: []
 - name: python-dotenv
   download_count: 334327298
   extension_type: pure
@@ -477,9 +476,8 @@ packages:
   download_count: 284122904
   extension_type: extensions
   enriched: true
-  skip: false
-  skip_versions_keys:
-  - '3.15'
+  skip: true
+  skip_versions_keys: []
 - name: pyasn1-modules
   download_count: 283880829
   extension_type: pure
@@ -1045,7 +1043,7 @@ packages:
   download_count: 134896232
   extension_type: extensions
   enriched: true
-  skip: true
+  skip: false
   skip_versions_keys: []
 - name: textual
   download_count: 134773724
@@ -1196,7 +1194,7 @@ packages:
   download_count: 122233058
   extension_type: extensions
   enriched: true
-  skip: true
+  skip: false
   skip_versions_keys: []
 - name: jaraco-context
   download_count: 122112425
@@ -1460,7 +1458,7 @@ packages:
   download_count: 95792495
   extension_type: extensions
   enriched: true
-  skip: true
+  skip: false
   skip_versions_keys: []
 - name: jsonpatch
   download_count: 95721283
@@ -1607,7 +1605,7 @@ packages:
   download_count: 86974692
   extension_type: extensions
   enriched: true
-  skip: true
+  skip: false
   skip_versions_keys: []
 - name: asttokens
   download_count: 86671185
@@ -1884,7 +1882,7 @@ packages:
   download_count: 69782107
   extension_type: extensions
   enriched: true
-  skip: true
+  skip: false
   skip_versions_keys: []
 - name: typer-slim
   download_count: 69700655
@@ -2080,8 +2078,7 @@ packages:
   extension_type: extensions
   enriched: true
   skip: false
-  skip_versions_keys:
-  - '3.15'
+  skip_versions_keys: []
 - name: pygithub
   download_count: 60446942
   extension_type: pure
@@ -2429,9 +2426,8 @@ packages:
   download_count: 50616819
   extension_type: extensions
   enriched: true
-  skip: false
-  skip_versions_keys:
-  - '3.15'
+  skip: true
+  skip_versions_keys: []
 - name: google-cloud-tasks
   download_count: 50513280
   extension_type: pure
@@ -2480,8 +2476,7 @@ packages:
   extension_type: extensions
   enriched: true
   skip: false
-  skip_versions_keys:
-  - '3.15'
+  skip_versions_keys: []
 - name: nbconvert
   download_count: 49293646
   extension_type: pure
@@ -2511,15 +2506,13 @@ packages:
   extension_type: pure
   enriched: true
   skip: false
-  skip_versions_keys:
-  - '3.15'
+  skip_versions_keys: []
 - name: argon2-cffi-bindings
   download_count: 48707685
   extension_type: extensions
   enriched: true
   skip: false
-  skip_versions_keys:
-  - '3.15'
+  skip_versions_keys: []
 - name: xlrd
   download_count: 48510263
   extension_type: pure
@@ -2676,22 +2669,19 @@ packages:
   extension_type: extensions
   enriched: true
   skip: false
-  skip_versions_keys:
-  - '3.15'
+  skip_versions_keys: []
 - name: confluent-kafka
   download_count: 45316318
   extension_type: extensions
   enriched: true
-  skip: false
-  skip_versions_keys:
-  - '3.15'
+  skip: true
+  skip_versions_keys: []
 - name: asyncpg
   download_count: 45270644
   extension_type: extensions
   enriched: true
   skip: false
-  skip_versions_keys:
-  - '3.15'
+  skip_versions_keys: []
 - name: pyperclip
   download_count: 45070816
   extension_type: pure
@@ -2828,8 +2818,7 @@ packages:
   extension_type: extensions
   enriched: true
   skip: false
-  skip_versions_keys:
-  - '3.15'
+  skip_versions_keys: []
 - name: nvidia-cusparse-cu12
   download_count: 42367846
   extension_type: extensions
@@ -3233,9 +3222,8 @@ packages:
   download_count: 35461155
   extension_type: extensions
   enriched: true
-  skip: false
-  skip_versions_keys:
-  - '3.15'
+  skip: true
+  skip_versions_keys: []
 - name: langgraph
   download_count: 35458331
   extension_type: pure
@@ -3272,8 +3260,7 @@ packages:
   extension_type: extensions
   enriched: true
   skip: false
-  skip_versions_keys:
-  - '3.15'
+  skip_versions_keys: []
 - name: appdirs
   download_count: 34856629
   extension_type: pure
@@ -3396,9 +3383,8 @@ packages:
   download_count: 33426514
   extension_type: extensions
   enriched: true
-  skip: false
-  skip_versions_keys:
-  - '3.15'
+  skip: true
+  skip_versions_keys: []
 - name: zeep
   download_count: 33408628
   extension_type: pure
@@ -3839,9 +3825,8 @@ packages:
   download_count: 27965186
   extension_type: extensions
   enriched: true
-  skip: false
-  skip_versions_keys:
-  - '3.15'
+  skip: true
+  skip_versions_keys: []
 - name: checkov
   download_count: 27805563
   extension_type: pure
@@ -4514,9 +4499,8 @@ packages:
   download_count: 21922730
   extension_type: extensions
   enriched: true
-  skip: false
-  skip_versions_keys:
-  - '3.15'
+  skip: true
+  skip_versions_keys: []
 - name: pyiceberg
   download_count: 21889779
   extension_type: extensions
@@ -4748,8 +4732,7 @@ packages:
   extension_type: extensions
   enriched: true
   skip: false
-  skip_versions_keys:
-  - '3.15'
+  skip_versions_keys: []
 - name: sphinxcontrib-jsmath
   download_count: 20239804
   extension_type: pure
@@ -4847,8 +4830,7 @@ packages:
   extension_type: extensions
   enriched: true
   skip: false
-  skip_versions_keys:
-  - '3.15'
+  skip_versions_keys: []
 - name: lazy-loader
   download_count: 19617221
   extension_type: pure
@@ -5083,8 +5065,7 @@ packages:
   extension_type: extensions
   enriched: true
   skip: false
-  skip_versions_keys:
-  - '3.15'
+  skip_versions_keys: []
 - name: userpath
   download_count: 18134533
   extension_type: pure
@@ -5198,8 +5179,7 @@ packages:
   extension_type: extensions
   enriched: true
   skip: false
-  skip_versions_keys:
-  - '3.15'
+  skip_versions_keys: []
 - name: looker-sdk
   download_count: 17390407
   extension_type: pure
@@ -5217,8 +5197,7 @@ packages:
   extension_type: extensions
   enriched: true
   skip: false
-  skip_versions_keys:
-  - '3.15'
+  skip_versions_keys: []
 - name: py-key-value-shared
   download_count: 17317113
   extension_type: pure
@@ -5488,8 +5467,7 @@ packages:
   extension_type: extensions
   enriched: true
   skip: false
-  skip_versions_keys:
-  - '3.15'
+  skip_versions_keys: []
 - name: sqlalchemy-spanner
   download_count: 16056574
   extension_type: pure
@@ -5531,8 +5509,7 @@ packages:
   extension_type: extensions
   enriched: true
   skip: false
-  skip_versions_keys:
-  - '3.15'
+  skip_versions_keys: []
 - name: srsly
   download_count: 15852018
   extension_type: extensions
@@ -5622,8 +5599,7 @@ packages:
   extension_type: extensions
   enriched: true
   skip: false
-  skip_versions_keys:
-  - '3.15'
+  skip_versions_keys: []
 - name: azure-storage-file-share
   download_count: 15445718
   extension_type: pure
@@ -5690,9 +5666,8 @@ packages:
   download_count: 15040403
   extension_type: extensions
   enriched: true
-  skip: false
-  skip_versions_keys:
-  - '3.15'
+  skip: true
+  skip_versions_keys: []
 - name: python-socketio
   download_count: 15032489
   extension_type: pure
@@ -5755,15 +5730,13 @@ packages:
   extension_type: extensions
   enriched: true
   skip: false
-  skip_versions_keys:
-  - '3.15'
+  skip_versions_keys: []
 - name: clickhouse-connect
   download_count: 14915207
   extension_type: extensions
   enriched: true
   skip: false
-  skip_versions_keys:
-  - '3.15'
+  skip_versions_keys: []
 - name: rich-argparse
   download_count: 14901873
   extension_type: pure
@@ -6273,9 +6246,8 @@ packages:
   download_count: 12810503
   extension_type: extensions
   enriched: true
-  skip: false
-  skip_versions_keys:
-  - '3.15'
+  skip: true
+  skip_versions_keys: []
 - name: genson
   download_count: 12798350
   extension_type: pure
@@ -6305,8 +6277,7 @@ packages:
   extension_type: extensions
   enriched: true
   skip: false
-  skip_versions_keys:
-  - '3.15'
+  skip_versions_keys: []
 - name: face
   download_count: 12618224
   extension_type: pure
@@ -6516,8 +6487,7 @@ packages:
   extension_type: extensions
   enriched: true
   skip: false
-  skip_versions_keys:
-  - '3.15'
+  skip_versions_keys: []
 - name: weasel
   download_count: 11926713
   extension_type: pure
@@ -6864,8 +6834,7 @@ packages:
   extension_type: pure
   enriched: true
   skip: false
-  skip_versions_keys:
-  - '3.15'
+  skip_versions_keys: []
 - name: oldest-supported-numpy
   download_count: 11041965
   extension_type: pure
@@ -7395,9 +7364,8 @@ packages:
   download_count: 9546516
   extension_type: extensions
   enriched: true
-  skip: false
-  skip_versions_keys:
-  - '3.15'
+  skip: true
+  skip_versions_keys: []
 - name: huey
   download_count: 9543713
   extension_type: pure
@@ -7525,8 +7493,7 @@ packages:
   extension_type: extensions
   enriched: true
   skip: false
-  skip_versions_keys:
-  - '3.15'
+  skip_versions_keys: []
 - name: msgraph-core
   download_count: 9227248
   extension_type: pure
@@ -8686,8 +8653,7 @@ packages:
   extension_type: extensions
   enriched: true
   skip: false
-  skip_versions_keys:
-  - '3.15'
+  skip_versions_keys: []
 - name: boto
   download_count: 7131787
   extension_type: pure

@@ -13,9 +13,7 @@ uses_xdist: false
 timeout: 1800
 skip: false
 skip_reason: null
-skip_versions:
-  '3.15': C extension source files not generated (Cython build step fails on editable
-    install for 3.15).
+skip_versions: null
 notes: aiohttp async HTTP framework. C extensions via Cython. Functional tests excluded
   (need running server). 30min timeout.
 enriched: true

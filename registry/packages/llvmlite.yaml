@@ -12,7 +12,7 @@ timeout: null
 skip: false
 skip_reason: null
 skip_versions:
-  '3.15': "LLVM bindings, complex build"
+  '3.15': distutils spawn() API change in Python 3.15 (dry_run keyword removed).
 notes: "Auto-triaged: extension with 3.15 build blocker"
 enriched: true
 clone_depth: null

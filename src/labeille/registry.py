@@ -279,4 +279,6 @@ def update_index_from_packages(
             entry.extension_type = pkg.extension_type
             entry.enriched = pkg.enriched
             entry.skip = pkg.skip
-            entry.skip_versions_keys = sorted(pkg.skip_versions.keys())
+            entry.skip_versions_keys = (
+                sorted(pkg.skip_versions.keys()) if pkg.skip_versions else []
+            )

@@ -12,7 +12,7 @@ timeout: null
 skip: false
 skip_reason: null
 skip_versions:
-  '3.15': C extension build fails on 3.15
+  '3.15': "Meson build system: 'Python dependency not found' on 3.15."
 notes: 'Re-enriched: C extension build fails on 3.15'
 enriched: true
 clone_depth: null

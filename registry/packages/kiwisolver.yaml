@@ -9,8 +9,8 @@ test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: true
-skip_reason: C++ extension built with Cython.
+skip: false
+skip_reason: null
 notes: Cassowary constraint solver.
 enriched: true
 clone_depth: null

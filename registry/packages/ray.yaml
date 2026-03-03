@@ -9,10 +9,9 @@ test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
-skip_versions:
-  '3.15': "Complex build with Cython and Bazel components"
+skip: true
+skip_reason: Binary-only distribution on PyPI (no source distribution available for 3.15).
+skip_versions: null
 notes: "Auto-triaged: extension with 3.15 build blocker"
 enriched: true
 clone_depth: null

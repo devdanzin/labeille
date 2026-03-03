@@ -12,7 +12,7 @@ timeout: null
 skip: false
 skip_reason: null
 skip_versions:
-  '3.15': "Complex tracing library with C extensions"
+  '3.15': setup.py requires pkg_resources (removed from setuptools).
 notes: "Auto-triaged: extension with 3.15 build blocker"
 enriched: true
 clone_depth: null

@@ -12,7 +12,7 @@ timeout: null
 skip: false
 skip_reason: null
 skip_versions:
-  '3.15': "C extension build failure on 3.15"
+  '3.15': CMake FindPython fails with Python 3.15.
 notes: "addopts cleared (refs: pytest-cov)"
 enriched: true
 clone_depth: null

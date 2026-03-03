@@ -12,7 +12,7 @@ timeout: null
 skip: false
 skip_reason: null
 skip_versions:
-  '3.15': "Complex protobuf-based build"
+  '3.15': "Meson build system: 'Python dependency not found' on 3.15 (numpy build dep fails)."
 notes: "Auto-triaged: extension with 3.15 build blocker"
 enriched: true
 clone_depth: null

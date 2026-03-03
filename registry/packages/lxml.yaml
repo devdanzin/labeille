@@ -10,7 +10,7 @@ test_framework: pytest
 uses_xdist: false
 timeout: null
 skip: true
-skip_reason: Complex C extension requiring libxml2 and libxslt development headers.
+skip_reason: Requires libxml2 and libxslt development headers (not a 3.15-specific issue).
   Build from source is fragile and version-sensitive.
 notes: XML/HTML processing library wrapping libxml2/libxslt C libraries.
 enriched: true
