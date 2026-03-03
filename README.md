@@ -21,11 +21,11 @@ extensions.
 
 ## Status
 
-**Early development (alpha).** Both the `resolve` and `run` subcommands are
-implemented. The tool can resolve PyPI packages to source repositories, classify
-them by extension type, and run their test suites against a JIT-enabled Python
-build. Crash detection, signature extraction, and JSONL result recording are
-functional. The registry format and CLI interface may change.
+**Early development (alpha).** Core features are implemented and functional:
+`resolve` and `run` for discovering packages and running test suites, `bench`
+for multi-condition performance comparison, `ft` for free-threaded CPython
+compatibility testing, and `compat` for C extension build compatibility surveys.
+The registry format and CLI interface may change.
 
 ## Security Considerations
 
@@ -323,6 +323,90 @@ labeille registry validate
 labeille registry remove-field old_field --apply --lenient
 ```
 
+## Benchmarking
+
+Compare test suite performance across conditions — JIT vs no-JIT, different
+interpreters, with/without coverage:
+
+```bash
+# Compare JIT-enabled vs disabled
+labeille bench run \
+    --condition "jit:target_python=/opt/cpython/python,env.PYTHON_JIT=1" \
+    --condition "nojit:target_python=/opt/cpython/python,env.PYTHON_JIT=0" \
+    --registry-dir registry --work-dir ~/bench-work --top 30
+
+# Or use a YAML profile for repeated benchmarks
+labeille bench run --profile jit-overhead.yaml --registry-dir registry
+
+# View results and compare conditions
+labeille bench show results/bench_*
+labeille bench compare results/bench_*
+
+# Track performance over time
+labeille bench track init jit-perf
+labeille bench track add jit-perf results/bench_*
+labeille bench track trend jit-perf
+```
+
+Key features: multi-condition comparison via YAML profiles or inline definitions,
+statistical analysis with confidence intervals, per-test timing capture, anomaly
+detection, longitudinal tracking with regression alerts, resource constraints
+(memory limits, CPU affinity), cache dropping for cold-start benchmarks, and
+export to CSV/Markdown.
+
+For the complete guide see **[doc/benchmarking.md](doc/benchmarking.md)**.
+
+## Free-Threaded Testing
+
+Test packages against free-threaded CPython builds to detect crashes, deadlocks,
+and race conditions:
+
+```bash
+# Run each package 10 times with PYTHON_GIL=0
+labeille ft run --target-python ~/cpython-ft/python \
+    --registry-dir registry --work-dir ~/ft-work --top 50
+
+# Compare with GIL-enabled behavior to isolate free-threading issues
+labeille ft run --target-python ~/cpython-ft/python \
+    --registry-dir registry --work-dir ~/ft-work --compare-with-gil --top 50
+
+# View results and analyze flakiness
+labeille ft show results/ft_*
+labeille ft flaky results/ft_* --package urllib3
+```
+
+Key features: multiple iterations per package to catch intermittent races,
+deadlock detection via output stall monitoring, GIL comparison mode, C extension
+GIL compatibility probing (`Py_mod_gil`), TSAN race condition detection, and
+failure categories (compatible, GIL fallback, intermittent, crash, deadlock).
+
+For the complete guide see **[doc/free-threaded.md](doc/free-threaded.md)**.
+
+## Compatibility Analysis
+
+Survey C extension packages for build compatibility against any Python version:
+
+```bash
+# Survey all C extensions in the registry against Python 3.15
+labeille compat survey --target-python ~/cpython-315/python \
+    --registry-dir registry --extensions-only --workers 4
+
+# Or survey specific packages from sdist or source
+labeille compat survey --target-python ~/cpython-315/python \
+    --packages numpy,scipy,pandas --from source
+
+# View results, diff two surveys
+labeille compat show compat-results/compat_*
+labeille compat diff compat-results/compat_314 compat-results/compat_315
+```
+
+Key features: three build modes (sdist, git source, `--no-binary :all:`), 40+
+built-in error classification patterns (removed C API, Cython, PyO3, struct
+changes, meson, cmake), custom pattern support via YAML, import probing after
+build, parallel execution, and markdown export.
+
+For the complete guide see **[doc/compat.md](doc/compat.md)**.
+
 ## Registry Format
 
 ### Package file (`registry/packages/{name}.yaml`)
@@ -379,7 +463,7 @@ Result statuses: `pass`, `fail`, `crash`, `timeout`, `install_error`,
 ```
 labeille/
 ├── src/labeille/        # Main package
-│   ├── cli.py           # Click CLI with resolve, run, bisect, scan-deps, registry, and analyze subcommands
+│   ├── cli.py           # Click CLI entry point (resolve, run, bisect, scan-deps, registry, analyze)
 │   ├── resolve.py       # Resolve PyPI packages to source repositories
 │   ├── runner.py        # Run test suites and capture results
 │   ├── bisect.py        # Automated crash bisection across git history
@@ -388,6 +472,22 @@ labeille/
 │   ├── registry_ops.py  # Batch operations (add/remove/rename/set/validate)
 │   ├── analyze.py       # Data loading and analysis functions
 │   ├── analyze_cli.py   # Analysis CLI (registry, run, compare, history, package)
+│   ├── bench_cli.py     # Benchmarking CLI (run, show, compare, track, export)
+│   ├── bench/           # Benchmarking subsystem
+│   │   ├── runner.py    # Benchmark execution engine
+│   │   ├── config.py    # Profile loading and condition resolution
+│   │   ├── compare.py   # Statistical comparison
+│   │   ├── tracking.py  # Longitudinal tracking series
+│   │   ├── trends.py    # Trend analysis and regression detection
+│   │   └── ...          # stats, anomaly, constraints, cache, system, export
+│   ├── ft_cli.py        # Free-threaded testing CLI (run, show, flaky, compat, compare)
+│   ├── ft/              # Free-threaded testing subsystem
+│   │   ├── runner.py    # Free-threading test execution
+│   │   ├── results.py   # Failure categories and result structures
+│   │   ├── compat.py    # Extension GIL compatibility detection
+│   │   └── ...          # analysis, compare, display, export
+│   ├── compat_cli.py    # Compatibility survey CLI (survey, show, diff, patterns)
+│   ├── compat.py        # C extension compatibility survey and error classification
 │   ├── formatting.py    # Shared text formatting (tables, histograms, sparklines)
 │   ├── summary.py       # Run summary formatting
 │   ├── yaml_lines.py    # Line-level YAML manipulation
@@ -397,6 +497,10 @@ labeille/
 │   ├── crash.py         # Crash detection and signature extraction
 │   └── logging.py       # Structured logging setup
 ├── doc/                 # Documentation
+│   ├── workflow.md      # Resolve-run workflow guide
+│   ├── benchmarking.md  # Benchmarking guide
+│   ├── free-threaded.md # Free-threaded testing guide
+│   ├── compat.md        # Compatibility analysis guide
 │   └── enrichment.md    # Package enrichment guide
 ├── tests/               # Unit and integration tests
 ├── registry/            # Package test configurations
