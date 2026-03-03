@@ -9,10 +9,9 @@ test_command: null
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
-skip_versions:
-  '3.15': C extension build
+skip: true
+skip_reason: build_bundled.sh requires protobuf compiler (not a 3.15-specific issue).
+skip_versions: null
 notes: 'Re-enriched: C extension build'
 enriched: true
 clone_depth: null

@@ -9,10 +9,9 @@ test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
-skip_versions:
-  '3.15': C extension
+skip: true
+skip_reason: Placeholder package on PyPI; hosted on NVIDIA Python Package Index.
+skip_versions: null
 notes: Repo found by improved URL detection. C extension
 enriched: true
 clone_depth: null

@@ -9,10 +9,9 @@ test_command: python -m pytest tests
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
-skip_versions:
-  '3.15': "C extension build failure on 3.15"
+skip: true
+skip_reason: Binary-only distribution on PyPI, no source available for sdist build.
+skip_versions: null
 notes: "Auto-enriched"
 enriched: true
 clone_depth: null

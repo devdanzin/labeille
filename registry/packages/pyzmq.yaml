@@ -12,7 +12,7 @@ timeout: 600
 skip: false
 skip_reason: null
 skip_versions:
-  '3.15': C extension (Cython) editable build fails on 3.15.
+  '3.15': CMake FindPython fails with Python 3.15 (missing Python Development.Module).
 notes: ZeroMQ Python bindings. C extension (Cython). Some socket tests may need running
   zmq.
 enriched: true

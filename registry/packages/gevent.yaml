@@ -11,8 +11,7 @@ uses_xdist: false
 timeout: null
 skip: false
 skip_reason: null
-skip_versions:
-  '3.15': "libev/libuv C extensions"
+skip_versions: null
 notes: "Auto-triaged: extension with 3.15 build blocker"
 enriched: true
 clone_depth: null

@@ -9,8 +9,8 @@ test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: true
-skip_reason: C++ extension using scikit-build-core.
+skip: false
+skip_reason: null
 notes: Fuzzy string matching.
 enriched: true
 clone_depth: null

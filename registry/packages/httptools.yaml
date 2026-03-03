@@ -9,8 +9,8 @@ test_command: python -m pytest tests/
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: true
-skip_reason: C extension build requires vendored llhttp headers missing from editable
+skip: false
+skip_reason: null
   install.
 notes: HTTP parser based on llhttp (C extension).
 enriched: true

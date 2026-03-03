@@ -9,10 +9,9 @@ test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
-skip_versions:
-  '3.15': C extension build (MySQL client)
+skip: true
+skip_reason: Requires MySQL/MariaDB client library (not a 3.15-specific issue).
+skip_versions: null
 notes: Repo found by improved URL detection. C extension build (MySQL client)
 enriched: true
 clone_depth: null

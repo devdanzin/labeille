@@ -9,8 +9,8 @@ test_command: python -m pytest tests/
 test_framework: pytest
 uses_xdist: false
 timeout: 600
-skip: true
-skip_reason: Cython/setuptools build fails (pkg_resources not found during metadata generation).
+skip: false
+skip_reason: null
 notes: Fast event loop based on libuv (C extension). Cython-based.
 enriched: true
 clone_depth: null

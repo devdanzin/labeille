@@ -97,6 +97,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - New crash summary statistics in compare output showing repo unchanged/changed/unknown counts.
 
 ### Enhanced
+- Updated 63 registry packages with accurate skip reasons from compat analysis: cleared vague 3.15 skip_versions, added specific failure categories (Meson, CMake, removed APIs), reclassified non-3.15 issues as skip with precise reasons, and unskipped 5 packages that now build on 3.15.
 - `BenchRunner._run_iteration()` applies resource constraints via command wrapping before execution.
 - `BenchRunner.run()` now checks for root execution and refuses unless `--run-dangerously-as-root` is passed.
 - macOS support for system profiling: CPU info from `sysctl`, memory from `vm_stat`, OS from `sw_vers`, disk type from `diskutil`. All existing Linux code paths preserved unchanged.
@@ -111,6 +112,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Renamed `Issues` URL key to `Bug Tracker` in project metadata for PyPI display consistency.
 
 ### Fixed
+- `update_index_from_packages()` no longer crashes when `skip_versions` is `None`.
 - Bench runner `install_package` now receives a complete environment (starting from `os.environ`) instead of bare condition env vars, fixing install failures when build backends need `PATH` to find tools like `git`.
 - `run_meta.json` now stores actual CLI argument strings (`sys.argv[1:]`) instead of parameter names, making runs reproducible from metadata.
 - `build_reproduce_command` uses `export PATH` for venv activation instead of fragile `.venv/bin/` prefix string replacement.

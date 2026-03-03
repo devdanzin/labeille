@@ -11,8 +11,7 @@ uses_xdist: false
 timeout: null
 skip: false
 skip_reason: null
-skip_versions:
-  '3.15': "Needs argon2 C headers (system C library)"
+skip_versions: null
 notes: "Uses setuptools-scm (needs git tags)"
 enriched: true
 clone_depth: 50
