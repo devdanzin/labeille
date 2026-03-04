@@ -7,6 +7,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+- `--adaptive` flag for `labeille bench run`: stop iterating early when wall-time measurements converge (RSE below threshold).
+- `--adaptive-threshold` option (default 0.005 = 0.5% RSE) and `--adaptive-min-iterations` option (default 5) for fine-tuning convergence behavior.
+- `adaptive`, `adaptive_threshold`, and `adaptive_min_iterations` fields in YAML benchmark profiles.
+- `converged_early` field on `BenchConditionResult`, recorded in `bench_results.jsonl`.
+- `relative_standard_error()` function in `bench/stats.py`.
+- Adaptive convergence support in all three execution strategies (block, alternating, interleaved).
+- Quick mode (`--quick`) now enables adaptive convergence by default.
+- Convergence indicators in benchmark display: checkmark in table, count in quality summary, config line.
 - `--trust-ft-wheels` flag for `labeille ft run`: packages with free-threaded wheels (`cpXYt` ABI tag) for the target Python version are classified as `compatible_by_wheel` without running tests.
 - `--trust-ft-wheels-any-version` flag for `labeille ft run`: like `--trust-ft-wheels` but trusts free-threaded wheels built for any Python version. Implies `--trust-ft-wheels`.
 - `COMPATIBLE_BY_WHEEL` category in `FailureCategory` with `⊕` symbol and severity 0.

@@ -198,6 +198,35 @@ class TestBenchConditionResult(unittest.TestCase):
         self.assertIsNone(cond.wall_time_stats)
         self.assertIsNone(cond.user_time_stats)
 
+    def test_condition_converged_early_default(self) -> None:
+        """converged_early defaults to False."""
+        cond = BenchConditionResult(condition_name="test")
+        self.assertFalse(cond.converged_early)
+
+    def test_condition_converged_early_to_dict(self) -> None:
+        """converged_early=True should appear in to_dict."""
+        cond = BenchConditionResult(condition_name="test")
+        cond.converged_early = True
+        d = cond.to_dict()
+        self.assertTrue(d["converged_early"])
+
+    def test_condition_converged_early_omitted_when_false(self) -> None:
+        """converged_early=False should not appear in to_dict."""
+        cond = BenchConditionResult(condition_name="test")
+        d = cond.to_dict()
+        self.assertNotIn("converged_early", d)
+
+    def test_condition_converged_early_roundtrip(self) -> None:
+        """converged_early should survive serialization roundtrip."""
+        cond = BenchConditionResult(condition_name="test")
+        cond.converged_early = True
+        for i in range(1, 4):
+            cond.iterations.append(self._make_iteration(i, float(i)))
+        cond.compute_stats()
+        d = cond.to_dict()
+        restored = BenchConditionResult.from_dict(d)
+        self.assertTrue(restored.converged_early)
+
     def test_condition_only_warmup_iterations(self) -> None:
         """compute_stats with only warmup iterations leaves stats as None."""
         cond = BenchConditionResult(condition_name="warmup_only")

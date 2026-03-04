@@ -153,10 +153,28 @@ def bench() -> None:
     help="Wait for system to stabilize.",
 )
 @click.option(
+    "--adaptive",
+    is_flag=True,
+    default=False,
+    help="Stop iterating early when measurements converge (RSE below threshold).",
+)
+@click.option(
+    "--adaptive-threshold",
+    type=float,
+    default=None,
+    help="RSE convergence threshold (default: 0.005 = 0.5%%).",
+)
+@click.option(
+    "--adaptive-min-iterations",
+    type=int,
+    default=None,
+    help="Minimum measured iterations before convergence check (default: 5).",
+)
+@click.option(
     "--quick",
     is_flag=True,
     default=False,
-    help="Quick mode: 3 iterations, no warmup, top 20.",
+    help="Quick mode: 3 iterations, no warmup, top 20, adaptive.",
 )
 @click.option(
     "--env",
@@ -236,6 +254,9 @@ def run(  # noqa: PLR0913
     name: str | None,
     check_stability: bool,
     wait_for_stability: bool,
+    adaptive: bool,
+    adaptive_threshold: float | None,
+    adaptive_min_iterations: int | None,
     quick: bool,
     per_test_timing: bool,
     memory_limit: int | None,
@@ -302,6 +323,9 @@ def run(  # noqa: PLR0913
             [p.strip() for p in packages.split(",") if p.strip()] if packages else None
         ),
         "top_n": top_n,
+        "adaptive": adaptive or None,
+        "adaptive_threshold": adaptive_threshold,
+        "adaptive_min_iterations": adaptive_min_iterations,
     }
 
     if profile_path:
@@ -344,6 +368,12 @@ def run(  # noqa: PLR0913
             config.default_env[k] = v
 
     config.installer = installer
+    if adaptive:
+        config.adaptive = True
+    if adaptive_threshold is not None:
+        config.adaptive_threshold = adaptive_threshold
+    if adaptive_min_iterations is not None:
+        config.adaptive_min_iterations = adaptive_min_iterations
     config.check_stability = check_stability
     config.wait_for_stability = wait_for_stability
     config.per_test_timing = per_test_timing

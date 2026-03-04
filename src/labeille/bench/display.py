@@ -121,6 +121,12 @@ def format_bench_show(
     if cfg.get("interleave"):
         strategy = "interleaved"
     lines.append(f"Strategy: {strategy}")
+    if cfg.get("adaptive"):
+        threshold_pct = cfg.get("adaptive_threshold", 0.005) * 100
+        lines.append(
+            f"Adaptive: on (threshold {threshold_pct:.1f}% RSE, "
+            f"min {cfg.get('adaptive_min_iterations', 5)} iterations)"
+        )
     lines.append(f"Packages: {meta.packages_completed} completed, {meta.packages_skipped} skipped")
     if meta.start_time and meta.end_time:
         lines.append(f"Time: {meta.start_time} \u2192 {meta.end_time}")
@@ -171,11 +177,12 @@ def _format_single_condition_table(
         statuses = [it.status for it in cond.measured_iterations]
         status = max(set(statuses), key=statuses.count) if statuses else "N/A"
 
+        converge_marker = " \u2713" if cond.converged_early else ""
         lines.append(
             f"{r.package:<30s} {ws.median:>10.2f} {ws.stdev:>7.2f}s "
             f"{us.mean if us else 0:>10.2f} "
             f"{rs.median if rs else 0:>10.1f} "
-            f"{cv_str:>6s} {status:>8s}"
+            f"{cv_str:>6s} {status:>8s}{converge_marker}"
         )
 
     return "\n".join(lines)
@@ -297,6 +304,18 @@ def _format_quality_summary(
             lines.append(f"    Packages with CV > 10%: {high_cv}")
         lines.append(f"    Outliers:          {outlier_count} / {total_iterations} iterations")
         lines.append(f"    Max system load:   {max_load:.1f}")
+
+        # Count converged packages.
+        converged_count = sum(
+            1
+            for r in results
+            if not r.skipped
+            and r.conditions.get(cond_name)
+            and r.conditions[cond_name].converged_early
+        )
+        if converged_count:
+            total_active = sum(1 for r in results if not r.skipped)
+            lines.append(f"    Converged early:   {converged_count} / {total_active} packages")
 
     # Overall quality assessment.
     all_cvs: list[float] = []

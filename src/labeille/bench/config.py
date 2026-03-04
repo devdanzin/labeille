@@ -48,6 +48,11 @@ class BenchConfig:
     alternate: bool | None = None  # None = auto (True if multi-condition)
     interleave: bool = False
 
+    # Adaptive convergence
+    adaptive: bool = False  # Enable adaptive early stopping
+    adaptive_threshold: float = 0.005  # RSE threshold (0.5%)
+    adaptive_min_iterations: int = 5  # Minimum measured iterations before checking
+
     # Package selection (same semantics as labeille run)
     packages_filter: list[str] | None = None
     top_n: int | None = None
@@ -230,6 +235,40 @@ def validate_config(config: BenchConfig) -> list[ValidationError]:
             )
         )
 
+    # Adaptive convergence constraints.
+    if config.adaptive:
+        if config.adaptive_threshold <= 0:
+            errors.append(
+                ValidationError(
+                    field="adaptive_threshold",
+                    message=(
+                        f"Adaptive threshold must be positive (got {config.adaptive_threshold})."
+                    ),
+                )
+            )
+        if config.adaptive_min_iterations < 3:
+            errors.append(
+                ValidationError(
+                    field="adaptive_min_iterations",
+                    message=(
+                        f"Adaptive min iterations must be >= 3 "
+                        f"(got {config.adaptive_min_iterations})."
+                    ),
+                )
+            )
+        if config.adaptive_min_iterations > config.iterations:
+            errors.append(
+                ValidationError(
+                    field="adaptive_min_iterations",
+                    message=(
+                        f"Adaptive min iterations ({config.adaptive_min_iterations}) "
+                        f"exceeds total iterations ({config.iterations}). "
+                        f"Adaptive stopping would never trigger."
+                    ),
+                    severity="warning",
+                )
+            )
+
     # Condition names must be non-empty.
     for name in config.conditions:
         if not name or not name.strip():
@@ -388,6 +427,20 @@ def config_from_profile(
     default_constraints_data = profile_data.get("constraints")
     if default_constraints_data and isinstance(default_constraints_data, dict):
         config.default_constraints = ResourceConstraints.from_dict(default_constraints_data)
+
+    # Adaptive convergence.
+    if cli.get("adaptive") is not None:
+        config.adaptive = cli["adaptive"]
+    elif profile_data.get("adaptive"):
+        config.adaptive = True
+    if cli.get("adaptive_threshold") is not None:
+        config.adaptive_threshold = cli["adaptive_threshold"]
+    elif profile_data.get("adaptive_threshold") is not None:
+        config.adaptive_threshold = float(profile_data["adaptive_threshold"])
+    if cli.get("adaptive_min_iterations") is not None:
+        config.adaptive_min_iterations = cli["adaptive_min_iterations"]
+    elif profile_data.get("adaptive_min_iterations") is not None:
+        config.adaptive_min_iterations = int(profile_data["adaptive_min_iterations"])
 
     # Cache control — drop_caches is allowed in profiles.
     if profile_data.get("drop_caches"):
