@@ -20,15 +20,18 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from labeille.classifier import has_ft_wheel
 from labeille.crash import detect_crash
 from labeille.ft.compat import assess_extension_compat
 from labeille.ft.results import (
+    FailureCategory,
     FTPackageResult,
     FTRunMeta,
     IterationOutcome,
     append_ft_result,
     save_ft_run,
 )
+from labeille.resolve import fetch_pypi_metadata
 from labeille.runner import (
     _clean_env,
     build_sdist_install_commands,
@@ -43,6 +46,22 @@ from labeille.runner import (
 )
 
 log = logging.getLogger("labeille")
+
+_PYTHON_VERSION_RE = re.compile(r"(\d+)\.(\d+)")
+
+
+def _parse_python_version(version_str: str) -> tuple[int, int] | None:
+    """Extract (major, minor) from a Python version string.
+
+    Handles formats like ``"3.15.0a1"``, ``"3.14.0"``, ``"3.15"``.
+
+    Returns:
+        Tuple of ``(major, minor)``, or None if parsing fails.
+    """
+    m = _PYTHON_VERSION_RE.match(version_str)
+    if m is None:
+        return None
+    return (int(m.group(1)), int(m.group(2)))
 
 
 @dataclass
@@ -71,6 +90,9 @@ class FTRunConfig:
     verbose: bool = False
     stderr_tail_bytes: int = 4096
     install_from: str = "source"
+    trust_ft_wheels: bool = False
+    trust_ft_wheels_any_version: bool = False
+    _target_python_version: tuple[int, int] | None = None
 
     def validate(self) -> list[str]:
         """Validate configuration. Returns list of error messages."""
@@ -85,6 +107,8 @@ class FTRunConfig:
             errors.append(f"Stall threshold must be >= 5, got {self.stall_threshold}")
         if self.compare_with_gil and self.iterations < 3:
             errors.append("GIL comparison mode needs at least 3 iterations for meaningful results")
+        if self.trust_ft_wheels_any_version and not self.trust_ft_wheels:
+            self.trust_ft_wheels = True
         return errors
 
 
@@ -465,6 +489,42 @@ def run_package_ft(
     """
     result = FTPackageResult(package=pkg.package)
 
+    # --- FT wheel trust check (before clone). ---
+    _cached_metadata: dict[str, Any] | None = None
+
+    if config.trust_ft_wheels:
+        ft_check_version: tuple[int, int] | None = (
+            None if config.trust_ft_wheels_any_version else config._target_python_version
+        )
+        _cached_metadata = fetch_pypi_metadata(pkg.package, timeout=10.0)
+        if _cached_metadata is not None:
+            urls = _cached_metadata.get("urls", [])
+            pypi_version: str | None = None
+            try:
+                pypi_version = _cached_metadata["info"]["version"]
+            except (KeyError, TypeError):
+                pass
+
+            if has_ft_wheel(urls, target_version=ft_check_version):
+                version_desc = (
+                    f" (Python {ft_check_version[0]}.{ft_check_version[1]})"
+                    if ft_check_version
+                    else " (any version)"
+                )
+                log.info(
+                    "Skipping %s: free-threaded wheel found for %s%s",
+                    pkg.package,
+                    pypi_version or "latest",
+                    version_desc,
+                )
+                result.category = FailureCategory.COMPATIBLE_BY_WHEEL
+                result.ft_wheel_found = True
+                result.ft_wheel_version = pypi_version
+                result.install_from = "skipped"
+                return result
+            else:
+                result.ft_wheel_found = False
+
     repo_dir = config.repos_dir / pkg.package
     venv_dir = config.venvs_dir / f"{pkg.package}-ft"
 
@@ -501,7 +561,14 @@ def run_package_ft(
 
     if config.install_from == "sdist":
         result.install_from = "sdist"
-        sdist_version = fetch_latest_pypi_version(pkg.package)
+        # Reuse cached metadata from FT wheel check if available.
+        if _cached_metadata is not None:
+            try:
+                sdist_version: str | None = _cached_metadata["info"]["version"]
+            except (KeyError, TypeError):
+                sdist_version = None
+        else:
+            sdist_version = fetch_latest_pypi_version(pkg.package)
         if sdist_version:
             log.info("PyPI latest version for %s: %s", pkg.package, sdist_version)
             commit_hash, matched_tag = checkout_matching_tag(repo_dir, pkg.package, sdist_version)
@@ -799,6 +866,9 @@ def run_ft(config: FTRunConfig) -> list[FTPackageResult]:
         env={"PYTHON_GIL": "0"},
     )
 
+    # Parse target Python version for FT wheel matching.
+    config._target_python_version = _parse_python_version(py_profile.version)
+
     if not py_profile.gil_disabled:
         log.warning(
             "Target Python at %s does not appear to be a "
@@ -851,6 +921,8 @@ def run_ft(config: FTRunConfig) -> list[FTPackageResult]:
             "test_command_suffix": config.test_command_suffix,
             "test_command_override": config.test_command_override,
             "install_from": config.install_from,
+            "trust_ft_wheels": config.trust_ft_wheels,
+            "trust_ft_wheels_any_version": config.trust_ft_wheels_any_version,
         },
         cli_args=sys.argv[1:],
         packages_total=len(packages),

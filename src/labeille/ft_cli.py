@@ -101,6 +101,26 @@ def ft() -> None:
         "from the cloned repo."
     ),
 )
+@click.option(
+    "--trust-ft-wheels",
+    is_flag=True,
+    default=False,
+    help=(
+        "Skip packages that publish free-threaded wheels for the target "
+        "Python version. These packages are classified as "
+        "'compatible_by_wheel' without running any tests."
+    ),
+)
+@click.option(
+    "--trust-ft-wheels-any-version",
+    is_flag=True,
+    default=False,
+    help=(
+        "Like --trust-ft-wheels, but trusts free-threaded wheels built "
+        "for any Python version, not just the target. Implies "
+        "--trust-ft-wheels."
+    ),
+)
 def run(
     target_python: str,
     iterations: int,
@@ -123,6 +143,8 @@ def run(
     env_pairs: tuple[str, ...],
     verbose: bool,
     install_from: str,
+    trust_ft_wheels: bool,
+    trust_ft_wheels_any_version: bool,
 ) -> None:
     """Run free-threading compatibility tests.
 
@@ -179,6 +201,8 @@ def run(
         check_stability=check_stability,
         verbose=verbose,
         install_from=install_from,
+        trust_ft_wheels=trust_ft_wheels or trust_ft_wheels_any_version,
+        trust_ft_wheels_any_version=trust_ft_wheels_any_version,
     )
 
     results = run_ft(config)

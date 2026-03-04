@@ -347,6 +347,7 @@ def prioritize_triage(
     for r in results:
         if not include_compatible and r.category in (
             FailureCategory.COMPATIBLE,
+            FailureCategory.COMPATIBLE_BY_WHEEL,
             FailureCategory.COMPATIBLE_GIL_FALLBACK,
         ):
             continue

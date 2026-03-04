@@ -2,7 +2,7 @@
 
 import unittest
 
-from labeille.classifier import classify_from_urls, has_platform_wheel, is_pure_wheel
+from labeille.classifier import classify_from_urls, has_ft_wheel, has_platform_wheel, is_pure_wheel
 
 
 class TestIsPureWheel(unittest.TestCase):
@@ -89,6 +89,61 @@ class TestClassifyFromUrls(unittest.TestCase):
     def test_no_filename_key(self) -> None:
         urls = [{"url": "https://example.com/pkg-1.0.tar.gz"}]
         self.assertEqual(classify_from_urls(urls), "unknown")
+
+
+class TestHasFtWheel(unittest.TestCase):
+    def test_ft_wheel_found_any_version(self) -> None:
+        urls = [{"filename": "numpy-2.1.0-cp313t-cp313t-manylinux_2_17_x86_64.whl"}]
+        self.assertTrue(has_ft_wheel(urls))
+
+    def test_ft_wheel_found_matching_version(self) -> None:
+        urls = [{"filename": "numpy-2.1.0-cp315t-cp315t-manylinux_2_17_x86_64.whl"}]
+        self.assertTrue(has_ft_wheel(urls, target_version=(3, 15)))
+
+    def test_ft_wheel_wrong_version(self) -> None:
+        urls = [{"filename": "numpy-2.1.0-cp313t-cp313t-manylinux_2_17_x86_64.whl"}]
+        self.assertFalse(has_ft_wheel(urls, target_version=(3, 15)))
+
+    def test_no_ft_wheel(self) -> None:
+        urls = [{"filename": "numpy-2.1.0-cp315-cp315-manylinux_2_17_x86_64.whl"}]
+        self.assertFalse(has_ft_wheel(urls))
+
+    def test_pure_wheel_not_matched(self) -> None:
+        urls = [{"filename": "requests-2.31.0-py3-none-any.whl"}]
+        self.assertFalse(has_ft_wheel(urls))
+
+    def test_mixed_ft_and_non_ft(self) -> None:
+        urls = [
+            {"filename": "numpy-2.1.0-cp315-cp315-manylinux_2_17_x86_64.whl"},
+            {"filename": "numpy-2.1.0-cp315t-cp315t-manylinux_2_17_x86_64.whl"},
+        ]
+        self.assertTrue(has_ft_wheel(urls, target_version=(3, 15)))
+
+    def test_empty_urls(self) -> None:
+        self.assertFalse(has_ft_wheel([]))
+
+    def test_no_filename_key(self) -> None:
+        urls = [{"url": "https://example.com/pkg.whl"}]
+        self.assertFalse(has_ft_wheel(urls))
+
+    def test_multiple_versions_picks_target(self) -> None:
+        urls = [
+            {"filename": "numpy-2.1.0-cp313t-cp313t-manylinux_2_17_x86_64.whl"},
+            {"filename": "numpy-2.1.0-cp315t-cp315t-manylinux_2_17_x86_64.whl"},
+        ]
+        self.assertTrue(has_ft_wheel(urls, target_version=(3, 15)))
+
+    def test_sdist_only(self) -> None:
+        urls = [{"filename": "numpy-2.1.0.tar.gz"}]
+        self.assertFalse(has_ft_wheel(urls))
+
+    def test_macosx_ft_wheel(self) -> None:
+        urls = [{"filename": "numpy-2.1.0-cp315t-cp315t-macosx_14_0_arm64.whl"}]
+        self.assertTrue(has_ft_wheel(urls, target_version=(3, 15)))
+
+    def test_windows_ft_wheel(self) -> None:
+        urls = [{"filename": "numpy-2.1.0-cp315t-cp315t-win_amd64.whl"}]
+        self.assertTrue(has_ft_wheel(urls, target_version=(3, 15)))
 
 
 if __name__ == "__main__":

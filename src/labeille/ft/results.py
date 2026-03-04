@@ -30,6 +30,7 @@ class FailureCategory(enum.Enum):
     """
 
     COMPATIBLE = "compatible"
+    COMPATIBLE_BY_WHEEL = "compatible_by_wheel"
     COMPATIBLE_GIL_FALLBACK = "compatible_gil_fallback"
     INTERMITTENT = "intermittent"
     INCOMPATIBLE = "incompatible"
@@ -45,6 +46,7 @@ class FailureCategory(enum.Enum):
         """True if the package at least works sometimes."""
         return self in (
             FailureCategory.COMPATIBLE,
+            FailureCategory.COMPATIBLE_BY_WHEEL,
             FailureCategory.COMPATIBLE_GIL_FALLBACK,
             FailureCategory.INTERMITTENT,
             FailureCategory.TSAN_WARNINGS,
@@ -55,6 +57,7 @@ class FailureCategory(enum.Enum):
         """Numeric severity for sorting (higher = worse)."""
         order = {
             FailureCategory.COMPATIBLE: 0,
+            FailureCategory.COMPATIBLE_BY_WHEEL: 0,
             FailureCategory.COMPATIBLE_GIL_FALLBACK: 1,
             FailureCategory.TSAN_WARNINGS: 2,
             FailureCategory.INTERMITTENT: 3,
@@ -72,6 +75,7 @@ class FailureCategory(enum.Enum):
         """Single-character symbol for compact display."""
         symbols = {
             FailureCategory.COMPATIBLE: "\u2713",
+            FailureCategory.COMPATIBLE_BY_WHEEL: "\u2295",
             FailureCategory.COMPATIBLE_GIL_FALLBACK: "\u26a0",
             FailureCategory.INTERMITTENT: "~",
             FailureCategory.INCOMPATIBLE: "\u2717",
@@ -180,6 +184,8 @@ class FTPackageResult:
     install_from: str = ""
     sdist_version: str | None = None
     sdist_tag_matched: bool | None = None
+    ft_wheel_found: bool | None = None
+    ft_wheel_version: str | None = None
 
     gil_enabled_pass_rate: float | None = None
     gil_enabled_iterations: list[IterationOutcome] | None = None
@@ -274,6 +280,8 @@ class FTPackageResult:
             "install_from": self.install_from,
             "sdist_version": self.sdist_version,
             "sdist_tag_matched": self.sdist_tag_matched,
+            "ft_wheel_found": self.ft_wheel_found,
+            "ft_wheel_version": self.ft_wheel_version,
             "iterations": [i.to_dict() for i in self.iterations],
         }
         if self.extension_compat is not None:
@@ -317,6 +325,8 @@ class FTPackageResult:
             install_from=data.get("install_from", ""),
             sdist_version=data.get("sdist_version"),
             sdist_tag_matched=data.get("sdist_tag_matched"),
+            ft_wheel_found=data.get("ft_wheel_found"),
+            ft_wheel_version=data.get("ft_wheel_version"),
             gil_enabled_pass_rate=data.get("gil_enabled_pass_rate"),
             gil_enabled_iterations=gil_iters,
         )
@@ -457,6 +467,7 @@ class FTRunSummary:
                 if r.category
                 in (
                     FailureCategory.COMPATIBLE,
+                    FailureCategory.COMPATIBLE_BY_WHEEL,
                     FailureCategory.TSAN_WARNINGS,
                 )
             )
@@ -469,6 +480,7 @@ class FTRunSummary:
                 if r.category
                 in (
                     FailureCategory.COMPATIBLE,
+                    FailureCategory.COMPATIBLE_BY_WHEEL,
                     FailureCategory.COMPATIBLE_GIL_FALLBACK,
                     FailureCategory.TSAN_WARNINGS,
                 )

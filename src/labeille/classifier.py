@@ -84,3 +84,40 @@ def has_platform_wheel(filenames: list[str]) -> bool:
         True if any wheel is platform-specific.
     """
     return any(_PLATFORM_INDICATORS.search(f) for f in filenames)
+
+
+_FT_WHEEL_TAG_RE = re.compile(r"-cp(\d)(\d+)t-")
+
+
+def has_ft_wheel(
+    urls: list[dict[str, Any]],
+    *,
+    target_version: tuple[int, int] | None = None,
+) -> bool:
+    """Check whether any wheel in the release is a free-threaded build.
+
+    Looks for wheels with ``cpXYt`` in the python/ABI tag, indicating
+    a free-threaded CPython build.
+
+    Args:
+        urls: The ``urls`` array from the PyPI JSON API response.
+        target_version: Optional ``(major, minor)`` tuple. If provided,
+            only wheels matching this specific Python version are
+            considered. If None, any free-threaded wheel matches.
+
+    Returns:
+        True if a matching free-threaded wheel is found.
+    """
+    filenames = [u.get("filename", "") for u in urls if u.get("filename")]
+    wheel_filenames = [f for f in filenames if f.endswith(".whl")]
+
+    for filename in wheel_filenames:
+        m = _FT_WHEEL_TAG_RE.search(filename)
+        if m is not None:
+            if target_version is None:
+                return True
+            major = int(m.group(1))
+            minor = int(m.group(2))
+            if (major, minor) == target_version:
+                return True
+    return False

@@ -174,6 +174,11 @@ def _report_header_md(meta: Any, summary: Any) -> list[str]:
     lines.append(f"**Iterations:** {config.get('iterations', '?')} per package")
     if config.get("install_from") == "sdist":
         lines.append("**Install source:** sdist")
+    if config.get("trust_ft_wheels"):
+        mode = (
+            "any version" if config.get("trust_ft_wheels_any_version") else "target version only"
+        )
+        lines.append(f"**FT wheel trust:** enabled ({mode})")
     lines.append(f"**Packages tested:** {summary.total_packages}")
     lines.append("")
 
@@ -193,6 +198,7 @@ def _report_summary_table_md(summary: Any) -> list[str]:
 
     display_order = [
         ("compatible", "Compatible"),
+        ("compatible_by_wheel", "Compatible (FT wheel)"),
         ("compatible_gil_fallback", "Compatible (GIL fallback)"),
         ("tsan_warnings", "TSAN warnings"),
         ("intermittent", "Intermittent"),
