@@ -158,5 +158,22 @@ class TestFtCompatWithMockData(unittest.TestCase):
             self.assertIn("numpy", result.output)
 
 
+class TestFtRunInstallFrom(unittest.TestCase):
+    def test_ft_run_help_shows_install_from(self) -> None:
+        runner = CliRunner()
+        result = runner.invoke(main, ["ft", "run", "--help"])
+        self.assertEqual(result.exit_code, 0)
+        self.assertIn("--install-from", result.output)
+        self.assertIn("source", result.output)
+        self.assertIn("sdist", result.output)
+
+    def test_ft_run_install_from_invalid_rejected(self) -> None:
+        runner = CliRunner()
+        result = runner.invoke(
+            main, ["ft", "run", "--target-python", "/usr/bin/python3", "--install-from", "wheel"]
+        )
+        self.assertNotEqual(result.exit_code, 0)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -177,6 +177,9 @@ class FTPackageResult:
     import_ok: bool = True
     import_error: str | None = None
     commit: str | None = None
+    install_from: str = ""
+    sdist_version: str | None = None
+    sdist_tag_matched: bool | None = None
 
     gil_enabled_pass_rate: float | None = None
     gil_enabled_iterations: list[IterationOutcome] | None = None
@@ -268,6 +271,9 @@ class FTPackageResult:
             "import_ok": self.import_ok,
             "import_error": self.import_error,
             "commit": self.commit,
+            "install_from": self.install_from,
+            "sdist_version": self.sdist_version,
+            "sdist_tag_matched": self.sdist_tag_matched,
             "iterations": [i.to_dict() for i in self.iterations],
         }
         if self.extension_compat is not None:
@@ -308,6 +314,9 @@ class FTPackageResult:
             import_ok=data.get("import_ok", True),
             import_error=data.get("import_error"),
             commit=data.get("commit"),
+            install_from=data.get("install_from", ""),
+            sdist_version=data.get("sdist_version"),
+            sdist_tag_matched=data.get("sdist_tag_matched"),
             gil_enabled_pass_rate=data.get("gil_enabled_pass_rate"),
             gil_enabled_iterations=gil_iters,
         )

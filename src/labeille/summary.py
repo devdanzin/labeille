@@ -44,16 +44,18 @@ def _format_run_header(
     python_version: str,
     jit_enabled: bool,
     total_duration: float,
+    install_from: str = "source",
 ) -> str:
     """Format the run header section."""
-    return "\n".join(
-        [
-            f"Run ID: {run_id}",
-            f"Target Python: {python_version}",
-            f"JIT enabled: {'yes' if jit_enabled else 'no'}",
-            f"Duration: {format_duration(total_duration)}",
-        ]
-    )
+    lines = [
+        f"Run ID: {run_id}",
+        f"Target Python: {python_version}",
+        f"JIT enabled: {'yes' if jit_enabled else 'no'}",
+    ]
+    if install_from == "sdist":
+        lines.append("Install source: sdist")
+    lines.append(f"Duration: {format_duration(total_duration)}")
+    return "\n".join(lines)
 
 
 def _format_package_table(
@@ -217,7 +219,12 @@ def format_summary(
 
     # Run header
     parts.append("")
-    parts.append(_format_run_header(config.run_id, python_version, jit_enabled, total_duration))
+    install_from = getattr(config, "install_from", "source")
+    parts.append(
+        _format_run_header(
+            config.run_id, python_version, jit_enabled, total_duration, install_from
+        )
+    )
     parts.append("")
 
     # Package table

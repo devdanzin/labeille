@@ -80,6 +80,9 @@ class PackageResult:
     installed_dependencies: dict[str, str] = field(default_factory=dict)
     error_message: str | None = None
     requested_revision: str | None = None
+    install_from: str = ""
+    sdist_version: str | None = None
+    sdist_tag_matched: bool | None = None
     timestamp: str = ""
 
     @classmethod
@@ -102,6 +105,9 @@ class PackageResult:
             installed_dependencies=data.get("installed_dependencies", {}),
             error_message=data.get("error_message"),
             requested_revision=data.get("requested_revision"),
+            install_from=data.get("install_from", ""),
+            sdist_version=data.get("sdist_version"),
+            sdist_tag_matched=data.get("sdist_tag_matched"),
             timestamp=data.get("timestamp", ""),
         )
 
@@ -528,8 +534,17 @@ def build_reproduce_command(
     # points resolve to the .venv automatically.
     lines.append('export PATH="$PWD/.venv/bin:$PATH"')
 
-    install_cmd = registry_entry.install_command or "pip install -e ."
-    lines.append(install_cmd)
+    if result.install_from == "sdist":
+        from labeille.runner import build_sdist_install_commands
+
+        raw_install_cmd = registry_entry.install_command or "pip install -e ."
+        sdist_cmd, deps_cmd = build_sdist_install_commands(pkg_name, raw_install_cmd)
+        lines.append(sdist_cmd)
+        if deps_cmd:
+            lines.append(deps_cmd)
+    else:
+        install_cmd = registry_entry.install_command or "pip install -e ."
+        lines.append(install_cmd)
 
     test_cmd = result.test_command or registry_entry.test_command or "python -m pytest"
     lines.append(f"PYTHON_JIT=1 PYTHONFAULTHANDLER=1 {test_cmd}")

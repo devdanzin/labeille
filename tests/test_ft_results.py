@@ -295,6 +295,36 @@ class TestFTPackageResult(unittest.TestCase):
         self.assertNotIn("gil_enabled_pass_rate", d)
         self.assertNotIn("gil_enabled_iterations", d)
 
+    def test_sdist_fields_roundtrip(self) -> None:
+        result = FTPackageResult(
+            package="mypkg",
+            install_from="sdist",
+            sdist_version="1.2.3",
+            sdist_tag_matched=True,
+        )
+        result.compute_aggregates()
+        result.categorize()
+        d = result.to_dict()
+        self.assertEqual(d["install_from"], "sdist")
+        self.assertEqual(d["sdist_version"], "1.2.3")
+        self.assertTrue(d["sdist_tag_matched"])
+
+        restored = FTPackageResult.from_dict(d)
+        self.assertEqual(restored.install_from, "sdist")
+        self.assertEqual(restored.sdist_version, "1.2.3")
+        self.assertTrue(restored.sdist_tag_matched)
+
+    def test_sdist_fields_default(self) -> None:
+        result = FTPackageResult(package="pkg")
+        d = result.to_dict()
+        self.assertEqual(d["install_from"], "")
+        self.assertIsNone(d["sdist_version"])
+        self.assertIsNone(d["sdist_tag_matched"])
+
+        restored = FTPackageResult.from_dict(d)
+        self.assertEqual(restored.install_from, "")
+        self.assertIsNone(restored.sdist_version)
+
 
 # ---------------------------------------------------------------------------
 # Categorization tests

@@ -7,6 +7,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+- `--install-from {source|sdist}` option for `labeille run` and `labeille ft run`: install packages from PyPI source distributions while running tests from cloned git repos.
+- Sdist version alignment: `fetch_latest_pypi_version()` queries PyPI, `checkout_matching_tag()` aligns the repo to the matching release tag.
+- Source directory shielding: `shield_source_dir()` temporarily renames flat-layout source dirs to prevent local imports from shadowing the sdist-installed package.
+- Install command splitting: `split_install_command()` and `build_sdist_install_commands()` separate self-install segments from test dependency segments.
+- `install_from`, `sdist_version`, and `sdist_tag_matched` fields on `PackageResult`, `FTPackageResult`, and analysis `PackageResult`.
 - `labeille compat` command group for C extension compatibility surveys: `survey`, `show`, `diff`, and `patterns` subcommands.
 - ~30 built-in error classification patterns across 10+ categories (removed_c_api, cython_incompatible, pyo3_incompatible, numpy_c_api, missing_system_lib, etc.).
 - YAML-based custom error pattern support with override semantics.

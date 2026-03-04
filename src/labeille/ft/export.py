@@ -172,6 +172,8 @@ def _report_header_md(meta: Any, summary: Any) -> list[str]:
 
     config = meta.config or {}
     lines.append(f"**Iterations:** {config.get('iterations', '?')} per package")
+    if config.get("install_from") == "sdist":
+        lines.append("**Install source:** sdist")
     lines.append(f"**Packages tested:** {summary.total_packages}")
     lines.append("")
 
