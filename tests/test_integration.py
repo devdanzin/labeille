@@ -608,6 +608,50 @@ class TestRunIntegration(unittest.TestCase):
         )
         self.assertEqual(result.exit_code, 0, msg=result.output)
 
+    def test_run_help_shows_install_from(self) -> None:
+        runner = CliRunner()
+        result = runner.invoke(main, ["run", "--help"])
+        self.assertEqual(result.exit_code, 0)
+        self.assertIn("--install-from", result.output)
+        self.assertIn("source", result.output)
+        self.assertIn("sdist", result.output)
+
+    def test_run_install_from_invalid_rejected(self) -> None:
+        runner = CliRunner()
+        result = runner.invoke(
+            main, ["run", "--target-python", "/usr/bin/python3", "--install-from", "wheel"]
+        )
+        self.assertNotEqual(result.exit_code, 0)
+
+    def test_run_install_from_sdist_dry_run(self) -> None:
+        save_index(Index(), self.registry_dir)
+
+        import sys
+
+        target = sys.executable
+
+        runner = CliRunner()
+        result = runner.invoke(
+            main,
+            [
+                "run",
+                "--dry-run",
+                "--target-python",
+                target,
+                "--registry-dir",
+                str(self.registry_dir),
+                "--results-dir",
+                str(self.results_dir),
+                "--run-id",
+                "test-sdist",
+                "--install-from",
+                "sdist",
+                "--log-file",
+                str(self.base / "run.log"),
+            ],
+        )
+        self.assertEqual(result.exit_code, 0, msg=result.output)
+
 
 if __name__ == "__main__":
     unittest.main()

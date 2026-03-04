@@ -18,6 +18,7 @@ def format_compatibility_summary(
     *,
     python_info: str = "",
     system_info: str = "",
+    install_from: str = "",
 ) -> str:
     """Format the top-level compatibility summary.
 
@@ -45,7 +46,9 @@ def format_compatibility_summary(
         lines.append(python_info)
     if system_info:
         lines.append(system_info)
-    if python_info or system_info:
+    if install_from == "sdist":
+        lines.append("Install source: sdist")
+    if python_info or system_info or install_from == "sdist":
         lines.append("")
 
     total = summary.get("total_packages", 0)

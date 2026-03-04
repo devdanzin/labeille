@@ -89,6 +89,18 @@ def ft() -> None:
     help="Extra env var as KEY=VALUE (repeatable).",
 )
 @click.option("-v", "--verbose", is_flag=True)
+@click.option(
+    "--install-from",
+    "install_from",
+    type=click.Choice(["source", "sdist"], case_sensitive=False),
+    default="source",
+    show_default=True,
+    help=(
+        "Install packages from cloned source (default) or from PyPI sdist. "
+        "sdist mode installs the released version via pip while running tests "
+        "from the cloned repo."
+    ),
+)
 def run(
     target_python: str,
     iterations: int,
@@ -110,6 +122,7 @@ def run(
     venvs_dir: str,
     env_pairs: tuple[str, ...],
     verbose: bool,
+    install_from: str,
 ) -> None:
     """Run free-threading compatibility tests.
 
@@ -165,6 +178,7 @@ def run(
         compare_with_gil=compare_with_gil,
         check_stability=check_stability,
         verbose=verbose,
+        install_from=install_from,
     )
 
     results = run_ft(config)
@@ -175,7 +189,7 @@ def run(
 
     summary = FTRunSummary.compute(results)
     click.echo()
-    click.echo(format_compatibility_summary(summary.to_dict()))
+    click.echo(format_compatibility_summary(summary.to_dict(), install_from=config.install_from))
 
 
 # ---------------------------------------------------------------------------
@@ -225,11 +239,13 @@ def show(result_dir: str, sort_by: str, limit: int | None) -> None:
             f"{sp.get('os_distro', '?')}"
         )
 
+    config_dict = meta.config or {}
     click.echo(
         format_compatibility_summary(
             summary.to_dict(),
             python_info=py_info,
             system_info=sys_info,
+            install_from=config_dict.get("install_from", ""),
         )
     )
     click.echo()

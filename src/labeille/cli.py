@@ -268,6 +268,18 @@ def resolve(
     show_default=True,
     help="Package installer backend. 'auto' uses uv if available.",
 )
+@click.option(
+    "--install-from",
+    "install_from",
+    type=click.Choice(["source", "sdist"], case_sensitive=False),
+    default="source",
+    show_default=True,
+    help=(
+        "Install packages from cloned source (default) or from PyPI sdist. "
+        "sdist mode installs the released version via pip while running tests "
+        "from the cloned repo."
+    ),
+)
 @click.pass_context
 def run_cmd(
     ctx: click.Context,
@@ -300,6 +312,7 @@ def run_cmd(
     work_dir: Path | None,
     workers: int,
     installer: str,
+    install_from: str,
 ) -> None:
     """Run test suites against a JIT-enabled Python build and detect crashes."""
     from datetime import datetime, timezone
@@ -414,6 +427,7 @@ def run_cmd(
         test_command_suffix=test_command_suffix,
         repo_overrides=repo_overrides,
         installer=installer,
+        install_from=install_from,
     )
 
     click.echo(f"Run ID: {run_id}")

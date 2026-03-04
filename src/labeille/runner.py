@@ -18,21 +18,24 @@ import enum
 import json
 import os
 import platform
+import re
 import shutil
 import socket
 import subprocess
 import tempfile
 import threading
 import time
+from contextlib import contextmanager, nullcontext
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 from labeille.crash import detect_crash
 from labeille.logging import get_logger
 from labeille.registry import Index, PackageEntry, load_index, load_package, package_exists
+from labeille.resolve import fetch_pypi_metadata
 
 log = get_logger("runner")
 
@@ -120,6 +123,7 @@ class RunnerConfig:
     test_command_suffix: str | None = None
     repo_overrides: dict[str, str] = field(default_factory=dict)
     installer: str = "auto"
+    install_from: str = "source"  # "source" or "sdist"
 
 
 @dataclass
@@ -142,6 +146,9 @@ class PackageResult:
     installed_dependencies: dict[str, str] = field(default_factory=dict)
     error_message: str | None = None
     requested_revision: str | None = None
+    install_from: str = ""  # "source" or "sdist"
+    sdist_version: str | None = None
+    sdist_tag_matched: bool | None = None
     installer_backend: str = ""
     timestamp: str = ""
 
@@ -210,6 +217,7 @@ def write_run_meta(
         "hostname": socket.gethostname(),
         "platform": platform.platform(),
         "installer": config.installer,
+        "install_from": config.install_from,
         "uv_available": detect_uv() is not None,
     }
     if summary is not None:
@@ -239,6 +247,9 @@ def append_result(run_dir: Path, result: PackageResult) -> None:
         "installed_dependencies": result.installed_dependencies,
         "error_message": result.error_message,
         "requested_revision": result.requested_revision,
+        "install_from": result.install_from,
+        "sdist_version": result.sdist_version,
+        "sdist_tag_matched": result.sdist_tag_matched,
         "installer_backend": result.installer_backend,
         "timestamp": result.timestamp,
     }
@@ -898,6 +909,208 @@ def checkout_revision(repo_dir: Path, revision: str) -> str | None:
 
 
 # ---------------------------------------------------------------------------
+# Sdist-mode helpers
+# ---------------------------------------------------------------------------
+
+
+def fetch_latest_pypi_version(
+    package_name: str,
+    *,
+    timeout: float = 10.0,
+) -> str | None:
+    """Fetch the latest release version of a package from PyPI.
+
+    Returns:
+        Version string (e.g. ``"2.1.0"``), or ``None`` on failure.
+    """
+    metadata = fetch_pypi_metadata(package_name, timeout=timeout)
+    if metadata is None:
+        return None
+    try:
+        return str(metadata["info"]["version"])
+    except (KeyError, TypeError):
+        return None
+
+
+_TAG_PATTERNS: list[str] = [
+    "v{version}",
+    "{version}",
+    "{package}-{version}",
+    "release-{version}",
+    "V{version}",
+]
+
+
+def checkout_matching_tag(
+    repo_dir: Path,
+    package_name: str,
+    version: str,
+) -> tuple[str | None, str | None]:
+    """Attempt to check out the git tag matching a PyPI version.
+
+    Tries several common tag naming conventions.  Fetches tags first
+    for shallow clones.
+
+    Returns:
+        Tuple of ``(commit_hash, matched_tag)``.  Both ``None`` if no
+        tag found.
+    """
+    # Best-effort fetch of tags for shallow clones.
+    subprocess.run(
+        ["git", "fetch", "--tags", "--depth=1", "origin"],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=str(repo_dir),
+        timeout=60,
+    )
+
+    normalized = package_name.lower().replace("_", "-")
+
+    for pattern in _TAG_PATTERNS:
+        tag = pattern.format(version=version, package=normalized)
+        proc = subprocess.run(
+            ["git", "rev-parse", "--verify", f"refs/tags/{tag}^{{}}"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=str(repo_dir),
+            timeout=10,
+        )
+        if proc.returncode == 0:
+            commit = checkout_revision(repo_dir, tag)
+            return (commit, tag)
+
+    return (None, None)
+
+
+def detect_source_layout(repo_dir: Path, import_name: str) -> str:
+    """Detect whether a repo uses ``src/`` layout or flat layout.
+
+    Returns:
+        ``"src"`` if import_name exists under ``src/``, ``"flat"``
+        if it exists at the repo root, or ``"unknown"`` if neither.
+    """
+    if (repo_dir / "src" / import_name).is_dir():
+        return "src"
+    if (repo_dir / import_name).is_dir():
+        return "flat"
+    return "unknown"
+
+
+@contextmanager
+def shield_source_dir(
+    repo_dir: Path,
+    import_name: str,
+    layout: str,
+) -> Iterator[None]:
+    """Context manager that temporarily hides the source directory.
+
+    For flat-layout packages, renames ``repo_dir/import_name`` to
+    ``repo_dir/_labeille_shielded_import_name`` before yielding,
+    and restores it after.  For src-layout or unknown, this is a
+    no-op.
+    """
+    if layout != "flat":
+        yield
+        return
+    src_path = repo_dir / import_name
+    if not src_path.exists():
+        yield
+        return
+    shield_path = repo_dir / f"_labeille_shielded_{import_name}"
+    src_path.rename(shield_path)
+    try:
+        yield
+    finally:
+        shield_path.rename(src_path)
+
+
+_SELF_INSTALL_RE = re.compile(
+    r"""
+    (?:pip\s+install|python\s+-m\s+pip\s+install)  # pip install variant
+    \s+.*                                            # flags
+    (?:
+        -e\s+[.'"]                                   # editable: -e . or -e '.[dev]'
+        | \.\s*$                                     # bare: pip install .
+        | '\.\[                                      # pip install '.[extras]'
+        | "\.\[                                      # pip install ".[extras]"
+    )
+    """,
+    re.VERBOSE | re.IGNORECASE,
+)
+
+
+def _is_self_install_segment(segment: str) -> bool:
+    """Return True if this command segment installs the package itself."""
+    return bool(_SELF_INSTALL_RE.search(segment))
+
+
+_EXTRAS_RE = re.compile(r"\.\[([^\]]+)\]")
+
+
+def _extract_extras(segment: str) -> str | None:
+    """Extract extras from an install segment.
+
+    E.g. ``'.[dev,test]'`` -> ``'dev,test'``.
+    """
+    m = _EXTRAS_RE.search(segment)
+    return m.group(1) if m else None
+
+
+def split_install_command(
+    install_command: str,
+) -> tuple[list[str], list[str]]:
+    """Split an install command into self-install and dependency segments.
+
+    Segments are split on ``&&``.  A segment is classified as a
+    "self-install" if it contains editable install markers (``-e .``,
+    ``pip install .``, etc.).
+
+    Returns:
+        Tuple of ``(self_install_segments, other_segments)``.
+    """
+    if not install_command.strip():
+        return ([], [])
+    parts = re.split(r"\s*&&\s*", install_command)
+    parts = [p.strip() for p in parts if p.strip()]
+    self_install: list[str] = []
+    other: list[str] = []
+    for seg in parts:
+        if _is_self_install_segment(seg):
+            self_install.append(seg)
+        else:
+            other.append(seg)
+    return (self_install, other)
+
+
+def build_sdist_install_commands(
+    package_name: str,
+    install_command: str,
+) -> tuple[str, str]:
+    """Build sdist-mode install commands from a registry install_command.
+
+    Replaces self-install segments with a ``pip install --no-binary``
+    command.  If the self-install had extras, those are included.
+
+    Returns:
+        Tuple of ``(sdist_install_cmd, deps_install_cmd)``.
+    """
+    self_segments, other_segments = split_install_command(install_command)
+    extras: str | None = None
+    for seg in self_segments:
+        extras = _extract_extras(seg)
+        if extras:
+            break
+    if extras:
+        sdist_cmd = f"pip install --no-binary {package_name} '{package_name}[{extras}]'"
+    else:
+        sdist_cmd = f"pip install --no-binary {package_name} {package_name}"
+    deps_cmd = " && ".join(other_segments) if other_segments else ""
+    return (sdist_cmd, deps_cmd)
+
+
+# ---------------------------------------------------------------------------
 # Per-package runner
 # ---------------------------------------------------------------------------
 
@@ -1060,6 +1273,44 @@ def _run_package_inner(
         result.git_revision = commit
         result.requested_revision = revision
 
+    # --- Sdist version alignment ---
+    sdist_version: str | None = None
+    sdist_tag_matched: bool | None = None
+    source_layout: str = "unknown"
+    import_name = pkg.import_name or pkg.package.replace("-", "_")
+
+    if config.install_from == "sdist":
+        result.install_from = "sdist"
+        sdist_version = fetch_latest_pypi_version(pkg.package)
+        if sdist_version:
+            log.info("PyPI latest version for %s: %s", pkg.package, sdist_version)
+            commit_hash, matched_tag = checkout_matching_tag(repo_dir, pkg.package, sdist_version)
+            if commit_hash:
+                result.git_revision = commit_hash
+                sdist_tag_matched = True
+                log.info(
+                    "Checked out tag %s for %s (commit %s)",
+                    matched_tag,
+                    pkg.package,
+                    commit_hash[:12],
+                )
+            else:
+                sdist_tag_matched = False
+                log.warning(
+                    "No matching tag for %s version %s, staying on HEAD",
+                    pkg.package,
+                    sdist_version,
+                )
+        else:
+            log.warning("Could not fetch PyPI version for %s", pkg.package)
+
+        result.sdist_version = sdist_version
+        result.sdist_tag_matched = sdist_tag_matched
+        source_layout = detect_source_layout(repo_dir, import_name)
+        log.debug("Source layout for %s: %s", pkg.package, source_layout)
+    else:
+        result.install_from = "source"
+
     # --- Create or reuse venv ---
     if _cancelled():
         result.status = "error"
@@ -1101,7 +1352,85 @@ def _run_package_inner(
 
     if venv_existed:
         log.info("Skipping install for %s (reusing venv)", pkg.package)
+    elif config.install_from == "sdist":
+        # --- Sdist install mode ---
+        raw_install_cmd = pkg.install_command or "pip install -e ."
+        sdist_install_cmd, deps_install_cmd = build_sdist_install_commands(
+            pkg.package, raw_install_cmd
+        )
+        log.info("Installing %s from sdist: %s", pkg.package, sdist_install_cmd)
+        install_start = time.monotonic()
+
+        # Step 1: Install the package from PyPI sdist.
+        try:
+            install_proc, actual_backend = install_with_fallback(
+                config.target_python,
+                venv_dir,
+                sdist_install_cmd,
+                repo_dir,
+                env,
+                per_pkg_timeout,
+                installer,
+            )
+            venv_python = venv_dir / "bin" / "python"
+            if actual_backend is not installer:
+                result.installer_backend = actual_backend.value
+                log.info(
+                    "Installer fell back from %s to %s for %s",
+                    installer.value,
+                    actual_backend.value,
+                    pkg.package,
+                )
+            installer = actual_backend
+        except subprocess.TimeoutExpired:
+            result.status = "install_error"
+            result.error_message = "Install timed out (sdist)"
+            result.install_duration_seconds = round(time.monotonic() - install_start, 2)
+            log.error("Sdist install timed out for %s", pkg.package)
+            return result
+        except OSError as exc:
+            result.status = "install_error"
+            result.error_message = f"Sdist install failed: {exc}"
+            result.install_duration_seconds = round(time.monotonic() - install_start, 2)
+            log.error("Sdist install failed for %s: %s", pkg.package, exc)
+            return result
+
+        if install_proc.returncode != 0:
+            result.status = "install_error"
+            result.exit_code = install_proc.returncode
+            result.error_message = (
+                install_proc.stderr[-500:] if install_proc.stderr else "non-zero (sdist)"
+            )
+            result.install_duration_seconds = round(time.monotonic() - install_start, 2)
+            log.error(
+                "Sdist install failed for %s (exit %d)", pkg.package, install_proc.returncode
+            )
+            return result
+
+        # Step 2: Install test dependencies from the repo.
+        if deps_install_cmd:
+            log.info("Installing test deps for %s: %s", pkg.package, deps_install_cmd)
+            try:
+                deps_proc = install_package(
+                    venv_python, deps_install_cmd, repo_dir, env, per_pkg_timeout, installer
+                )
+                if deps_proc.returncode != 0:
+                    log.warning(
+                        "Test deps install had non-zero exit for %s (exit %d, continuing)",
+                        pkg.package,
+                        deps_proc.returncode,
+                    )
+            except (subprocess.TimeoutExpired, OSError) as exc:
+                log.warning("Test deps install failed for %s: %s (continuing)", pkg.package, exc)
+
+        result.install_duration_seconds = round(time.monotonic() - install_start, 2)
+        log.debug(
+            "Sdist install for %s completed in %.2fs",
+            pkg.package,
+            result.install_duration_seconds,
+        )
     else:
+        # --- Source install mode (original behaviour) ---
         install_cmd = pkg.install_command or "pip install -e ."
         log.info("Installing %s: %s", pkg.package, install_cmd)
         install_start = time.monotonic()
@@ -1160,24 +1489,34 @@ def _run_package_inner(
             return result
 
     # --- Import check (skip if reusing venv) ---
-    if not venv_existed:
-        import_name = pkg.import_name or pkg.package.replace("-", "_")
-        log.info("Checking import for %s: import %s", pkg.package, import_name)
-        try:
-            import_proc = check_import(venv_python, import_name, env)
-            if import_proc.returncode != 0:
+    # Use shield_source_dir in sdist mode to prevent importing from local source.
+    _shield = (
+        shield_source_dir(repo_dir, import_name, source_layout)
+        if config.install_from == "sdist"
+        else nullcontext()
+    )
+    with _shield:
+        if not venv_existed:
+            log.info("Checking import for %s: import %s", pkg.package, import_name)
+            try:
+                import_proc = check_import(venv_python, import_name, env)
+                if import_proc.returncode != 0:
+                    result.status = "install_error"
+                    stderr_msg = import_proc.stderr.strip()[-200:] if import_proc.stderr else ""
+                    result.error_message = f"Package installed but import failed: {stderr_msg}"
+                    log.error(
+                        "Import check failed for %s: %s",
+                        pkg.package,
+                        result.error_message,
+                    )
+                    return result
+            except subprocess.TimeoutExpired:
                 result.status = "install_error"
-                stderr_msg = import_proc.stderr.strip()[-200:] if import_proc.stderr else ""
-                result.error_message = f"Package installed but import failed: {stderr_msg}"
-                log.error("Import check failed for %s: %s", pkg.package, result.error_message)
+                result.error_message = "Package installed but import timed out"
+                log.error("Import check timed out for %s", pkg.package)
                 return result
-        except subprocess.TimeoutExpired:
-            result.status = "install_error"
-            result.error_message = "Package installed but import timed out"
-            log.error("Import check timed out for %s", pkg.package)
-            return result
-        except OSError as exc:
-            log.warning("Import check failed for %s: %s (continuing)", pkg.package, exc)
+            except OSError as exc:
+                log.warning("Import check failed for %s: %s (continuing)", pkg.package, exc)
 
     # --- Install extra dependencies if specified ---
     if config.extra_deps and not venv_existed:
@@ -1224,15 +1563,23 @@ def _run_package_inner(
     result.test_command = test_cmd
     log.info("Running tests for %s: %s", pkg.package, test_cmd)
     log.debug("Test timeout: %ds", per_pkg_timeout)
-    test_start = time.monotonic()
-    try:
-        test_proc = run_test_command(venv_python, test_cmd, repo_dir, env, per_pkg_timeout)
-    except subprocess.TimeoutExpired as exc:
-        result.status = "timeout"
-        result.timeout_hit = True
-        result.stderr_tail = (exc.stderr or "")[-2000:] if isinstance(exc.stderr, str) else ""
-        log.warning("Tests timed out for %s after %ds", pkg.package, per_pkg_timeout)
-        return result
+
+    # Shield source directory in sdist mode to prevent local imports.
+    _test_shield = (
+        shield_source_dir(repo_dir, import_name, source_layout)
+        if config.install_from == "sdist"
+        else nullcontext()
+    )
+    with _test_shield:
+        test_start = time.monotonic()
+        try:
+            test_proc = run_test_command(venv_python, test_cmd, repo_dir, env, per_pkg_timeout)
+        except subprocess.TimeoutExpired as exc:
+            result.status = "timeout"
+            result.timeout_hit = True
+            result.stderr_tail = (exc.stderr or "")[-2000:] if isinstance(exc.stderr, str) else ""
+            log.warning("Tests timed out for %s after %ds", pkg.package, per_pkg_timeout)
+            return result
 
     test_dur = round(time.monotonic() - test_start, 2)
     result.exit_code = test_proc.returncode

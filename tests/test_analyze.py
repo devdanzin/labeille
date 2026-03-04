@@ -496,6 +496,41 @@ class TestBuildReproduceCommand(unittest.TestCase):
         self.assertNotIn(".venv/bin/pip", cmd)
         self.assertNotIn(".venv/bin/python", cmd)
 
+    def test_sdist_mode(self) -> None:
+        result = PackageResult(
+            package="urllib3",
+            repo="https://github.com/urllib3/urllib3",
+            test_command="python -m pytest tests/",
+            install_from="sdist",
+        )
+        entry = _make_pkg("urllib3", install_command="pip install -e . && pip install pytest")
+        cmd = build_reproduce_command(result, entry, "/opt/python")
+        self.assertIn("pip install --no-binary urllib3 urllib3", cmd)
+        self.assertIn("pip install pytest", cmd)
+        self.assertNotIn("pip install -e .", cmd)
+
+    def test_sdist_mode_with_extras(self) -> None:
+        result = PackageResult(
+            package="click",
+            repo="https://github.com/pallets/click",
+            test_command="python -m pytest tests/",
+            install_from="sdist",
+        )
+        entry = _make_pkg("click", install_command='pip install -e ".[test]"')
+        cmd = build_reproduce_command(result, entry, "/opt/python")
+        self.assertIn("pip install --no-binary click 'click[test]'", cmd)
+
+    def test_source_mode_unchanged(self) -> None:
+        result = PackageResult(
+            package="urllib3",
+            repo="https://github.com/urllib3/urllib3",
+            test_command="python -m pytest tests/",
+            install_from="source",
+        )
+        entry = _make_pkg("urllib3", install_command="pip install -e .")
+        cmd = build_reproduce_command(result, entry, "/opt/python")
+        self.assertIn("pip install -e .", cmd)
+
 
 class TestCategorizeInstallErrors(unittest.TestCase):
     def test_basic(self) -> None:
