@@ -164,6 +164,51 @@ class TestValidateConfig(unittest.TestCase):
         warnings = [e for e in errors if e.severity == "warning"]
         self.assertTrue(len(warnings) > 0)
 
+    def test_validate_adaptive_threshold_positive(self) -> None:
+        """Adaptive threshold must be positive."""
+        config = self._valid_config()
+        config.adaptive = True
+        config.adaptive_threshold = 0.0
+        errors = validate_config(config)
+        self.assertTrue(any(e.field == "adaptive_threshold" for e in errors))
+
+    def test_validate_adaptive_min_iterations_too_low(self) -> None:
+        """Adaptive min iterations must be >= 3."""
+        config = self._valid_config()
+        config.adaptive = True
+        config.adaptive_min_iterations = 2
+        errors = validate_config(config)
+        self.assertTrue(any(e.field == "adaptive_min_iterations" for e in errors))
+
+    def test_validate_adaptive_min_exceeds_total_warns(self) -> None:
+        """Adaptive min > iterations should produce a warning."""
+        config = self._valid_config()
+        config.adaptive = True
+        config.iterations = 5
+        config.adaptive_min_iterations = 10
+        errors = validate_config(config)
+        warnings = [e for e in errors if e.severity == "warning"]
+        self.assertTrue(any(e.field == "adaptive_min_iterations" for e in warnings))
+
+    def test_validate_adaptive_valid(self) -> None:
+        """Valid adaptive config should produce no errors."""
+        config = self._valid_config()
+        config.adaptive = True
+        config.adaptive_threshold = 0.005
+        config.adaptive_min_iterations = 5
+        config.iterations = 10
+        errors = validate_config(config)
+        fatal = [e for e in errors if e.severity == "error"]
+        self.assertEqual(fatal, [])
+
+    def test_validate_adaptive_disabled_skips_checks(self) -> None:
+        """With adaptive=False, bad threshold doesn't error."""
+        config = self._valid_config()
+        config.adaptive = False
+        config.adaptive_threshold = -1.0
+        errors = validate_config(config)
+        self.assertFalse(any(e.field == "adaptive_threshold" for e in errors))
+
 
 # ---------------------------------------------------------------------------
 # Profile loading tests
@@ -316,6 +361,33 @@ class TestConfigFromProfile(unittest.TestCase):
         data = {"warmup": 3, "conditions": {"a": None}}
         config = config_from_profile(data, cli_overrides={"warmup": 0})
         self.assertEqual(config.warmup, 0)
+
+    def test_config_from_profile_adaptive(self) -> None:
+        """Adaptive settings should be loaded from profile."""
+        data = {
+            "conditions": {"a": None},
+            "adaptive": True,
+            "adaptive_threshold": 0.01,
+            "adaptive_min_iterations": 7,
+        }
+        config = config_from_profile(data)
+        self.assertTrue(config.adaptive)
+        self.assertAlmostEqual(config.adaptive_threshold, 0.01)
+        self.assertEqual(config.adaptive_min_iterations, 7)
+
+    def test_config_from_profile_adaptive_cli_overrides(self) -> None:
+        """CLI adaptive settings should override profile."""
+        data = {
+            "conditions": {"a": None},
+            "adaptive": True,
+            "adaptive_threshold": 0.01,
+        }
+        config = config_from_profile(
+            data,
+            cli_overrides={"adaptive_threshold": 0.002, "adaptive_min_iterations": 10},
+        )
+        self.assertAlmostEqual(config.adaptive_threshold, 0.002)
+        self.assertEqual(config.adaptive_min_iterations, 10)
 
 
 # ---------------------------------------------------------------------------

@@ -362,5 +362,57 @@ class TestComparisonSummary(unittest.TestCase):
         self.assertIn("improved", output)
 
 
+# ---------------------------------------------------------------------------
+# Adaptive convergence display tests
+# ---------------------------------------------------------------------------
+
+
+class TestAdaptiveDisplay(unittest.TestCase):
+    def test_adaptive_shown_in_config(self) -> None:
+        """Adaptive settings should appear in format_bench_show output."""
+        meta = _make_meta(["baseline"])
+        meta.config["adaptive"] = True
+        meta.config["adaptive_threshold"] = 0.005
+        meta.config["adaptive_min_iterations"] = 5
+        output = format_bench_show(meta, [])
+        self.assertIn("Adaptive: on", output)
+        self.assertIn("0.5% RSE", output)
+        self.assertIn("min 5", output)
+
+    def test_adaptive_not_shown_when_disabled(self) -> None:
+        """Adaptive should not appear when disabled."""
+        meta = _make_meta(["baseline"])
+        meta.config["adaptive"] = False
+        output = format_bench_show(meta, [])
+        self.assertNotIn("Adaptive:", output)
+
+    def test_converged_marker_in_table(self) -> None:
+        """Converged packages should show checkmark in single-condition table."""
+        meta = _make_meta(["baseline"])
+        cr = _make_condition_result("baseline")
+        cr.converged_early = True
+        results = [_make_package_result("mypkg", conditions={"baseline": cr})]
+        output = format_bench_show(meta, results)
+        self.assertIn("\u2713", output)
+
+    def test_no_converged_marker_when_not_converged(self) -> None:
+        """Non-converged packages should not show checkmark."""
+        meta = _make_meta(["baseline"])
+        results = [_make_package_result("mypkg")]
+        output = format_bench_show(meta, results)
+        self.assertNotIn("\u2713", output)
+
+    def test_converged_count_in_quality(self) -> None:
+        """Quality summary should show converged count."""
+        cr = _make_condition_result("A")
+        cr.converged_early = True
+        results = [
+            _make_package_result("pkg1", conditions={"A": cr}),
+            _make_package_result("pkg2", conditions={"A": _make_condition_result("A")}),
+        ]
+        output = _format_quality_summary(results, ["A"])
+        self.assertIn("Converged early:   1 / 2", output)
+
+
 if __name__ == "__main__":
     unittest.main()

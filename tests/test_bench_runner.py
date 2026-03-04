@@ -1053,6 +1053,243 @@ class TestQuickConfig(unittest.TestCase):
         result = quick_config(config)
         self.assertEqual(result.name, "My bench (quick)")
 
+    def test_quick_enables_adaptive(self) -> None:
+        config = BenchConfig()
+        result = quick_config(config)
+        self.assertTrue(result.adaptive)
+
+
+# ---------------------------------------------------------------------------
+# Adaptive convergence tests
+# ---------------------------------------------------------------------------
+
+
+class TestAdaptiveConvergence(unittest.TestCase):
+    """Tests for adaptive early stopping in _benchmark_package."""
+
+    def _make_tracking_runner_with_times(
+        self,
+        conditions: dict[str, ConditionDef],
+        wall_times: list[float],
+        *,
+        warmup: int = 0,
+        iterations: int = 10,
+        alternate: bool | None = None,
+        adaptive: bool = True,
+        adaptive_threshold: float = 0.005,
+        adaptive_min_iterations: int = 3,
+    ) -> tuple[BenchRunner, list[tuple[str, str, int, bool]]]:
+        """Create a runner that returns predetermined wall times."""
+        config = _make_config(
+            conditions=conditions,
+            warmup=warmup,
+            iterations=iterations,
+            alternate=alternate,
+            default_target_python="/usr/bin/python3",
+            adaptive=adaptive,
+            adaptive_threshold=adaptive_threshold,
+            adaptive_min_iterations=adaptive_min_iterations,
+        )
+        runner = BenchRunner(config, progress_callback=lambda p: None)
+
+        call_log: list[tuple[str, str, int, bool]] = []
+        time_iter = iter(wall_times)
+
+        def tracking_run_iteration(
+            *,
+            pkg: object,
+            cond: object,
+            setup: object,
+            iter_index: int,
+            is_warmup: bool,
+        ) -> BenchIteration:
+            wt = next(time_iter, 1.0)
+            call_log.append(
+                (
+                    pkg.package,  # type: ignore[union-attr]
+                    cond.name,  # type: ignore[union-attr]
+                    iter_index,
+                    is_warmup,
+                )
+            )
+            return BenchIteration(
+                index=iter_index,
+                warmup=is_warmup,
+                wall_time_s=wt,
+                user_time_s=wt * 0.8,
+                sys_time_s=wt * 0.1,
+                peak_rss_mb=100.0,
+                exit_code=0,
+                status="ok",
+            )
+
+        runner._run_iteration = tracking_run_iteration  # type: ignore[assignment]
+        return runner, call_log
+
+    def test_adaptive_block_convergence(self) -> None:
+        """Block mode: stops early when RSE is below threshold."""
+        conds = {"A": _make_condition("A")}
+        # All identical times → RSE=0 → converges at min_iterations=3
+        wall_times = [10.0] * 20
+        runner, call_log = self._make_tracking_runner_with_times(
+            conds,
+            wall_times,
+            iterations=10,
+            alternate=False,
+            adaptive_min_iterations=3,
+        )
+        pkg = FakePackage(package="mypkg")
+        setup: dict[str, object] = {
+            "repo_dir": Path("/tmp/fake/repo"),
+            "venvs": {"A": Path("/tmp/fake/venv_A")},
+            "clone_duration": 0.5,
+        }
+        with patch.object(runner, "_setup_package", return_value=setup):
+            result = runner._benchmark_package(pkg, 0, 1)
+
+        # Should converge early: 3 measured iterations (not all 10).
+        measured = [c for c in call_log if not c[3]]
+        self.assertEqual(len(measured), 3)
+        self.assertTrue(result.conditions["A"].converged_early)
+
+    def test_adaptive_alternating_convergence(self) -> None:
+        """Alternating mode: stops early when all conditions converge."""
+        conds = {
+            "A": _make_condition("A"),
+            "B": _make_condition("B"),
+        }
+        # Identical times → immediate convergence at min_iterations
+        wall_times = [10.0] * 40
+        runner, call_log = self._make_tracking_runner_with_times(
+            conds,
+            wall_times,
+            iterations=10,
+            alternate=True,
+            adaptive_min_iterations=3,
+        )
+        pkg = FakePackage(package="mypkg")
+        setup: dict[str, object] = {
+            "repo_dir": Path("/tmp/fake/repo"),
+            "venvs": {"A": Path("/tmp/A"), "B": Path("/tmp/B")},
+            "clone_duration": 0.5,
+        }
+        with patch.object(runner, "_setup_package", return_value=setup):
+            result = runner._benchmark_package(pkg, 0, 1)
+
+        # Should converge after 3 rounds (6 total calls: A,B,A,B,A,B).
+        self.assertEqual(len(call_log), 6)
+        self.assertTrue(result.conditions["A"].converged_early)
+        self.assertTrue(result.conditions["B"].converged_early)
+
+    def test_adaptive_no_convergence_high_variance(self) -> None:
+        """High variance: runs all iterations without converging."""
+        conds = {"A": _make_condition("A")}
+        # Highly variable times → won't converge with tight threshold
+        wall_times = [1.0, 100.0, 1.0, 100.0, 1.0, 100.0, 1.0, 100.0]
+        runner, call_log = self._make_tracking_runner_with_times(
+            conds,
+            wall_times,
+            iterations=5,
+            alternate=False,
+            adaptive_min_iterations=3,
+            adaptive_threshold=0.001,
+        )
+        pkg = FakePackage(package="mypkg")
+        setup: dict[str, object] = {
+            "repo_dir": Path("/tmp/fake/repo"),
+            "venvs": {"A": Path("/tmp/fake/venv_A")},
+            "clone_duration": 0.5,
+        }
+        with patch.object(runner, "_setup_package", return_value=setup):
+            result = runner._benchmark_package(pkg, 0, 1)
+
+        # All 5 measured iterations should run.
+        measured = [c for c in call_log if not c[3]]
+        self.assertEqual(len(measured), 5)
+        self.assertFalse(result.conditions["A"].converged_early)
+
+    def test_adaptive_disabled_runs_all(self) -> None:
+        """With adaptive=False, all iterations run even with identical times."""
+        conds = {"A": _make_condition("A")}
+        wall_times = [10.0] * 20
+        runner, call_log = self._make_tracking_runner_with_times(
+            conds,
+            wall_times,
+            iterations=5,
+            alternate=False,
+            adaptive=False,
+        )
+        pkg = FakePackage(package="mypkg")
+        setup: dict[str, object] = {
+            "repo_dir": Path("/tmp/fake/repo"),
+            "venvs": {"A": Path("/tmp/fake/venv_A")},
+            "clone_duration": 0.5,
+        }
+        with patch.object(runner, "_setup_package", return_value=setup):
+            result = runner._benchmark_package(pkg, 0, 1)
+
+        measured = [c for c in call_log if not c[3]]
+        self.assertEqual(len(measured), 5)
+        self.assertFalse(result.conditions["A"].converged_early)
+
+    def test_adaptive_respects_warmup(self) -> None:
+        """Warmup iterations are not counted for convergence."""
+        conds = {"A": _make_condition("A")}
+        wall_times = [10.0] * 20
+        runner, call_log = self._make_tracking_runner_with_times(
+            conds,
+            wall_times,
+            warmup=2,
+            iterations=10,
+            alternate=False,
+            adaptive_min_iterations=3,
+        )
+        pkg = FakePackage(package="mypkg")
+        setup: dict[str, object] = {
+            "repo_dir": Path("/tmp/fake/repo"),
+            "venvs": {"A": Path("/tmp/fake/venv_A")},
+            "clone_duration": 0.5,
+        }
+        with patch.object(runner, "_setup_package", return_value=setup):
+            result = runner._benchmark_package(pkg, 0, 1)
+
+        warmup_calls = [c for c in call_log if c[3]]
+        measured_calls = [c for c in call_log if not c[3]]
+        # 2 warmup + 3 measured (converges at min).
+        self.assertEqual(len(warmup_calls), 2)
+        self.assertEqual(len(measured_calls), 3)
+        self.assertTrue(result.conditions["A"].converged_early)
+
+    def test_adaptive_meta_config_recorded(self) -> None:
+        """Adaptive settings should appear in meta config dict."""
+        config = _make_config(
+            conditions={"baseline": _make_condition()},
+            adaptive=True,
+            adaptive_threshold=0.01,
+            adaptive_min_iterations=7,
+        )
+        runner = BenchRunner(config, progress_callback=lambda p: None)
+
+        with (
+            patch("labeille.bench.runner.validate_config", return_value=[]),
+            patch("labeille.bench.runner.capture_system_profile", return_value=SystemProfile()),
+            patch("labeille.bench.runner.capture_python_profile", return_value=PythonProfile()),
+            patch("labeille.bench.runner.format_system_profile", return_value=""),
+            patch("labeille.bench.runner.format_python_profile", return_value=""),
+            patch(
+                "labeille.bench.runner.resolve_target_python",
+                return_value=Path("/usr/bin/python3"),
+            ),
+            patch("labeille.bench.runner.resolve_env", return_value={}),
+            patch.object(runner, "_load_packages", return_value=[]),
+            patch("labeille.bench.runner.save_bench_run"),
+        ):
+            meta, _ = runner.run()
+
+        self.assertTrue(meta.config["adaptive"])
+        self.assertAlmostEqual(meta.config["adaptive_threshold"], 0.01)
+        self.assertEqual(meta.config["adaptive_min_iterations"], 7)
+
 
 # ---------------------------------------------------------------------------
 # Full integration test (heavily mocked)

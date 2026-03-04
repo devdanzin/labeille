@@ -36,6 +36,7 @@ from labeille.bench.config import (
     resolve_test_command,
     validate_config,
 )
+from labeille.bench.stats import relative_standard_error
 from labeille.bench.results import (
     BenchConditionResult,
     BenchIteration,
@@ -246,6 +247,9 @@ class BenchRunner:
                 "interleave": self.config.interleave,
                 "packages_filter": self.config.packages_filter,
                 "top_n": self.config.top_n,
+                "adaptive": self.config.adaptive,
+                "adaptive_threshold": self.config.adaptive_threshold,
+                "adaptive_min_iterations": self.config.adaptive_min_iterations,
             },
             cli_args=self.config.cli_args,
             start_time=time.strftime("%Y-%m-%dT%H:%M:%S%z"),
@@ -387,6 +391,9 @@ class BenchRunner:
         total_iter = self.config.total_iterations
         condition_names = list(self.config.conditions.keys())
 
+        # Track which packages have converged (for adaptive mode).
+        converged_packages: set[int] = set()
+
         for iter_idx in range(total_iter):
             is_warmup = iter_idx < self.config.warmup
             phase = "warmup" if is_warmup else "measure"
@@ -395,7 +402,7 @@ class BenchRunner:
             for pkg_idx, (pkg, setup, pkg_result) in enumerate(
                 zip(packages, pkg_setups, pkg_results),
             ):
-                if pkg_result.skipped or not setup:
+                if pkg_result.skipped or not setup or pkg_idx in converged_packages:
                     continue
 
                 for cond_name in condition_names:
@@ -422,6 +429,22 @@ class BenchRunner:
                             status=iteration.status,
                         )
                     )
+
+                # Adaptive convergence: check after each full round of conditions.
+                if self.config.adaptive and not is_warmup:
+                    all_converged = all(
+                        self._check_convergence(pkg_result.conditions[cn])
+                        for cn in condition_names
+                    )
+                    if all_converged:
+                        for cn in condition_names:
+                            pkg_result.conditions[cn].converged_early = True
+                        converged_packages.add(pkg_idx)
+                        log.info(
+                            "Adaptive: %s converged after %d measured iterations",
+                            pkg.package,
+                            iter_idx + 1 - self.config.warmup,
+                        )
 
         # Compute stats and write results.
         results: list[BenchPackageResult] = []
@@ -493,6 +516,22 @@ class BenchRunner:
                             status=iteration.status,
                         )
                     )
+
+                # Adaptive convergence: check after each full round of conditions.
+                if self.config.adaptive and not is_warmup:
+                    all_converged = all(
+                        self._check_convergence(pkg_result.conditions[cn])
+                        for cn in condition_names
+                    )
+                    if all_converged:
+                        for cn in condition_names:
+                            pkg_result.conditions[cn].converged_early = True
+                        log.info(
+                            "Adaptive: %s converged after %d measured iterations",
+                            pkg.package,
+                            iter_idx + 1 - self.config.warmup,
+                        )
+                        break
         else:
             # Block: all iterations of condition A, then B.
             for cond_name in condition_names:
@@ -523,6 +562,21 @@ class BenchRunner:
                             status=iteration.status,
                         )
                     )
+
+                    # Adaptive convergence: check after each measured iteration.
+                    if (
+                        self.config.adaptive
+                        and not is_warmup
+                        and self._check_convergence(pkg_result.conditions[cond_name])
+                    ):
+                        pkg_result.conditions[cond_name].converged_early = True
+                        log.info(
+                            "Adaptive: %s/%s converged after %d measured iterations",
+                            pkg.package,
+                            cond_name,
+                            iter_idx + 1 - self.config.warmup,
+                        )
+                        break
 
         # Compute stats.
         for cond_result in pkg_result.conditions.values():
@@ -761,6 +815,31 @@ class BenchRunner:
             per_test_timings=per_test_timings,
         )
 
+    def _check_convergence(
+        self,
+        cond_result: BenchConditionResult,
+    ) -> bool:
+        """Check if wall-time measurements have converged.
+
+        Convergence is reached when the Relative Standard Error (RSE)
+        of measured wall times drops below the adaptive threshold.
+
+        Args:
+            cond_result: The condition result to check.
+
+        Returns:
+            True if RSE is below the threshold.
+        """
+        measured = [it for it in cond_result.iterations if not it.warmup]
+        n = len(measured)
+        if n < self.config.adaptive_min_iterations:
+            return False
+        wall_times = [it.wall_time_s for it in measured]
+        rse = relative_standard_error(wall_times)
+        if rse != rse:  # NaN check
+            return False
+        return rse < self.config.adaptive_threshold
+
     def _wait_for_stability(self) -> None:
         """Block until the system meets stability criteria."""
         log.info(
@@ -823,11 +902,13 @@ class BenchRunner:
 def quick_config(config: BenchConfig) -> BenchConfig:
     """Apply quick mode settings for rapid iteration.
 
-    Reduces iterations to 3, warmup to 0, and limits to top 20
-    packages.  Useful during development and testing.
+    Reduces iterations to 3, warmup to 0, limits to top 20
+    packages, and enables adaptive convergence.  Useful during
+    development and testing.
     """
     config.iterations = 3
     config.warmup = 0
     config.top_n = min(config.top_n or 20, 20)
+    config.adaptive = True
     config.name = f"{config.name} (quick)" if config.name else "Quick benchmark"
     return config

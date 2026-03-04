@@ -114,6 +114,9 @@ class BenchConditionResult:
     user_time_stats: DescriptiveStats | None = None
     sys_time_stats: DescriptiveStats | None = None
     peak_rss_stats: DescriptiveStats | None = None
+    # Adaptive convergence.
+    converged_early: bool = False  # True if adaptive stopping triggered
+
     # Setup timing (not part of the benchmark):
     install_duration_s: float = 0.0
     venv_setup_duration_s: float = 0.0
@@ -166,6 +169,8 @@ class BenchConditionResult:
             "install_duration_s": round(self.install_duration_s, 2),
             "venv_setup_duration_s": round(self.venv_setup_duration_s, 2),
         }
+        if self.converged_early:
+            d["converged_early"] = True
         if self.wall_time_stats:
             d["wall_time_stats"] = self.wall_time_stats.to_dict()
         if self.user_time_stats:
@@ -183,6 +188,7 @@ class BenchConditionResult:
         result.iterations = [BenchIteration.from_dict(it) for it in data.get("iterations", [])]
         result.install_duration_s = data.get("install_duration_s", 0.0)
         result.venv_setup_duration_s = data.get("venv_setup_duration_s", 0.0)
+        result.converged_early = data.get("converged_early", False)
         # Recompute stats rather than deserializing — ensures consistency.
         result.compute_stats()
         return result

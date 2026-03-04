@@ -24,6 +24,7 @@ from labeille.bench.stats import (
     compute_overhead,
     describe,
     detect_outliers,
+    relative_standard_error,
     welch_ttest,
 )
 
@@ -601,6 +602,56 @@ class TestIntegration(unittest.TestCase):
         # b > a, so t < 0 (sample_a - sample_b) and d > 0 (sample_b - sample_a)
         self.assertLess(ttest.t_statistic, 0)
         self.assertGreater(effect.d, 0)
+
+
+# ---------------------------------------------------------------------------
+# Relative Standard Error
+# ---------------------------------------------------------------------------
+
+
+class TestRelativeStandardError(unittest.TestCase):
+    """Tests for relative_standard_error()."""
+
+    def test_rse_known_value(self) -> None:
+        """RSE for a known sample."""
+        # values = [10, 10, 10, 10, 10]: stdev=0, rse=0
+        values = [10.0, 10.0, 10.0, 10.0, 10.0]
+        self.assertAlmostEqual(relative_standard_error(values), 0.0, places=10)
+
+    def test_rse_nonzero(self) -> None:
+        """RSE for a sample with variation."""
+        # mean=10.0, stdev≈1.58, n=5, SE=stdev/sqrt(5)≈0.707, RSE≈0.0707
+        values = [8.0, 9.0, 10.0, 11.0, 12.0]
+        rse = relative_standard_error(values)
+        self.assertGreater(rse, 0)
+        self.assertAlmostEqual(rse, 0.0707, places=3)
+
+    def test_rse_single_value(self) -> None:
+        """Single value: RSE is NaN (need n >= 2)."""
+        self.assertTrue(math.isnan(relative_standard_error([42.0])))
+
+    def test_rse_empty(self) -> None:
+        """Empty input: RSE is NaN."""
+        self.assertTrue(math.isnan(relative_standard_error([])))
+
+    def test_rse_zero_mean(self) -> None:
+        """Zero mean: RSE is NaN."""
+        self.assertTrue(math.isnan(relative_standard_error([-1.0, 1.0])))
+
+    def test_rse_decreases_with_more_samples(self) -> None:
+        """RSE should decrease as n increases (more precision)."""
+        values_5 = [10.0, 10.5, 9.5, 10.2, 9.8]
+        values_10 = values_5 + [10.1, 9.9, 10.3, 9.7, 10.0]
+        rse_5 = relative_standard_error(values_5)
+        rse_10 = relative_standard_error(values_10)
+        self.assertGreater(rse_5, rse_10)
+
+    def test_rse_uses_absolute_mean(self) -> None:
+        """RSE should use absolute mean for negative-mean samples."""
+        values = [-10.0, -10.5, -9.5, -10.2, -9.8]
+        rse = relative_standard_error(values)
+        self.assertGreater(rse, 0)
+        self.assertLess(rse, 1)
 
 
 if __name__ == "__main__":

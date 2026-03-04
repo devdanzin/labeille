@@ -117,6 +117,31 @@ def describe(values: Sequence[float]) -> DescriptiveStats:
     )
 
 
+def relative_standard_error(values: Sequence[float]) -> float:
+    """Compute the Relative Standard Error (RSE) of a sample.
+
+    RSE = (stdev / sqrt(n)) / mean
+
+    This measures the precision of the sample mean as a fraction.
+    Lower RSE means the mean is more precisely estimated.  A value
+    of 0.005 means the sample mean is estimated to within 0.5%.
+
+    Args:
+        values: Numeric sample. Must have at least 2 elements.
+
+    Returns:
+        RSE as a float. Returns NaN if n < 2 or mean == 0.
+    """
+    n = len(values)
+    if n < 2:
+        return float("nan")
+    mean = statistics.mean(values)
+    if mean == 0:
+        return float("nan")
+    stdev = statistics.stdev(values)
+    return (stdev / math.sqrt(n)) / abs(mean)
+
+
 def _percentile(sorted_values: list[float], p: float) -> float:
     """Compute the p-th percentile using linear interpolation.
 
