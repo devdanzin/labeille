@@ -36,6 +36,7 @@ class TestFailureCategory(unittest.TestCase):
     def test_category_is_usable(self) -> None:
         usable = {
             FailureCategory.COMPATIBLE,
+            FailureCategory.COMPATIBLE_BY_WHEEL,
             FailureCategory.COMPATIBLE_GIL_FALLBACK,
             FailureCategory.INTERMITTENT,
             FailureCategory.TSAN_WARNINGS,
@@ -74,6 +75,18 @@ class TestFailureCategory(unittest.TestCase):
     def test_category_invalid_string(self) -> None:
         with self.assertRaises(ValueError):
             FailureCategory("not_a_category")
+
+    def test_compatible_by_wheel_severity(self) -> None:
+        self.assertEqual(FailureCategory.COMPATIBLE_BY_WHEEL.severity, 0)
+
+    def test_compatible_by_wheel_is_usable(self) -> None:
+        self.assertTrue(FailureCategory.COMPATIBLE_BY_WHEEL.is_usable)
+
+    def test_compatible_by_wheel_symbol(self) -> None:
+        self.assertEqual(FailureCategory.COMPATIBLE_BY_WHEEL.symbol, "\u2295")
+
+    def test_compatible_by_wheel_value(self) -> None:
+        self.assertEqual(FailureCategory.COMPATIBLE_BY_WHEEL.value, "compatible_by_wheel")
 
 
 # ---------------------------------------------------------------------------
@@ -325,6 +338,28 @@ class TestFTPackageResult(unittest.TestCase):
         self.assertEqual(restored.install_from, "")
         self.assertIsNone(restored.sdist_version)
 
+    def test_ft_wheel_fields_roundtrip(self) -> None:
+        result = FTPackageResult(
+            package="mypkg",
+            ft_wheel_found=True,
+            ft_wheel_version="2.1.0",
+        )
+        result.compute_aggregates()
+        result.categorize()
+        d = result.to_dict()
+        self.assertTrue(d["ft_wheel_found"])
+        self.assertEqual(d["ft_wheel_version"], "2.1.0")
+
+        restored = FTPackageResult.from_dict(d)
+        self.assertTrue(restored.ft_wheel_found)
+        self.assertEqual(restored.ft_wheel_version, "2.1.0")
+
+    def test_ft_wheel_fields_missing_defaults(self) -> None:
+        d = {"package": "pkg", "category": "unknown"}
+        restored = FTPackageResult.from_dict(d)
+        self.assertIsNone(restored.ft_wheel_found)
+        self.assertIsNone(restored.ft_wheel_version)
+
 
 # ---------------------------------------------------------------------------
 # Categorization tests
@@ -455,6 +490,37 @@ class TestFTRunSummary(unittest.TestCase):
         self.assertEqual(summary.pure_python_count, 1)
         self.assertEqual(summary.extension_count, 2)
         self.assertEqual(summary.pure_python_compatible_pct, 100.0)
+        self.assertEqual(summary.extension_compatible_pct, 50.0)
+
+    def test_summary_compatible_by_wheel_counted(self) -> None:
+        wheel_result = FTPackageResult(
+            package="numpy",
+            category=FailureCategory.COMPATIBLE_BY_WHEEL,
+            ft_wheel_found=True,
+            ft_wheel_version="2.1.0",
+        )
+        results = [
+            make_package_result("a", ["pass"] * 5),
+            wheel_result,
+        ]
+        summary = FTRunSummary.compute(results)
+        self.assertEqual(summary.categories.get("compatible_by_wheel"), 1)
+        self.assertEqual(summary.categories.get("compatible"), 1)
+
+    def test_summary_wheel_counts_as_compatible_pct(self) -> None:
+        wheel_result = FTPackageResult(
+            package="numpy",
+            category=FailureCategory.COMPATIBLE_BY_WHEEL,
+            extension_compat={"is_pure_python": False},
+        )
+        fail_result = make_package_result(
+            "badext",
+            ["fail"] * 5,
+            extension_compat={"is_pure_python": False},
+        )
+        results = [wheel_result, fail_result]
+        summary = FTRunSummary.compute(results)
+        self.assertEqual(summary.extension_count, 2)
         self.assertEqual(summary.extension_compatible_pct, 50.0)
 
     def test_summary_serialization_roundtrip(self) -> None:

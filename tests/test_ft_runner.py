@@ -14,6 +14,7 @@ from labeille.ft.results import FailureCategory, IterationOutcome
 from labeille.ft.runner import (
     FTRunConfig,
     OutputMonitor,
+    _parse_python_version,
     extract_tsan_warnings,
     parse_pytest_summary,
     parse_pytest_verbose,
@@ -667,6 +668,242 @@ class TestFTRunConfig(unittest.TestCase):
         )
         errors = config.validate()
         self.assertTrue(any("comparison" in e.lower() for e in errors))
+
+
+# ---------------------------------------------------------------------------
+# _parse_python_version tests
+# ---------------------------------------------------------------------------
+
+
+class TestParsePythonVersion(unittest.TestCase):
+    def test_full_version(self) -> None:
+        self.assertEqual(_parse_python_version("3.15.0a1"), (3, 15))
+
+    def test_release_version(self) -> None:
+        self.assertEqual(_parse_python_version("3.14.0"), (3, 14))
+
+    def test_short_version(self) -> None:
+        self.assertEqual(_parse_python_version("3.15"), (3, 15))
+
+    def test_two_digit_minor(self) -> None:
+        self.assertEqual(_parse_python_version("3.15.0"), (3, 15))
+
+    def test_empty_string(self) -> None:
+        self.assertIsNone(_parse_python_version(""))
+
+    def test_garbage(self) -> None:
+        self.assertIsNone(_parse_python_version("not-a-version"))
+
+
+# ---------------------------------------------------------------------------
+# FTRunConfig trust wheels tests
+# ---------------------------------------------------------------------------
+
+
+class TestFTRunConfigTrustWheels(unittest.TestCase):
+    def test_any_version_implies_trust(self) -> None:
+        config = FTRunConfig(
+            target_python=Path(sys.executable),
+            trust_ft_wheels_any_version=True,
+            trust_ft_wheels=False,
+        )
+        config.validate()
+        self.assertTrue(config.trust_ft_wheels)
+
+    def test_default_no_trust(self) -> None:
+        config = FTRunConfig(target_python=Path(sys.executable))
+        self.assertFalse(config.trust_ft_wheels)
+        self.assertFalse(config.trust_ft_wheels_any_version)
+
+
+# ---------------------------------------------------------------------------
+# run_package_ft wheel trust tests
+# ---------------------------------------------------------------------------
+
+
+class TestRunPackageFtWheelTrust(unittest.TestCase):
+    def _make_pkg(self, **overrides: object) -> SimpleNamespace:
+        defaults = {
+            "package": "mypkg",
+            "repo": "https://github.com/x/mypkg",
+            "install_command": "pip install -e .",
+            "test_command": "python -m pytest tests/",
+            "import_name": "mypkg",
+        }
+        defaults.update(overrides)
+        return SimpleNamespace(**defaults)
+
+    def _make_config(self, **overrides: object) -> FTRunConfig:
+        import tempfile
+
+        tmpdir = Path(tempfile.mkdtemp())
+        defaults: dict[str, object] = {
+            "target_python": Path("/fake/python"),
+            "iterations": 3,
+            "timeout": 60,
+            "stall_threshold": 30,
+            "repos_dir": tmpdir / "repos",
+            "venvs_dir": tmpdir / "venvs",
+            "results_dir": tmpdir / "results",
+            "detect_extensions": False,
+            "compare_with_gil": False,
+            "stop_on_first_pass": False,
+        }
+        defaults.update(overrides)
+        return FTRunConfig(**defaults)  # type: ignore[arg-type]
+
+    @patch("labeille.ft.runner.install_package")
+    @patch("labeille.ft.runner.create_venv")
+    @patch("labeille.ft.runner.clone_repo")
+    @patch("labeille.ft.runner.has_ft_wheel", return_value=True)
+    @patch("labeille.ft.runner.fetch_pypi_metadata")
+    def test_ft_wheel_found_skips_package(
+        self,
+        mock_metadata: MagicMock,
+        mock_has_ft: MagicMock,
+        mock_clone: MagicMock,
+        mock_venv: MagicMock,
+        mock_install: MagicMock,
+    ) -> None:
+        mock_metadata.return_value = {"info": {"version": "2.1.0"}, "urls": []}
+        config = self._make_config(trust_ft_wheels=True, _target_python_version=(3, 15))
+        result = run_package_ft(self._make_pkg(), config)
+
+        self.assertEqual(result.category, FailureCategory.COMPATIBLE_BY_WHEEL)
+        self.assertTrue(result.ft_wheel_found)
+        self.assertEqual(result.ft_wheel_version, "2.1.0")
+        self.assertEqual(result.install_from, "skipped")
+        mock_clone.assert_not_called()
+        mock_venv.assert_not_called()
+        mock_install.assert_not_called()
+
+    @patch("labeille.ft.runner.run_single_iteration")
+    @patch("labeille.ft.runner.install_package")
+    @patch("labeille.ft.runner.create_venv")
+    @patch("labeille.ft.runner.clone_repo")
+    @patch("labeille.ft.runner.has_ft_wheel", return_value=False)
+    @patch("labeille.ft.runner.fetch_pypi_metadata")
+    def test_ft_wheel_not_found_continues(
+        self,
+        mock_metadata: MagicMock,
+        mock_has_ft: MagicMock,
+        mock_clone: MagicMock,
+        mock_venv: MagicMock,
+        mock_install: MagicMock,
+        mock_run_iter: MagicMock,
+    ) -> None:
+        mock_metadata.return_value = {"info": {"version": "2.1.0"}, "urls": []}
+        config = self._make_config(trust_ft_wheels=True, _target_python_version=(3, 15))
+        repo_dir = config.repos_dir / "mypkg"
+        repo_dir.mkdir(parents=True)
+
+        mock_install.return_value = MagicMock(returncode=0)
+        mock_run_iter.return_value = IterationOutcome(
+            index=1, status="pass", exit_code=0, duration_s=5.0
+        )
+
+        with patch("labeille.ft.runner.pull_repo"):
+            result = run_package_ft(self._make_pkg(), config)
+
+        self.assertFalse(result.ft_wheel_found)
+        mock_clone.assert_not_called()  # repo_dir exists, so pull_repo is used
+        self.assertNotEqual(result.category, FailureCategory.COMPATIBLE_BY_WHEEL)
+
+    @patch("labeille.ft.runner.run_single_iteration")
+    @patch("labeille.ft.runner.install_package")
+    @patch("labeille.ft.runner.create_venv")
+    @patch("labeille.ft.runner.clone_repo")
+    @patch("labeille.ft.runner.fetch_pypi_metadata", return_value=None)
+    def test_pypi_failure_continues(
+        self,
+        mock_metadata: MagicMock,
+        mock_clone: MagicMock,
+        mock_venv: MagicMock,
+        mock_install: MagicMock,
+        mock_run_iter: MagicMock,
+    ) -> None:
+        config = self._make_config(trust_ft_wheels=True, _target_python_version=(3, 15))
+        repo_dir = config.repos_dir / "mypkg"
+        repo_dir.mkdir(parents=True)
+
+        mock_install.return_value = MagicMock(returncode=0)
+        mock_run_iter.return_value = IterationOutcome(
+            index=1, status="pass", exit_code=0, duration_s=5.0
+        )
+
+        with patch("labeille.ft.runner.pull_repo"):
+            result = run_package_ft(self._make_pkg(), config)
+
+        self.assertIsNone(result.ft_wheel_found)
+        self.assertNotEqual(result.category, FailureCategory.COMPATIBLE_BY_WHEEL)
+
+    @patch("labeille.ft.runner.run_single_iteration")
+    @patch("labeille.ft.runner.install_package")
+    @patch("labeille.ft.runner.create_venv")
+    @patch("labeille.ft.runner.clone_repo")
+    @patch("labeille.ft.runner.fetch_pypi_metadata")
+    def test_trust_off_skips_check(
+        self,
+        mock_metadata: MagicMock,
+        mock_clone: MagicMock,
+        mock_venv: MagicMock,
+        mock_install: MagicMock,
+        mock_run_iter: MagicMock,
+    ) -> None:
+        config = self._make_config(trust_ft_wheels=False)
+        repo_dir = config.repos_dir / "mypkg"
+        repo_dir.mkdir(parents=True)
+
+        mock_install.return_value = MagicMock(returncode=0)
+        mock_run_iter.return_value = IterationOutcome(
+            index=1, status="pass", exit_code=0, duration_s=5.0
+        )
+
+        with patch("labeille.ft.runner.pull_repo"):
+            run_package_ft(self._make_pkg(), config)
+
+        mock_metadata.assert_not_called()
+
+    @patch("labeille.ft.runner.clone_repo")
+    @patch("labeille.ft.runner.has_ft_wheel", return_value=True)
+    @patch("labeille.ft.runner.fetch_pypi_metadata")
+    def test_any_version_passes_none(
+        self,
+        mock_metadata: MagicMock,
+        mock_has_ft: MagicMock,
+        mock_clone: MagicMock,
+    ) -> None:
+        mock_metadata.return_value = {"info": {"version": "2.1.0"}, "urls": []}
+        config = self._make_config(
+            trust_ft_wheels=True,
+            trust_ft_wheels_any_version=True,
+        )
+
+        run_package_ft(self._make_pkg(), config)
+        mock_has_ft.assert_called_once()
+        _, kwargs = mock_has_ft.call_args
+        self.assertIsNone(kwargs.get("target_version"))
+
+    @patch("labeille.ft.runner.clone_repo")
+    @patch("labeille.ft.runner.has_ft_wheel", return_value=True)
+    @patch("labeille.ft.runner.fetch_pypi_metadata")
+    def test_version_matched_passes_tuple(
+        self,
+        mock_metadata: MagicMock,
+        mock_has_ft: MagicMock,
+        mock_clone: MagicMock,
+    ) -> None:
+        mock_metadata.return_value = {"info": {"version": "2.1.0"}, "urls": []}
+        config = self._make_config(
+            trust_ft_wheels=True,
+            trust_ft_wheels_any_version=False,
+            _target_python_version=(3, 15),
+        )
+
+        run_package_ft(self._make_pkg(), config)
+        mock_has_ft.assert_called_once()
+        _, kwargs = mock_has_ft.call_args
+        self.assertEqual(kwargs.get("target_version"), (3, 15))
 
 
 if __name__ == "__main__":

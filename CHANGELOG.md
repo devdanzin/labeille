@@ -7,6 +7,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+- `--trust-ft-wheels` flag for `labeille ft run`: packages with free-threaded wheels (`cpXYt` ABI tag) for the target Python version are classified as `compatible_by_wheel` without running tests.
+- `--trust-ft-wheels-any-version` flag for `labeille ft run`: like `--trust-ft-wheels` but trusts free-threaded wheels built for any Python version. Implies `--trust-ft-wheels`.
+- `COMPATIBLE_BY_WHEEL` category in `FailureCategory` with `⊕` symbol and severity 0.
+- `has_ft_wheel()` function in `classifier.py` to detect free-threaded wheels in PyPI release metadata.
+- `ft_wheel_found` and `ft_wheel_version` fields on `FTPackageResult` for provenance tracking.
+- `trust_ft_wheels` and `trust_ft_wheels_any_version` fields on `FTRunConfig`, recorded in `ft_meta.json`.
+- FT wheel check reuses PyPI metadata for sdist version lookup when both `--trust-ft-wheels` and `--install-from sdist` are active.
 - `--install-from {source|sdist}` option for `labeille run` and `labeille ft run`: install packages from PyPI source distributions while running tests from cloned git repos.
 - Sdist version alignment: `fetch_latest_pypi_version()` queries PyPI, `checkout_matching_tag()` aligns the repo to the matching release tag.
 - Source directory shielding: `shield_source_dir()` temporarily renames flat-layout source dirs to prevent local imports from shadowing the sdist-installed package.

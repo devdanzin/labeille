@@ -10,6 +10,8 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from labeille.ft.results import FailureCategory
+
 log = logging.getLogger("labeille")
 
 
@@ -60,6 +62,7 @@ def format_compatibility_summary(
     # Display categories in severity order.
     display_order = [
         ("compatible", "✓", "Compatible"),
+        ("compatible_by_wheel", "⊕", "Compatible (FT wheel)"),
         ("compatible_gil_fallback", "⚠", "Compatible (GIL fallback)"),
         ("tsan_warnings", "⚡", "TSAN warnings (tests pass)"),
         ("intermittent", "~", "Intermittent"),
@@ -153,6 +156,8 @@ def format_package_table(
 
         # Details column.
         details: list[str] = []
+        if r.category == FailureCategory.COMPATIBLE_BY_WHEEL:
+            details.append(f"FT wheel ({r.ft_wheel_version or '?'})")
         if r.failure_signatures:
             details.append(r.failure_signatures[0][:30])
         if r.flaky_tests:

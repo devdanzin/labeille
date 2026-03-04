@@ -175,5 +175,19 @@ class TestFtRunInstallFrom(unittest.TestCase):
         self.assertNotEqual(result.exit_code, 0)
 
 
+class TestFtRunTrustFtWheels(unittest.TestCase):
+    def test_ft_run_trust_ft_wheels_help(self) -> None:
+        runner = CliRunner()
+        result = runner.invoke(main, ["ft", "run", "--help"])
+        self.assertEqual(result.exit_code, 0)
+        self.assertIn("--trust-ft-wheels", result.output)
+
+    def test_ft_run_trust_ft_wheels_any_version_help(self) -> None:
+        runner = CliRunner()
+        result = runner.invoke(main, ["ft", "run", "--help"])
+        self.assertEqual(result.exit_code, 0)
+        self.assertIn("--trust-ft-wheels-any-version", result.output)
+
+
 if __name__ == "__main__":
     unittest.main()

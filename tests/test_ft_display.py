@@ -82,6 +82,24 @@ class TestFormatCompatibilitySummary(unittest.TestCase):
         output = format_compatibility_summary(summary, system_info="System: AMD Ryzen 9, 64GB RAM")
         self.assertIn("System: AMD Ryzen 9, 64GB RAM", output)
 
+    def test_summary_compatible_by_wheel(self) -> None:
+        summary = {
+            "total_packages": 100,
+            "categories": {"compatible": 50, "compatible_by_wheel": 15},
+        }
+        output = format_compatibility_summary(summary)
+        self.assertIn("Compatible (FT wheel)", output)
+        self.assertIn("15", output)
+        self.assertIn("⊕", output)
+
+    def test_summary_wheel_zero_omitted(self) -> None:
+        summary = {
+            "total_packages": 100,
+            "categories": {"compatible": 100, "compatible_by_wheel": 0},
+        }
+        output = format_compatibility_summary(summary)
+        self.assertNotIn("Compatible (FT wheel)", output)
+
     def test_summary_extension_breakdown(self) -> None:
         summary = {
             "total_packages": 350,
@@ -150,6 +168,18 @@ class TestFormatPackageTable(unittest.TestCase):
         )
         output = format_package_table([r])
         self.assertIn("3 flaky tests", output)
+
+    def test_table_wheel_trust_details(self) -> None:
+        r = _make_result(
+            "numpy",
+            FailureCategory.COMPATIBLE_BY_WHEEL,
+            ft_wheel_found=True,
+            ft_wheel_version="2.1.0",
+            iterations_completed=0,
+            pass_count=0,
+        )
+        output = format_package_table([r])
+        self.assertIn("FT wheel (2.1.0)", output)
 
     def test_table_install_failure(self) -> None:
         r = _make_result(
