@@ -57,8 +57,8 @@ main.add_command(compat_group)
 @click.option(
     "--registry-dir",
     type=click.Path(path_type=Path),
-    default=Path("registry"),
-    show_default=True,
+    default=None,
+    help="Registry directory (default: ~/.local/share/labeille/registry/).",
 )
 @click.option("--dry-run", is_flag=True, help="Show what would be done without making changes.")
 @click.option("--timeout", type=float, default=10.0, show_default=True)
@@ -82,7 +82,7 @@ def resolve(
     from_file: Path | None,
     from_json: Path | None,
     top_n: int | None,
-    registry_dir: Path,
+    registry_dir: Path | None,
     dry_run: bool,
     timeout: float,
     verbose: bool,
@@ -91,7 +91,11 @@ def resolve(
     workers: int,
 ) -> None:
     """Resolve PyPI packages to source repositories and build a test registry."""
+    from labeille.registry import default_registry_dir
+
     setup_logging(verbose=verbose, quiet=quiet, log_file=log_file)
+    if registry_dir is None:
+        registry_dir = default_registry_dir()
 
     if top_n is not None and from_json is None:
         raise click.UsageError("--top requires --from-json")
@@ -147,8 +151,8 @@ def resolve(
 @click.option(
     "--registry-dir",
     type=click.Path(path_type=Path),
-    default=Path("registry"),
-    show_default=True,
+    default=None,
+    help="Registry directory (default: ~/.local/share/labeille/registry/).",
 )
 @click.option(
     "--results-dir",
@@ -284,7 +288,7 @@ def resolve(
 def run_cmd(
     ctx: click.Context,
     target_python: Path,
-    registry_dir: Path,
+    registry_dir: Path | None,
     results_dir: Path,
     top_n: int | None,
     packages_csv: str | None,
@@ -316,6 +320,11 @@ def run_cmd(
 ) -> None:
     """Run test suites against a JIT-enabled Python build and detect crashes."""
     from datetime import datetime, timezone
+
+    from labeille.registry import default_registry_dir
+
+    if registry_dir is None:
+        registry_dir = default_registry_dir()
 
     from labeille.runner import (
         RunnerConfig,
@@ -649,8 +658,8 @@ def _print_human_format(result: "ScanResult", install_command: str | None) -> No
 @click.option(
     "--registry-dir",
     type=click.Path(path_type=Path),
-    default=Path("registry"),
-    show_default=True,
+    default=None,
+    help="Registry directory (default: ~/.local/share/labeille/registry/).",
 )
 @click.option(
     "--test-command",
@@ -697,7 +706,7 @@ def bisect_cmd(
     good_rev: str,
     bad_rev: str,
     target_python: Path,
-    registry_dir: Path,
+    registry_dir: Path | None,
     test_command: str | None,
     install_command: str | None,
     crash_signature: str | None,
@@ -710,8 +719,11 @@ def bisect_cmd(
 ) -> None:
     """Bisect a package's git history to find the first commit that introduced a crash."""
     from labeille.bisect import BisectConfig, run_bisect
+    from labeille.registry import default_registry_dir
 
     setup_logging(verbose=verbose)
+    if registry_dir is None:
+        registry_dir = default_registry_dir()
 
     # Parse env pairs.
     env_overrides: dict[str, str] = {}

@@ -74,14 +74,17 @@ pip install -e '.[dev]'
 ## Quick Start
 
 ```bash
+# Step 0: Fetch the package registry
+labeille registry sync
+
 # Step 1: Resolve packages — build the test registry from a PyPI top-packages dump
-labeille resolve --from-json top-pypi-packages.json --top 50 --registry-dir registry
+labeille resolve --from-json top-pypi-packages.json --top 50
 
 # Or resolve specific packages by name
-labeille resolve requests click flask --registry-dir registry
+labeille resolve requests click flask
 
 # Step 2: Run test suites against a JIT-enabled Python build
-labeille run --target-python /path/to/jit-python --registry-dir registry
+labeille run --target-python /path/to/jit-python
 
 # Dry-run to see what would be tested without actually running anything
 labeille run --target-python /path/to/jit-python --dry-run
@@ -249,12 +252,23 @@ the most important step — without accurate enrichment, test runs will fail
 with missing dependencies, broken installs, or pytest configuration errors.
 
 Enrichment can be done manually, with Claude Code, or with another AI coding
-agent. The process is iterative: fill in the YAML fields, run the tests,
-diagnose any failures, fix the YAML, and re-run until the test harness works.
-
-For the complete guide — including field reference, step-by-step walkthrough,
-common problems, and ready-to-use Claude Code prompts — see
+agent. For the field reference, enrichment guidelines, and the registry schema,
+see [laruche](https://github.com/devdanzin/laruche). For a step-by-step
+walkthrough with common problems and ready-to-use Claude Code prompts, see
 **[doc/enrichment.md](doc/enrichment.md)**.
+
+## Registry
+
+The package registry is maintained in
+[laruche](https://github.com/devdanzin/laruche), a separate repository
+containing YAML configurations for each tracked package.
+
+- **Fetch the registry:** `labeille registry sync` clones or updates the
+  registry to `~/.local/share/labeille/registry/`.
+- **Override the location:** Pass `--registry-dir <path>` to any command
+  to use a different registry directory.
+- **Field schema:** See the [laruche](https://github.com/devdanzin/laruche)
+  README for the full field reference and enrichment guidelines.
 
 ## Analyzing Results
 
@@ -333,10 +347,10 @@ interpreters, with/without coverage:
 labeille bench run \
     --condition "jit:target_python=/opt/cpython/python,env.PYTHON_JIT=1" \
     --condition "nojit:target_python=/opt/cpython/python,env.PYTHON_JIT=0" \
-    --registry-dir registry --work-dir ~/bench-work --top 30
+    --work-dir ~/bench-work --top 30
 
 # Or use a YAML profile for repeated benchmarks
-labeille bench run --profile jit-overhead.yaml --registry-dir registry
+labeille bench run --profile jit-overhead.yaml
 
 # View results and compare conditions
 labeille bench show results/bench_*
@@ -364,11 +378,11 @@ and race conditions:
 ```bash
 # Run each package 10 times with PYTHON_GIL=0
 labeille ft run --target-python ~/cpython-ft/python \
-    --registry-dir registry --work-dir ~/ft-work --top 50
+    --work-dir ~/ft-work --top 50
 
 # Compare with GIL-enabled behavior to isolate free-threading issues
 labeille ft run --target-python ~/cpython-ft/python \
-    --registry-dir registry --work-dir ~/ft-work --compare-with-gil --top 50
+    --work-dir ~/ft-work --compare-with-gil --top 50
 
 # View results and analyze flakiness
 labeille ft show results/ft_*
@@ -389,7 +403,7 @@ Survey C extension packages for build compatibility against any Python version:
 ```bash
 # Survey all C extensions in the registry against Python 3.15
 labeille compat survey --target-python ~/cpython-315/python \
-    --registry-dir registry --extensions-only --workers 4
+    --extensions-only --workers 4
 
 # Or survey specific packages from sdist or source
 labeille compat survey --target-python ~/cpython-315/python \
@@ -409,41 +423,12 @@ For the complete guide see **[doc/compat.md](doc/compat.md)**.
 
 ## Registry Format
 
-### Package file (`registry/packages/{name}.yaml`)
+The registry field schema is documented in
+[laruche](https://github.com/devdanzin/laruche). Each package has a YAML
+file with fields for installation, testing, and metadata.
 
-```yaml
-package: requests
-repo: "https://github.com/psf/requests"
-pypi_url: "https://pypi.org/project/requests/"
-extension_type: pure       # pure | extensions | unknown
-python_versions: []
-install_method: pip
-install_command: "pip install -e '.[dev]'"
-test_command: "python -m pytest tests/"
-test_framework: pytest
-uses_xdist: false
-timeout: null
-skip: false
-skip_reason: null
-skip_versions:             # per-version skip reasons (empty = no version skips)
-  "3.15": "PyO3 not supported on 3.15"
-notes: ""
-enriched: false            # set to true after manual review
-clone_depth: null           # null = shallow (depth=1); set higher for setuptools-scm
-import_name: null           # null = derived from package name; override when different
-```
-
-### Index file (`registry/index.yaml`)
-
-```yaml
-last_updated: "2026-02-22T14:30:00"
-packages:
-  - name: boto3
-    download_count: 1611866263
-    extension_type: unknown
-    enriched: false
-    skip: false
-```
+The default registry location is `~/.local/share/labeille/registry/`. Use
+`--registry-dir` to override this for any command.
 
 ## Results
 
@@ -503,11 +488,12 @@ labeille/
 │   ├── compat.md        # Compatibility analysis guide
 │   └── enrichment.md    # Package enrichment guide
 ├── tests/               # Unit and integration tests
-├── registry/            # Package test configurations
-│   ├── index.yaml       # Index of tracked packages
-│   └── packages/        # Per-package YAML configs
 └── results/             # Test run output (gitignored)
 ```
+
+The package registry lives in a separate repository:
+[laruche](https://github.com/devdanzin/laruche).
+Use `labeille registry sync` to fetch it.
 
 ## Relationship to lafleur
 

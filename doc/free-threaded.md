@@ -29,7 +29,7 @@ with GIL fallback, intermittent failures, incompatible, crash, or deadlock.
 ```bash
 # Run each package 10 times with PYTHON_GIL=0
 labeille ft run --target-python ~/cpython-ft/python \
-    --registry-dir registry --work-dir ~/ft-work \
+    --work-dir ~/ft-work \
     --top 50
 
 # View results
@@ -42,7 +42,7 @@ Stop after the first passing iteration per package:
 
 ```bash
 labeille ft run --target-python ~/cpython-ft/python \
-    --registry-dir registry --work-dir ~/ft-work \
+    --work-dir ~/ft-work \
     --stop-on-first-pass --top 100
 ```
 
@@ -50,7 +50,7 @@ labeille ft run --target-python ~/cpython-ft/python \
 
 ```bash
 labeille ft run --target-python ~/cpython-ft/python \
-    --registry-dir registry --work-dir ~/ft-work \
+    --work-dir ~/ft-work \
     --compare-with-gil --iterations 10 --top 50
 ```
 
@@ -58,7 +58,7 @@ labeille ft run --target-python ~/cpython-ft/python \
 
 ```bash
 labeille ft run --target-python ~/cpython-tsan/python \
-    --registry-dir registry --work-dir ~/ft-work \
+    --work-dir ~/ft-work \
     --tsan --iterations 5 --top 30
 ```
 
@@ -131,7 +131,6 @@ C extensions for free-threading compatibility:
 ```bash
 --packages requests,click    # Specific packages
 --top 50                     # Top N by downloads
---registry-dir registry      # Required
 ```
 
 ### Iteration control
@@ -192,7 +191,7 @@ C extensions for free-threading compatibility:
 | `--test-command-suffix STR` | Append to test commands |
 | `--test-command-override STR` | Override all test commands |
 | `--env KEY=VALUE` | Extra environment variables (repeatable) |
-| `--registry-dir PATH` | Registry directory (default: `registry`) |
+| `--registry-dir PATH` | Registry directory (default: `~/.local/share/labeille/registry/`) |
 | `--repos-dir PATH` | Persistent repos (default: `repos`) |
 | `--venvs-dir PATH` | Persistent venvs (default: `venvs`) |
 | `--results-dir PATH` | Output directory (default: `results`) |
@@ -310,7 +309,7 @@ results/ft_20260303_140000/
 ```bash
 # Quick scan of top 100 packages
 labeille ft run --target-python ~/cpython-ft/python \
-    --registry-dir registry --work-dir ~/ft-work \
+    --work-dir ~/ft-work \
     --stop-on-first-pass --top 100
 
 # View summary
@@ -325,7 +324,7 @@ labeille ft report results/ft_* --format markdown -o ft-compat-report.md
 ```bash
 # Run many iterations for a specific package
 labeille ft run --target-python ~/cpython-ft/python \
-    --registry-dir registry --work-dir ~/ft-work \
+    --work-dir ~/ft-work \
     --packages urllib3 --iterations 50
 
 # Analyze flakiness
@@ -337,12 +336,12 @@ labeille ft flaky results/ft_* --package urllib3
 ```bash
 # Run against 3.14a1
 labeille ft run --target-python ~/cpython-314a1/python \
-    --registry-dir registry --work-dir ~/ft-work --top 50 \
+    --work-dir ~/ft-work --top 50 \
     --results-dir results/ft_314a1
 
 # Run against 3.14b2
 labeille ft run --target-python ~/cpython-314b2/python \
-    --registry-dir registry --work-dir ~/ft-work --top 50 \
+    --work-dir ~/ft-work --top 50 \
     --results-dir results/ft_314b2
 
 # Compare
@@ -354,7 +353,7 @@ labeille ft compare results/ft_314a1 results/ft_314b2
 ```bash
 # Use a TSAN-instrumented build
 labeille ft run --target-python ~/cpython-tsan/python \
-    --registry-dir registry --work-dir ~/ft-work \
+    --work-dir ~/ft-work \
     --tsan --iterations 5 --top 30
 
 # Check for packages with tsan_warnings category

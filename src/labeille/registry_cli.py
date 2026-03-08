@@ -31,13 +31,21 @@ from labeille.yaml_lines import format_yaml_value, parse_default_value
 
 
 def _auto_detect_registry(registry_dir: Path | None) -> Path:
-    """Resolve the registry directory, defaulting to ``registry/``."""
+    """Resolve the registry directory.
+
+    Priority:
+    1. Explicit ``--registry-dir`` argument
+    2. ``./registry/`` if it exists in cwd (backward compat)
+    3. Default from ``LABEILLE_REGISTRY_DIR`` or ``~/.local/share/labeille/registry/``
+    """
     if registry_dir is not None:
         return registry_dir
+    from labeille.registry import default_registry_dir
+
     cwd = Path.cwd()
     if (cwd / "registry" / "packages").is_dir():
         return cwd / "registry"
-    return Path("registry")
+    return default_registry_dir()
 
 
 def _parse_filters(where_exprs: tuple[str, ...]) -> list[FieldFilter]:
@@ -639,3 +647,84 @@ def migrate_cmd(
         if update_index and result.modified_count > 0:
             count = rebuild_index(registry_dir)
             click.echo(f"Index updated ({count} packages).")
+
+
+# ---------------------------------------------------------------------------
+# registry sync
+# ---------------------------------------------------------------------------
+
+
+@registry.command("sync")
+@click.option(
+    "--registry-dir",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Target directory (default: ~/.local/share/labeille/registry/).",
+)
+@click.option(
+    "--repo-url",
+    type=str,
+    default=None,
+    help="Git repo URL (default: laruche on GitHub).",
+)
+@click.option("-v", "--verbose", is_flag=True)
+def sync_cmd(
+    registry_dir: Path | None,
+    repo_url: str | None,
+    verbose: bool,
+) -> None:
+    """Clone or update the laruche registry.
+
+    On first run, clones the laruche repository into the default
+    registry location. On subsequent runs, pulls the latest changes.
+
+    The registry is stored at ~/.local/share/labeille/registry/ by
+    default, or wherever --registry-dir points.
+    """
+    import subprocess
+
+    from labeille.registry import LARUCHE_REPO_URL, default_registry_dir
+
+    target = registry_dir or default_registry_dir()
+    url = repo_url or LARUCHE_REPO_URL
+
+    if (target / ".git").is_dir():
+        # Existing clone — pull.
+        click.echo(f"Updating registry at {target}...")
+        result = subprocess.run(
+            ["git", "-C", str(target), "pull", "--ff-only"],
+            capture_output=not verbose,
+            text=True,
+        )
+        if result.returncode != 0:
+            click.echo(f"Pull failed (exit {result.returncode}).", err=True)
+            if not verbose and result.stderr:
+                click.echo(result.stderr.strip(), err=True)
+            click.echo(f"Try: cd {target} && git pull --rebase", err=True)
+            sys.exit(1)
+        click.echo("Registry updated.")
+    elif target.exists() and any(target.iterdir()):
+        # Directory exists but isn't a git repo.
+        click.echo(
+            f"Directory {target} exists but is not a git repository.\n"
+            f"If this is a manually managed registry, use --registry-dir "
+            f"to point labeille at it.\n"
+            f"To use laruche, remove {target} and re-run this command.",
+            err=True,
+        )
+        sys.exit(1)
+    else:
+        # Fresh clone.
+        click.echo(f"Cloning laruche registry into {target}...")
+        target.parent.mkdir(parents=True, exist_ok=True)
+        result = subprocess.run(
+            ["git", "clone", url, str(target)],
+            capture_output=not verbose,
+            text=True,
+        )
+        if result.returncode != 0:
+            click.echo(f"Clone failed (exit {result.returncode}).", err=True)
+            if not verbose and result.stderr:
+                click.echo(result.stderr.strip(), err=True)
+            sys.exit(1)
+        click.echo(f"Registry cloned to {target}.")

@@ -21,13 +21,11 @@ This answers questions like:
 # Survey all C extension packages in the registry
 labeille compat survey \
     --target-python ~/cpython-315/python \
-    --registry-dir registry \
     --extensions-only
 
 # Survey top 50 by downloads
 labeille compat survey \
     --target-python ~/cpython-315/python \
-    --registry-dir registry \
     --top 50
 ```
 
@@ -117,7 +115,7 @@ using the same crash detection module as `labeille run`.
 Packages can come from three sources, which are merged:
 
 ```bash
---registry-dir registry      # All packages in the registry
+--registry-dir PATH          # Custom registry location (default: ~/.local/share/labeille/registry/)
 --packages numpy,scipy       # Inline list
 --packages-file packages.txt # One per line
 ```
@@ -279,7 +277,6 @@ compat-results/compat_20260303_140000/
 # Survey all C extension packages in the registry
 labeille compat survey \
     --target-python ~/cpython-315/python \
-    --registry-dir registry \
     --extensions-only \
     --workers 4 \
     --export-markdown
@@ -317,7 +314,6 @@ Test the latest git HEAD of packages against the target Python:
 ```bash
 labeille compat survey \
     --target-python ~/cpython-315/python \
-    --registry-dir registry \
     --from source \
     --repos-dir ~/compat-repos \
     --extensions-only \
