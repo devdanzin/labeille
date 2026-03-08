@@ -1,0 +1,19 @@
+package: guppy3
+repo: https://github.com/zhuyifei1999/guppy3/
+pypi_url: https://pypi.org/project/guppy3/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e .
+test_command: python -c "from guppy.heapy.test import test_all; test_all.test_main()"
+test_framework: custom
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': C extensions, only supports up to 3.14
+notes: 'Auto-enriched. Backend: setuptools. Tests in guppy/heapy/test/ using custom framework. Reviewed: specs/ contains .gsl files not tests.'
+enriched: true
+clone_depth: null
+import_name: null

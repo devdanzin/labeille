@@ -1,7 +1,7 @@
 package: numba
-repo: null
+repo: https://github.com/numba/numba
 pypi_url: https://pypi.org/project/numba/
-extension_type: extensions
+extension_type: c_extension
 python_versions: []
 install_method: pip
 install_command: ''
@@ -10,9 +10,10 @@ test_framework: pytest
 uses_xdist: false
 timeout: null
 skip: true
-skip_reason: No source repository URL available on PyPI.
-skip_versions: {}
-notes: 'Confirmed: no repo available after improved URL detection'
+skip_reason: Requires LLVM/llvmlite C extension that does not support 3.15 yet.
+skip_versions:
+  '3.15': "llvmlite C extension does not support 3.15"
+notes: JIT compiler for Python using LLVM. Depends on llvmlite which needs LLVM build infrastructure.
 enriched: true
 clone_depth: null
 import_name: null

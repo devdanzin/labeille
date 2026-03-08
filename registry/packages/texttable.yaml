@@ -4,8 +4,8 @@ pypi_url: https://pypi.org/project/texttable/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest pytest-cov
-test_command: python -m pytest . -p no:xdist
+install_command: pip install -e . && pip install pytest cjkwrap
+test_command: python -m pytest tests.py -p no:xdist
 test_framework: pytest
 uses_xdist: false
 timeout: null

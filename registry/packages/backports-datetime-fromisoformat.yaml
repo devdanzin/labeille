@@ -4,16 +4,16 @@ pypi_url: https://pypi.org/project/backports-datetime-fromisoformat/
 extension_type: extensions
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest
-test_command: python -m pytest tests
-test_framework: pytest
+install_command: pip install -e . && pip install pytz
+test_command: python -m unittest discover tests -v
+test_framework: unittest
 uses_xdist: false
-timeout: null
+timeout: 600
 skip: false
 skip_reason: null
 skip_versions:
   '3.15': Uses private C API _PyUnicode_CheckConsistency, undeclared in 3.15.
-notes: "Auto-enriched"
+notes: 'Auto-enriched. Backend: setuptools. Tests in tests/.'
 enriched: true
 clone_depth: null
 import_name: null

@@ -1,0 +1,18 @@
+package: qiskit
+repo: https://github.com/Qiskit/qiskit
+pypi_url: https://pypi.org/project/qiskit/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install ddt stestr coverage threadpoolctl
+test_command: python -m stestr run test/python
+test_framework: stestr
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: 'Auto-enriched. Backend: setuptools. Tests in test/.'
+enriched: true
+clone_depth: null
+import_name: null

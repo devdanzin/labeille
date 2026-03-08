@@ -11,8 +11,7 @@ uses_xdist: false
 timeout: null
 skip: true
 skip_reason: Monorepo package in azure-sdk-for-python. Complex to test standalone.
-notes: Azure common utilities. Lives in Azure/azure-sdk-for-python monorepo under
-  sdk/core/azure-common/.
+notes: "Azure common utilities. Lives in Azure/azure-sdk-for-python monorepo under sdk/core/azure-common/."
 enriched: true
 clone_depth: null
 import_name: azure.common

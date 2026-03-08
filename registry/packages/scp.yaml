@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/scp/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest
-test_command: python -m pytest . -p no:xdist
-test_framework: pytest
+install_command: ''
+test_command: ''
+test_framework: unittest
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
+skip: true
+skip_reason: Tests require a running SSH server with credentials in environment variables
 skip_versions: {}
-notes: Re-enriched with improved test detection. Tests in ./
+notes: Tests use unittest and require paramiko SSH connection to a remote server.
 enriched: true
 clone_depth: null
 import_name: null

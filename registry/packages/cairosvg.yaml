@@ -4,16 +4,15 @@ pypi_url: https://pypi.org/project/cairosvg/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: null
-test_command: null
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest cairosvg/test_api.py
 test_framework: pytest
 uses_xdist: false
-timeout: null
-skip: false
-skip_reason: null
-skip_versions:
-  '3.15': Depends on cairocffi C extension
-notes: 'Re-enriched: Depends on cairocffi C extension'
+timeout: 120
+skip: true
+skip_reason: Requires system libcairo library (system dependency not available in test environment)
+skip_versions: {}
+notes: Depends on cairocffi (CFFI-based Cairo binding). Requires system libcairo to be installed. Tests in cairosvg/test_api.py.
 enriched: true
 clone_depth: null
 import_name: null

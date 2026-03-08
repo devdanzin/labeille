@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/semver/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: git fetch --tags --depth 1 && pip install -e ".[test]"
-test_command: python -m pytest tests
+install_command: pip install -e ".[test]"
+test_command: python -m pytest tests -p no:xdist
 test_framework: pytest
 uses_xdist: false
 timeout: null
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: "Uses setuptools-scm (needs git tags)"
+notes: "setuptools-scm commented out in pyproject.toml; version from semver.__about__"
 enriched: true
-clone_depth: 50
+clone_depth: null
 import_name: null

@@ -1,11 +1,11 @@
 package: watchdog
 repo: https://github.com/gorakhargosh/watchdog/
 pypi_url: https://pypi.org/project/watchdog/
-extension_type: extensions
+extension_type: c_extension
 python_versions: []
 install_method: pip
 install_command: pip install -e . && pip install pytest pytest-timeout pytest-cov
-test_command: python -m pytest tests/ -o "addopts="
+test_command: python -m pytest -p no:xdist tests/ -o "addopts="
 test_framework: pytest
 uses_xdist: false
 timeout: 600

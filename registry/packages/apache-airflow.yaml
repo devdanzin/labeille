@@ -10,9 +10,9 @@ test_framework: pytest
 uses_xdist: false
 timeout: null
 skip: true
-skip_reason: "Subpackage of apache/airflow monorepo. Requires full Airflow installation."
+skip_reason: "Requires Python <3.14 (supports 3.10-3.13 only); also requires external database (PostgreSQL/MySQL/SQLite metadata DB) and complex installation."
 skip_versions: {}
-notes: "Auto-triaged: monorepo_airflow"
+notes: "Monorepo at github.com/apache/airflow. Requires Python <3.14 per project metadata."
 enriched: true
 clone_depth: null
 import_name: null

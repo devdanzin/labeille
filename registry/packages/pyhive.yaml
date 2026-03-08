@@ -1,7 +1,7 @@
 package: pyhive
 repo: https://github.com/dropbox/PyHive
 pypi_url: https://pypi.org/project/pyhive/
-extension_type: unknown
+extension_type: pure
 python_versions: []
 install_method: pip
 install_command: ''

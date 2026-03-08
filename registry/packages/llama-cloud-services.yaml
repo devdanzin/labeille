@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/llama-cloud-services/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest
-test_command: python -m pytest py/tests -p no:xdist
+install_command: ''
+test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
+skip: true
+skip_reason: Tests require LlamaCloud API key
 skip_versions: {}
-notes: Repo found by improved URL detection. Tests in py/tests/
+notes: "Monorepo at py/. Tests (py/tests/) need LLAMA_CLOUD_API_KEY. unit_tests exist but need pydantic-settings."
 enriched: true
 clone_depth: null
 import_name: null

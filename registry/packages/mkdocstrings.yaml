@@ -4,16 +4,15 @@ pypi_url: https://pypi.org/project/mkdocstrings/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest griffe dirty-equals mkdocstrings-python
-test_command: python -m pytest tests -p no:xdist
+install_command: pip install -e . && pip install pytest pytest-cov griffe dirty-equals mkdocstrings-python mkdocs
+test_command: python -m pytest tests -p no:xdist -o "addopts="
 test_framework: pytest
 uses_xdist: true
 timeout: null
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: "Tests need griffe, dirty-equals (test_handlers), mkdocstrings-python (conftest
-  fixture). xdist disabled for JIT testing."
+notes: "Tests need griffe, dirty-equals, mkdocstrings-python, mkdocs. addopts cleared (refs: pytest-cov). xdist disabled for JIT testing."
 enriched: true
 clone_depth: null
 import_name: null

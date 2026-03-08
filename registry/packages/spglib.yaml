@@ -1,0 +1,20 @@
+package: spglib
+repo: https://github.com/spglib/spglib
+pypi_url: https://pypi.org/project/spglib/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: git fetch --tags --depth 1 && pip install -e ".[test]"
+test_command: python -m pytest test/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: 'Auto-enriched. Backend: scikit-build-core (not scikit-build). Uses setuptools-scm.
+  Has [test] extras (pytest, pyyaml). Tests in test/. Fixed multiline install_command;
+  removed redundant explicit pytest/pyyaml (already in [test] extras).'
+enriched: true
+clone_depth: 50
+import_name: null

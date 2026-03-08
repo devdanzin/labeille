@@ -12,7 +12,7 @@ timeout: null
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: "Uses setuptools-scm (needs git tags)"
+notes: Uses hatch-vcs for versioning (needs git tags).
 enriched: true
 clone_depth: 50
 import_name: null

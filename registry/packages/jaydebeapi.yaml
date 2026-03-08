@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/jaydebeapi/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e .
-test_command: python -m unittest discover test -v
+install_command: ''
+test_command: ''
 test_framework: unittest
 uses_xdist: false
-timeout: null
-skip: false
-skip_reason: null
+timeout: 600
+skip: true
+skip_reason: Requires Java runtime (JVM) and Maven for test JDBC driver
 skip_versions: {}
-notes: "Auto-enriched"
+notes: 'Auto-enriched (skipped: JVM required)'
 enriched: true
 clone_depth: null
 import_name: null

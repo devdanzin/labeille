@@ -4,8 +4,8 @@ pypi_url: https://pypi.org/project/ruamel-yaml/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest
-test_command: python -m pytest _test/
+install_command: ''
+test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: 600

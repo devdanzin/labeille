@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/std-uritemplate/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e .
-test_command: python -m pytest tests
+install_command: ''
+test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: null
 skip: true
-skip_reason: "No pyproject.toml or setup.py in cloned repo"
+skip_reason: "Multi-language monorepo; Python code in python/ subdirectory, no standard test suite"
 skip_versions: {}
-notes: "Auto-enriched"
+notes: "Multi-language monorepo (python/, go/, java/, etc). Python pyproject.toml in python/ subdir."
 enriched: true
 clone_depth: null
 import_name: null

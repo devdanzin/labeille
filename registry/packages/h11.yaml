@@ -7,11 +7,11 @@ python_versions:
 - '3.14'
 install_method: pip
 install_command: pip install -e . && pip install pytest
-test_command: python -m pytest
+test_command: python -m pytest h11/tests/
 test_framework: pytest
 uses_xdist: false
 timeout: null
 skip: false
 skip_reason: null
-notes: Pure Python HTTP/1.1 library. Tests in h11/tests/ directory.
+notes: Pure Python HTTP/1.1 library. Tests are inside the package at h11/tests/.
 enriched: true

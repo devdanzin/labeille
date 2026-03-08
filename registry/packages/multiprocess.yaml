@@ -1,11 +1,11 @@
 package: multiprocess
 repo: https://github.com/uqfoundation/multiprocess
 pypi_url: https://pypi.org/project/multiprocess/
-extension_type: extensions
+extension_type: c_extension
 python_versions: []
 install_method: pip
 install_command: pip install -e . && pip install pytest
-test_command: python -m pytest multiprocess/tests/
+test_command: python -m pytest multiprocess/tests/ -p no:xdist
 test_framework: pytest
 uses_xdist: false
 timeout: 600

@@ -4,9 +4,8 @@ pypi_url: https://pypi.org/project/starlette/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest pytest-asyncio httpx python-multipart
-  trio anyio[trio] jinja2 typing_extensions itsdangerous itsdangerous
-test_command: python -m pytest tests/
+install_command: pip install -e . && pip install pytest httpx python-multipart trio anyio[trio] jinja2 typing_extensions itsdangerous
+test_command: python -m pytest tests/ -p no:xdist
 test_framework: pytest
 uses_xdist: false
 timeout: null

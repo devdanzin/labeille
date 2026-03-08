@@ -1,0 +1,18 @@
+package: httpstan
+repo: https://github.com/stan-dev/httpstan
+pypi_url: https://pypi.org/project/httpstan/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install aiohttp numpy pytest pytest-asyncio
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: true
+skip_reason: Requires C++ compiler (gcc >=9.0 or clang >=10.0) and Stan C++ library for building extensions
+skip_versions: {}
+notes: 'Auto-enriched. Backend: setuptools. Tests in tests/. Reviewed: requires system C++ compiler and Stan lib, not installable via pip alone.'
+enriched: true
+clone_depth: null
+import_name: null

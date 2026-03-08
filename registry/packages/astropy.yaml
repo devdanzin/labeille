@@ -1,0 +1,19 @@
+package: astropy
+repo: https://github.com/astropy/astropy
+pypi_url: https://pypi.org/project/astropy/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: git fetch --tags --depth 1 && pip install -e ".[test]"
+test_command: python -m pytest -p no:xdist astropy/
+test_framework: pytest
+uses_xdist: true
+timeout: 1800
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: 'Auto-enriched. Backend: setuptools. Uses setuptools-scm. Has [test] extras.
+  Uses xdist (disabled for JIT). Large test suite, needs extended timeout.'
+enriched: true
+clone_depth: 50
+import_name: null

@@ -1,0 +1,18 @@
+package: mmhash3
+repo: https://github.com/Fokko/mmhash3
+pypi_url: https://pypi.org/project/mmhash3/
+extension_type: cpp_extension
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest test_mmh3.py -p no:xdist
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: MurmurHash3 Python wrapper. C++ extension. Tests in test_mmh3.py at repo root.
+enriched: true
+clone_depth: null
+import_name: mmh3

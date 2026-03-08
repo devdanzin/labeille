@@ -5,7 +5,7 @@ extension_type: pure
 python_versions: []
 install_method: pip
 install_command: pip install -e . && pip install pytest pytest-trio pytest-asyncio trio testpath
-test_command: python -m pytest jeepney/tests/
+test_command: python -m pytest jeepney/tests/ -p no:xdist
 test_framework: pytest
 uses_xdist: false
 timeout: 300

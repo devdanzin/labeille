@@ -5,15 +5,15 @@ extension_type: pure
 python_versions: []
 install_method: pip
 install_command: pip install -e ".[test]"
-test_command: python -m pytest test
+test_command: python -m pytest -p no:xdist test/
 test_framework: pytest
 uses_xdist: false
-timeout: null
+timeout: 600
 skip: false
 skip_reason: null
 skip_versions:
-  '3.15': "Depends on numpy (C ext build failure on 3.15)"
-notes: "Auto-enriched"
+  '3.15': Depends on numpy (no Python 3.15 wheels available)
+notes: 'Auto-enriched. Backend: setuptools. Has [test] extras. Tests in test/.'
 enriched: true
 clone_depth: null
 import_name: null

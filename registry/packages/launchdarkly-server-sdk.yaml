@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/launchdarkly-server-sdk/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: null
-test_command: null
+install_command: pip install -e . && pip install pytest pytest-cov mock jsonpickle
+test_command: python -m pytest ldclient/testing/ -p no:xdist
 test_framework: pytest
 uses_xdist: false
-timeout: null
-skip: true
-skip_reason: No test directory or test files found in repository
+timeout: 600
+skip: false
+skip_reason: null
 skip_versions: {}
-notes: Reset for re-enrichment (improved test directory detection)
+notes: Tests are in ldclient/testing/ (not a top-level tests/ dir). Includes unit and integration tests.
 enriched: true
 clone_depth: null
 import_name: null

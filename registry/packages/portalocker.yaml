@@ -4,8 +4,7 @@ pypi_url: https://pypi.org/project/portalocker/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: git fetch --tags --depth 1 && pip install -e . && pip install pytest
-  pytest-cov
+install_command: git fetch --tags --depth 1 && pip install -e . && pip install pytest pytest-cov
 test_command: python -m pytest portalocker_tests -p no:xdist -o "addopts="
 test_framework: pytest
 uses_xdist: false

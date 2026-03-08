@@ -15,4 +15,4 @@ skip_versions: {}
 notes: "Uses setuptools-scm (needs git tags). xdist disabled for JIT testing. addopts cleared (refs: pytest-cov, pytest-timeout)"
 enriched: true
 clone_depth: 50
-import_name: pydocket
+import_name: docket

@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/pprintpp/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest
-test_command: python -m pytest . -p no:xdist
-test_framework: pytest
+install_command: ''
+test_command: ''
+test_framework: nose
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
+skip: true
+skip_reason: Tests use nose (deprecated, removed in 3.x) with nose's capture plugin. Not pytest-compatible.
 skip_versions: {}
-notes: Re-enriched with improved test detection. Tests in ./
+notes: Unmaintained package. Tests require nose and parameterized, rely on nose's stdout capture.
 enriched: true
 clone_depth: null
 import_name: null

@@ -1,0 +1,18 @@
+package: ta-lib
+repo: https://github.com/ta-lib/ta-lib-python
+pypi_url: https://pypi.org/project/ta-lib/
+extension_type: c_extension
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: "Requires TA-Lib C library to be pre-installed on the system"
+skip_versions: {}
+notes: "Python wrapper for TA-Lib C library (Cython/NumPy). Requires system-level TA-Lib."
+enriched: true
+clone_depth: null
+import_name: null

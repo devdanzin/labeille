@@ -1,17 +1,18 @@
 package: aliyun-python-sdk-core
 repo: https://github.com/aliyun/aliyun-openapi-python-sdk
 pypi_url: https://pypi.org/project/aliyun-python-sdk-core/
-extension_type: unknown
+extension_type: pure
 python_versions: []
 install_method: pip
-install_command: ''
-test_command: ''
+install_command: pip install -e aliyun-python-sdk-core/ && pip install pytest cryptography jmespath
+test_command: python -m pytest aliyun-python-sdk-core/tests/ -p no:xdist
 test_framework: pytest
 uses_xdist: false
-timeout: null
-skip: true
-skip_reason: Alibaba Cloud SDK. Tests require cloud credentials.
-notes: Alibaba Cloud SDK core.
+timeout: 120
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: Alibaba Cloud SDK core. Part of monorepo (aliyun-openapi-python-sdk); package and tests are in aliyun-python-sdk-core/ subdirectory. Unit tests use a local mock HTTP server (MyServer), no real cloud credentials required.
 enriched: true
 clone_depth: null
 import_name: null

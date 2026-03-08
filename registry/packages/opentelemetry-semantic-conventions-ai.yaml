@@ -1,18 +1,18 @@
 package: opentelemetry-semantic-conventions-ai
-repo: https://github.com/open-telemetry/semantic-conventions
+repo: https://github.com/traceloop/openllmetry
 pypi_url: https://pypi.org/project/opentelemetry-semantic-conventions-ai/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest
-test_command: python -m pytest policies_test -p no:xdist
+install_command: ''
+test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
+skip: true
+skip_reason: Part of traceloop/openllmetry monorepo; repo URL was pointing to wrong project (semantic-conventions spec repo)
 skip_versions: {}
-notes: Repo found by improved URL detection. Tests in policies_test/
+notes: 'OpenLLMetry AI semantic conventions. Subpackage of traceloop/openllmetry monorepo.'
 enriched: true
 clone_depth: null
 import_name: null

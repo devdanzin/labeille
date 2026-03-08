@@ -4,14 +4,14 @@ pypi_url: https://pypi.org/project/dbt-common/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: ''
-test_command: ''
+install_command: pip install -e . && pip install pytest pytest-mock pytest-xdist pytest-cov hypothesis
+test_command: python -m pytest tests/unit -p no:xdist
 test_framework: pytest
-uses_xdist: false
+uses_xdist: true
 timeout: null
-skip: true
-skip_reason: Depends on dbt-core.
-notes: dbt common utilities.
+skip: false
+skip_reason: null
+notes: Shared common utilities used by dbt-core and adapter implementations. Standalone library with unit tests.
 enriched: true
 clone_depth: null
 import_name: null

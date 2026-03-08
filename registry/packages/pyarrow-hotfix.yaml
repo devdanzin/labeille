@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/pyarrow-hotfix/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest
-test_command: python -m pytest tests
+install_command: pip install -e . && pip install pyarrow pytest
+test_command: python -m pytest tests/
 test_framework: pytest
 uses_xdist: false
-timeout: null
-skip: false
-skip_reason: null
+timeout: 600
+skip: true
+skip_reason: 'pyarrow (test dep) has no cp315 wheels and building from source requires the Apache Arrow C++ library; unblocks when pyarrow ships cp315 wheels'
 skip_versions: {}
-notes: "Auto-enriched"
+notes: 'Backend: hatchling. Tests in tests/ (test_in_process.py, test_subprocess.py). Workflow builds wheel first then installs; our pip install -e . is equivalent. pyarrow is required for all tests.'
 enriched: true
 clone_depth: null
 import_name: null

@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/functions-framework/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e .
-test_command: python -m pytest tests
+install_command: pip install -e ".[async]" && pip install pytest pretend httpx pytest-asyncio
+test_command: python -m pytest tests/ --ignore=tests/test_samples.py
 test_framework: pytest
 uses_xdist: false
-timeout: null
+timeout: 600
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: "Auto-enriched"
+notes: 'Auto-enriched. Backend: setuptools. Tests in tests/. test_samples.py excluded (requires Docker daemon).'
 enriched: true
 clone_depth: null
 import_name: null

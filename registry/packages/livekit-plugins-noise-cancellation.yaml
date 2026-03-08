@@ -1,0 +1,18 @@
+package: livekit-plugins-noise-cancellation
+repo: https://github.com/livekit/agents
+pypi_url: https://pypi.org/project/livekit-plugins-noise-cancellation/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install livekit-plugins-noise-cancellation
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: true
+skip_reason: No livekit-plugins-noise-cancellation directory exists in the agents repo livekit-plugins/; package is distributed only as pre-built wheels and requires LiveKit Cloud to function. No test suite in the repo.
+skip_versions: {}
+notes: 'Pre-built binary wheel only (no source in repo). Requires LiveKit Cloud external service. The livekit-plugins-noise-cancellation directory does not exist in the agents monorepo. fake_session and toxic_proxy in original install were wrong (local module and wrong package).'
+enriched: true
+clone_depth: null
+import_name: null

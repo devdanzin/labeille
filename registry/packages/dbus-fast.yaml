@@ -1,0 +1,18 @@
+package: dbus-fast
+repo: https://github.com/bluetooth-devices/dbus-fast
+pypi_url: https://pypi.org/project/dbus-fast/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-cov pytest-asyncio pytest-timeout covdefaults
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: true
+skip_reason: Most tests require a running D-Bus session bus; PyGObject needs system libs
+skip_versions: {}
+notes: 'Auto-enriched. Backend: setuptools. Tests in tests/.'
+enriched: true
+clone_depth: null
+import_name: null

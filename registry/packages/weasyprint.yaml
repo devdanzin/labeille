@@ -5,15 +5,14 @@ extension_type: pure
 python_versions: []
 install_method: pip
 install_command: pip install -e ".[test]"
-test_command: python -m pytest tests
+test_command: python -m pytest tests/
 test_framework: pytest
 uses_xdist: false
-timeout: null
-skip: false
-skip_reason: null
-skip_versions:
-  '3.15': "Depends on Pillow (C ext)"
-notes: "Auto-enriched"
+timeout: 600
+skip: true
+skip_reason: Requires system libraries (Pango, libharfbuzz, fontconfig) that must be installed at OS level
+skip_versions: {}
+notes: 'Auto-enriched. Backend: flit. Has [test] extras (pytest, ruff, Pillow). Tests in tests/. Needs libpango, libharfbuzz, libfontconfig system packages.'
 enriched: true
 clone_depth: null
 import_name: null

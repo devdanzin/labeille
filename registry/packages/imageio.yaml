@@ -5,15 +5,15 @@ extension_type: pure
 python_versions: []
 install_method: pip
 install_command: pip install -e ".[test]"
-test_command: python -m pytest tests
+test_command: python -m pytest tests/
 test_framework: pytest
 uses_xdist: false
-timeout: null
+timeout: 600
 skip: false
 skip_reason: null
 skip_versions:
-  '3.15': "Transitive dependency on numpy (meson build failure on 3.15)"
-notes: "Auto-enriched"
+  '3.15': Transitive dependency on numpy (meson build failure on 3.15)
+notes: 'Auto-enriched. Backend: setuptools. Has [test] extras (pytest, pytest-cov, fsspec[github]). Tests in tests/. Core dep on numpy blocks 3.15.'
 enriched: true
 clone_depth: null
 import_name: null

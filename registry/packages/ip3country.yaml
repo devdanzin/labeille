@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/ip3country/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest
-test_command: python -m pytest . -p no:xdist
-test_framework: pytest
+install_command: ''
+test_command: ''
+test_framework: custom
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
+skip: true
+skip_reason: No pytest/unittest tests. Only a custom test script (country_lookup_test.py) with no pytest conventions.
 skip_versions: {}
-notes: Re-enriched with improved test detection. Tests in ./
+notes: Only has a custom test script (country_lookup_test.py) with no pytest/unittest conventions.
 enriched: true
 clone_depth: null
 import_name: null

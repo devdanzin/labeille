@@ -1,0 +1,19 @@
+package: vl-convert-python
+repo: https://github.com/jonmmease/vl-convert
+pypi_url: https://pypi.org/project/vl-convert-python/
+extension_type: rust
+python_versions: []
+install_method: pip
+install_command: pip install vl-convert-python && pip install pytest
+test_command: python -m pytest vl-convert-python/tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': Rust/PyO3 package (maturin) — no cp315 wheels available
+notes: 'Auto-enriched. Backend: maturin (Rust/PyO3). Tests in vl-convert-python/tests/. Install from PyPI wheel (pip install vl-convert-python) as source build requires Rust toolchain.'
+enriched: true
+clone_depth: null
+import_name: null

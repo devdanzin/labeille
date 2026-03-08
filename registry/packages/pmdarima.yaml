@@ -1,0 +1,18 @@
+package: pmdarima
+repo: https://github.com/alkaline-ml/pmdarima
+pypi_url: https://pypi.org/project/pmdarima/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install meson-python meson cython ninja numpy && pip install --no-build-isolation -e ".[test]"
+test_command: python -m pytest pmdarima/tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: 'Auto-enriched. Backend: meson. Has [test] extras. Tests in pmdarima/tests/.'
+enriched: true
+clone_depth: null
+import_name: null

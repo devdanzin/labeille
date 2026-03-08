@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/ghapi/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: null
-test_command: null
+install_command: ''
+test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: null
 skip: true
-skip_reason: No test directory or test files found in repository
+skip_reason: nbdev project with no standard test files. Tests are embedded in Jupyter notebooks.
 skip_versions: {}
-notes: Reset for re-enrichment (improved test directory detection)
+notes: nbdev-based project (fastai/ghapi). Tests are in .ipynb notebooks, not standard Python test files.
 enriched: true
 clone_depth: null
 import_name: null

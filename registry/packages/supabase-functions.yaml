@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/supabase-functions/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest
-test_command: python -m pytest src/functions/tests
+install_command: pip install -e src/functions/ && pip install pytest pytest-asyncio
+test_command: python -m pytest src/functions/tests/
 test_framework: pytest
 uses_xdist: false
-timeout: null
+timeout: 600
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: "Auto-enriched"
+notes: 'Monorepo supabase-py. Functions unit tests in src/functions/tests/ use mocked data, no live service required.'
 enriched: true
 clone_depth: null
 import_name: supafunc

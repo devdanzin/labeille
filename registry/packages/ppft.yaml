@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/ppft/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e .
-test_command: python -m pytest ppft/tests
-test_framework: pytest
+install_command: pip install -e . && pip install pytest
+test_command: python ppft/tests/__main__.py
+test_framework: other
 uses_xdist: false
-timeout: null
+timeout: 600
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: "Auto-enriched"
+notes: 'Tests are standalone scripts run via __main__.py, not pytest test functions. Backend: setuptools.'
 enriched: true
 clone_depth: null
 import_name: null

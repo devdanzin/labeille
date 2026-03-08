@@ -1,18 +1,18 @@
 package: spacy-legacy
-repo: null
+repo: https://github.com/explosion/spacy-legacy
 pypi_url: https://pypi.org/project/spacy-legacy/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: ''
-test_command: ''
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest spacy_legacy/tests -p no:xdist
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: true
-skip_reason: No source repository URL available on PyPI.
+skip: false
+skip_reason: null
 skip_versions: {}
-notes: 'Confirmed: no repo available after improved URL detection'
+notes: Repo found at explosion/spacy-legacy. Tests in spacy_legacy/tests/.
 enriched: true
 clone_depth: null
 import_name: null

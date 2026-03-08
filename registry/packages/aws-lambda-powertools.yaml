@@ -4,16 +4,16 @@ pypi_url: https://pypi.org/project/aws-lambda-powertools/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest
-test_command: python -m pytest tests -p no:xdist
+install_command: pip install -e . && pip install pytest pytest-mock pytest-asyncio boto3
+test_command: python -m pytest tests/unit -p no:xdist -m "not perf"
 test_framework: pytest
 uses_xdist: true
 timeout: null
 skip: false
 skip_reason: null
 skip_versions:
-  '3.15': "Requires pydantic (pydantic-core needs PyO3) and many AWS-specific test deps"
-notes: "xdist disabled for JIT testing"
+  '3.15': "Test suite requires boto3, aws-cdk-lib, testcontainers, and many other heavy AWS test deps that do not yet support Python 3.15"
+notes: xdist disabled for JIT testing. pydantic is optional (parser extra); core tests do not require it. Unit tests only to avoid AWS credential requirements.
 enriched: true
 clone_depth: null
 import_name: null

@@ -4,7 +4,7 @@ pypi_url: https://pypi.org/project/poetry-core/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest pytest-mock virtualenv tomli_w build
+install_command: pip install -e . && pip install pytest pytest-mock virtualenv tomli_w build setuptools trove-classifiers
 test_command: python -m pytest tests/
 test_framework: pytest
 uses_xdist: false

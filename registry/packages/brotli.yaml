@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/brotli/
 extension_type: extensions
 python_versions: []
 install_method: pip
-install_command: null
-test_command: null
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest python/tests/
 test_framework: pytest
 uses_xdist: false
-timeout: null
+timeout: 120
 skip: false
 skip_reason: null
-skip_versions: null
-notes: 'Re-enriched: C extension (brotli/_brotli.c)'
+skip_versions: {}
+notes: C extension (brotli/_brotli.c). Python bindings in python/ subdirectory. Tests in python/tests/.
 enriched: true
 clone_depth: null
 import_name: null

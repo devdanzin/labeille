@@ -4,9 +4,8 @@ pypi_url: https://pypi.org/project/tomlkit/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && git submodule update --init && pip install pytest
-  pyyaml
-test_command: python -m pytest tests/
+install_command: pip install -e . && git submodule update --init && pip install pytest pyyaml
+test_command: python -m pytest -p no:xdist tests/
 test_framework: pytest
 uses_xdist: false
 timeout: null

@@ -6,12 +6,13 @@ python_versions:
 - '3.15'
 - '3.14'
 install_method: pip
-install_command: pip install -e . && pip install pytest
+install_command: git fetch --tags --depth 1 && pip install -e . && pip install pytest
 test_command: python -m pytest testing/
 test_framework: pytest
 uses_xdist: false
 timeout: null
 skip: false
 skip_reason: null
-notes: Core pytest plugin system. Tests in testing/ directory. Requires Python 3.10+.
+notes: Core pytest plugin system. Tests in testing/ directory. Uses setuptools-scm (needs
+  git tags). Requires Python 3.10+.
 enriched: true

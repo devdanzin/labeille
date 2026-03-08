@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/icdiff/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install -r requirements-dev.txt
-test_command: python -m pytest tests
-test_framework: pytest
+install_command: pip install -e .
+test_command: ''
+test_framework: custom
 uses_xdist: false
-timeout: null
-skip: false
-skip_reason: null
+timeout: 600
+skip: true
+skip_reason: Tests use a custom bash script (test.sh) with gold file comparisons, not a Python test framework
 skip_versions: {}
-notes: "Auto-enriched"
+notes: 'Auto-enriched. Tests are shell-based (test.sh), no Python test files exist. Not suitable for labeille.'
 enriched: true
 clone_depth: null
 import_name: null

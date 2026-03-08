@@ -1,18 +1,18 @@
 package: pycares
-repo: http://github.com/saghul/pycares
+repo: https://github.com/saghul/pycares
 pypi_url: https://pypi.org/project/pycares/
-extension_type: extensions
+extension_type: c_extension
 python_versions: []
 install_method: pip
-install_command: pip install -e .
-test_command: python -m unittest discover tests -v
-test_framework: unittest
+install_command: ''
+test_command: ''
+test_framework: pytest
 uses_xdist: false
 timeout: null
 skip: true
 skip_reason: Requires CMake >= 3.5 to build (not a 3.15-specific issue).
 skip_versions: null
-notes: "Auto-enriched"
+notes: Auto-enriched (clone failed, defaults only)
 enriched: true
 clone_depth: null
 import_name: null

@@ -1,0 +1,18 @@
+package: netifaces
+repo: https://github.com/al45tair/netifaces
+pypi_url: https://pypi.org/project/netifaces/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: true
+skip_reason: Repo archived by owner on Jun 11, 2021 and unmaintained
+skip_versions: {}
+notes: 'Auto-enriched. Backend: unknown. No test directory found.'
+enriched: true
+clone_depth: null
+import_name: null

@@ -1,0 +1,18 @@
+package: jsonnet
+repo: https://github.com/google/jsonnet
+pypi_url: https://pypi.org/project/jsonnet/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest python/_jsonnet_test.py
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: 'C extension (builds jsonnet C++ lib). Real test is python/_jsonnet_test.py (unittest). case_studies/kubernetes/test_same.py is a plain script needing jsonnet binary and PyYAML, not a pytest suite.'
+enriched: true
+clone_depth: null
+import_name: null

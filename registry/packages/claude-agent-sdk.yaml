@@ -1,0 +1,18 @@
+package: claude-agent-sdk
+repo: https://github.com/anthropics/claude-agent-sdk-python
+pypi_url: https://pypi.org/project/claude-agent-sdk/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e ".[dev]" && pip install pytest
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: 'Auto-enriched. Backend: hatchling. Has [dev] extras. Tests in tests/.'
+enriched: true
+clone_depth: null
+import_name: null

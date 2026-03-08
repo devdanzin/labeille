@@ -1,11 +1,11 @@
 package: notebook-shim
-repo: https://github.com/jupyter/jupyter_server
+repo: https://github.com/jupyter/notebook_shim
 pypi_url: https://pypi.org/project/notebook-shim/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest
-test_command: python -m pytest tests -p no:xdist -o "addopts="
+install_command: pip install -e ".[test]"
+test_command: python -m pytest notebook_shim/tests/ -p no:xdist -o "addopts="
 test_framework: pytest
 uses_xdist: false
 timeout: null

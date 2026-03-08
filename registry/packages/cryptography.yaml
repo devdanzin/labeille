@@ -1,7 +1,7 @@
 package: cryptography
 repo: https://github.com/pyca/cryptography/
 pypi_url: https://pypi.org/project/cryptography/
-extension_type: extensions
+extension_type: rust
 python_versions:
 - '3.15'
 - '3.14'
@@ -13,7 +13,5 @@ uses_xdist: true
 timeout: null
 skip: false
 skip_reason: null
-notes: Requires Rust toolchain for building (maturin backend). Uses xdist (-n auto
-  --dist=worksteal) by default, disabled for JIT testing. Test vectors package may
-  need separate install.
+notes: Requires Rust toolchain for building (maturin backend). Uses xdist (-n auto --dist=worksteal) by default, disabled for JIT testing. Vectors package installed from local ./vectors subdir.
 enriched: true

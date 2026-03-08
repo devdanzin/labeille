@@ -4,15 +4,16 @@ pypi_url: https://pypi.org/project/constantly/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e .
-test_command: python -m unittest discover constantly/test -v
-test_framework: unittest
+install_command: git fetch --tags --depth 1 && pip install -e . && pip install twisted
+test_command: python -m pytest constantly/test/
+test_framework: pytest
 uses_xdist: false
-timeout: null
+timeout: 600
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: "Auto-enriched"
+notes: 'Auto-enriched. Backend: setuptools. Uses versioneer (needs tags). Uses Twisted
+  trial TestCase (pytest can discover). Tests in constantly/test/.'
 enriched: true
 clone_depth: null
 import_name: null

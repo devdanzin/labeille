@@ -1,7 +1,7 @@
 package: snowflake-connector-python
 repo: https://github.com/snowflakedb/snowflake-connector-python
 pypi_url: https://pypi.org/project/snowflake-connector-python/
-extension_type: extensions
+extension_type: c_extension
 python_versions: []
 install_method: pip
 install_command: ''

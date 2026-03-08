@@ -1,19 +1,19 @@
 package: pure-sasl
-repo: http://github.com/thobbs/pure-sasl
+repo: https://github.com/thobbs/pure-sasl
 pypi_url: https://pypi.org/project/pure-sasl/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install -r test-requirements.txt && pip install pytest
-test_command: python -m pytest tests
-test_framework: pytest
+install_command: pip install -e . && pip install pytest mock
+test_command: python -m pytest tests/ -p no:xdist
+test_framework: unittest
 uses_xdist: false
 timeout: null
 skip: false
 skip_reason: null
 skip_versions:
-  '3.15': "Depends on kerberos (C extension build failure)"
-notes: "Auto-enriched"
+  '3.15': Depends on kerberos (C extension build failure)
+notes: Auto-enriched (clone failed, defaults only)
 enriched: true
 clone_depth: null
 import_name: null

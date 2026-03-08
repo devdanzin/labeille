@@ -1,0 +1,18 @@
+package: fastwarc
+repo: https://github.com/chatnoir-eu/chatnoir-resiliparse
+pypi_url: https://pypi.org/project/fastwarc/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e fastwarc-py/ && pip install pytest brotli lz4
+test_command: python -m pytest tests/fastwarc/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: true
+skip_reason: Cython monorepo requiring system libraries (zlib-dev, liblz4-dev) and cross-subpackage Cython headers
+skip_versions: {}
+notes: 'Auto-enriched. Backend: Cython/setuptools. Tests in tests/fastwarc/. Monorepo with resiliparse. Needs system zlib and lz4 dev headers.'
+enriched: true
+clone_depth: null
+import_name: null

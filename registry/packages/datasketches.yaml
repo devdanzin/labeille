@@ -1,0 +1,18 @@
+package: datasketches
+repo: https://github.com/apache/datasketches-python
+pypi_url: https://pypi.org/project/datasketches/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest numpy
+test_command: python -m pytest tests/
+test_framework: unittest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: 'Auto-enriched. Backend: setuptools (CMake + nanobind C extension). Tests use unittest, run via pytest. Requires cmake.'
+enriched: true
+clone_depth: null
+import_name: null

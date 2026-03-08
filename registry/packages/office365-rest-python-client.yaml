@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/office365-rest-python-client/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e .
-test_command: python -m pytest tests
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest tests/
 test_framework: pytest
 uses_xdist: false
-timeout: null
-skip: false
-skip_reason: null
+timeout: 600
+skip: true
+skip_reason: Tests require live Microsoft 365/SharePoint/Azure AD credentials and external services
 skip_versions: {}
-notes: "Auto-enriched"
+notes: 'All tests interact with real Microsoft Graph, SharePoint, OneDrive, and Teams endpoints. No mocking layer — cannot run without valid Azure/M365 credentials.'
 enriched: true
 clone_depth: null
 import_name: office365

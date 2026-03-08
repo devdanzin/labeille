@@ -1,17 +1,17 @@
 package: kiwisolver
 repo: https://github.com/nucleic/kiwi
 pypi_url: https://pypi.org/project/kiwisolver/
-extension_type: extensions
+extension_type: cpp_extension
 python_versions: []
 install_method: pip
-install_command: ''
-test_command: ''
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest py/tests/ -p no:xdist
 test_framework: pytest
 uses_xdist: false
-timeout: null
+timeout: 300
 skip: false
 skip_reason: null
-notes: Cassowary constraint solver.
+notes: Cassowary constraint solver. C++ extension via cppy. Tests in py/tests/.
 enriched: true
 clone_depth: null
 import_name: null

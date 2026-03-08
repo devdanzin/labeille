@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/alibabacloud-tea-openapi/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: ''
-test_command: ''
+install_command: pip install -e python/ && pip install pytest httpretty aioresponses alibabacloud-gateway-pop
+test_command: python -m pytest python/tests/ -p no:xdist
 test_framework: pytest
 uses_xdist: false
-timeout: null
-skip: true
-skip_reason: "Subpackage of aliyun SDK monorepo."
+timeout: 120
+skip: false
+skip_reason: null
 skip_versions: {}
-notes: "Auto-triaged: monorepo_alibaba"
+notes: Alibaba Cloud OpenAPI SDK for Python. Multi-language repo (Go/Java/Python/TypeScript); Python package is in python/ subdirectory. Unit tests use httpretty and aioresponses to mock HTTP calls, no real cloud credentials needed.
 enriched: true
 clone_depth: null
 import_name: null

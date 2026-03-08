@@ -1,18 +1,18 @@
 package: antlr4-python3-runtime
-repo: null
+repo: https://github.com/antlr/antlr4
 pypi_url: https://pypi.org/project/antlr4-python3-runtime/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: ''
-test_command: ''
+install_command: pip install -e runtime/Python3/ && pip install pytest
+test_command: python -m pytest runtime/Python3/tests/
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: true
-skip_reason: No source repository URL available on PyPI.
+skip: false
+skip_reason: null
 skip_versions: {}
-notes: 'Confirmed: no repo available after improved URL detection'
+notes: Monorepo - Python runtime lives in runtime/Python3/. Tests use unittest but pytest can discover them. No Java ANTLR tool needed for runtime tests.
 enriched: true
 clone_depth: null
-import_name: null
+import_name: antlr4

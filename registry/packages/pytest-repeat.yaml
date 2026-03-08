@@ -14,5 +14,5 @@ skip_reason: null
 skip_versions: {}
 notes: Repo found by improved URL detection. Tests in ./
 enriched: true
-clone_depth: null
+clone_depth: 50
 import_name: pytest_repeat

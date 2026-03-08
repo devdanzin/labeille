@@ -4,16 +4,15 @@ pypi_url: https://pypi.org/project/ldap3/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install -r requirements-dev.txt
-test_command: python -m pytest test
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest test/
 test_framework: pytest
 uses_xdist: false
-timeout: null
-skip: false
-skip_reason: null
-skip_versions:
-  '3.15': "Build failure on 3.15"
-notes: "Auto-enriched"
+timeout: 600
+skip: true
+skip_reason: Tests require live LDAP servers (eDirectory, OpenLDAP, Active Directory); default strategy is SYNC not MOCK
+skip_versions: {}
+notes: 'Auto-enriched. Backend: setuptools. Tests in test/. Pure Python, no build issues. Most tests need real LDAP server connections.'
 enriched: true
 clone_depth: null
 import_name: null

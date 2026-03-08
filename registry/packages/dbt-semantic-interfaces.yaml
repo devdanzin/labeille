@@ -1,18 +1,18 @@
 package: dbt-semantic-interfaces
-repo: https://github.com/psf/black
+repo: https://github.com/dbt-labs/dbt-semantic-interfaces
 pypi_url: https://pypi.org/project/dbt-semantic-interfaces/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: git fetch --tags --depth 1 && pip install -e . && pip install pytest
+install_command: pip install -e . && pip install pytest pytest-xdist hypothesis
 test_command: python -m pytest tests -p no:xdist -o "addopts="
 test_framework: pytest
-uses_xdist: false
+uses_xdist: true
 timeout: null
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: Repo found by improved URL detection. Tests in tests/
+notes: Pure Python shared semantic layer for dbt-core and MetricFlow. Uses hatchling build backend. Tests in tests/.
 enriched: true
 clone_depth: null
 import_name: null

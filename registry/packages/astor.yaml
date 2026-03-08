@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/astor/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install -r requirements-dev.txt && pip install pytest
-test_command: python -m pytest tests
-test_framework: pytest
+install_command: pip install -e .
+test_command: python -m unittest discover tests -v
+test_framework: unittest
 uses_xdist: false
-timeout: null
+timeout: 600
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: "Auto-enriched"
+notes: 'Auto-enriched. Backend: setuptools. Removed bogus deps (ast=stdlib, astunparse_common/support=local). Tests in tests/.'
 enriched: true
 clone_depth: null
 import_name: null

@@ -1,0 +1,18 @@
+package: lintrunner
+repo: https://github.com/suo/lintrunner
+pypi_url: https://pypi.org/project/lintrunner/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest tools/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: 'Maturin package with bindings=bin (pure Rust CLI binary, no PyO3). Only Python test is tools/convert_to_sarif_test.py which tests the standalone tools/convert_to_sarif.py script using unittest (discovered by pytest). No PyO3 dependency so no 3.15 blocker.'
+enriched: true
+clone_depth: null
+import_name: null

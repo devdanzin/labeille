@@ -1,0 +1,18 @@
+package: open3d
+repo: https://github.com/isl-org/Open3D
+pypi_url: https://pypi.org/project/open3d/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest python/test/ml_ops/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: true
+skip_reason: CMake/C++ project with no pyproject.toml; pip install -e . requires full CMake + compiler toolchain. Pre-built wheels only go up to Python 3.12. ML ops tests also require TensorFlow or PyTorch compiled into Open3D.
+skip_versions: {}
+notes: 'Auto-enriched. Backend: CMake/C++. Tests in python/test/ml_ops/ require compiled ML ops + TF/PyTorch.'
+enriched: true
+clone_depth: null
+import_name: null

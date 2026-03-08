@@ -4,9 +4,8 @@ pypi_url: https://pypi.org/project/jaraco-functools/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: git fetch --tags --depth 1 && pip install -e . && pip install pytest
-  jaraco.classes
-test_command: python -m pytest test_functools.py
+install_command: git fetch --tags --depth 1 && pip install -e . && pip install pytest jaraco.classes
+test_command: python -m pytest test_functools.py -p no:xdist
 test_framework: pytest
 uses_xdist: false
 timeout: 120

@@ -12,7 +12,7 @@ timeout: null
 skip: false
 skip_reason: null
 skip_versions:
-  '3.15': "Version detection fails from shallow clone"
+  '3.15': "Package only declared support up to Python 3.14; bytecode format changes in 3.15 likely cause incompatibilities"
 notes: "Uses setuptools-scm (needs git tags)"
 enriched: true
 clone_depth: 50

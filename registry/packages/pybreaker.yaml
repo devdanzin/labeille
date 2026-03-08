@@ -1,18 +1,18 @@
 package: pybreaker
-repo: http://github.com/danielfm/pybreaker
+repo: https://github.com/danielfm/pybreaker
 pypi_url: https://pypi.org/project/pybreaker/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e ".[test]"
-test_command: python -m pytest tests
+install_command: pip install -e . && pip install pytest mock tornado fakeredis redis
+test_command: python -m pytest tests/ -p no:xdist
 test_framework: pytest
 uses_xdist: false
 timeout: null
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: "Auto-enriched"
+notes: Circuit breaker pattern. Tests use pytest+unittest+mock+tornado+fakeredis. src/ layout.
 enriched: true
 clone_depth: null
 import_name: null

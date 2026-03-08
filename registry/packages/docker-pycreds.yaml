@@ -4,16 +4,16 @@ pypi_url: https://pypi.org/project/docker-pycreds/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install -r test-requirements.txt
-test_command: python -m pytest tests
+install_command: pip install -e . && pip install pytest six
+test_command: python -m pytest tests/
 test_framework: pytest
 uses_xdist: false
-timeout: null
-skip: false
-skip_reason: null
+timeout: 600
+skip: true
+skip_reason: Uses distutils (removed in 3.12+) in source code and six for Py2/3 compat; unmaintained
 skip_versions:
-  '3.15': "Uses distutils (removed from stdlib in 3.12+)"
-notes: "Auto-enriched"
+  '3.15': Uses distutils (removed from stdlib in 3.12+)
+notes: 'Auto-enriched. Backend: setuptools. Tests in tests/. Runtime deps: six. Source code uses distutils.spawn and six.binary_type/six.PY3 -- will not work on 3.12+.'
 enriched: true
 clone_depth: null
 import_name: dockerpycreds

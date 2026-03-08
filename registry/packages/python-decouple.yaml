@@ -1,18 +1,18 @@
 package: python-decouple
-repo: http://github.com/henriquebastos/python-decouple/
+repo: https://github.com/henriquebastos/python-decouple/
 pypi_url: https://pypi.org/project/python-decouple/
 extension_type: pure
 python_versions: []
 install_method: pip
 install_command: pip install -e . && pip install pytest
-test_command: python -m pytest tests
+test_command: python -m pytest tests/
 test_framework: pytest
 uses_xdist: false
 timeout: null
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: "Auto-enriched"
+notes: Config helper, single-module (decouple.py). Tests in tests/ dir.
 enriched: true
 clone_depth: null
 import_name: decouple

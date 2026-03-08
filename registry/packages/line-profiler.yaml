@@ -1,0 +1,18 @@
+package: line-profiler
+repo: https://github.com/pyutils/line_profiler
+pypi_url: https://pypi.org/project/line-profiler/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest ubelt IPython flake8 packaging
+test_command: python -m pytest tests/ -p no:xdist
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: 'ast/runpy are stdlib; my_mod4/my_pkg are dynamically created temp modules in tests; kernprof is part of line-profiler itself; pandas/rich only appear in dead if-0 block. Real test deps: pytest, ubelt, IPython (conditional), flake8 (conditional), packaging (used in test_import.py).'
+enriched: true
+clone_depth: null
+import_name: line_profiler

@@ -1,0 +1,18 @@
+package: vllm
+repo: https://github.com/vllm-project/vllm
+pypi_url: https://pypi.org/project/vllm/
+extension_type: c_extension
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: true
+skip_reason: Requires special hardware (CUDA/GPU/TPU)
+skip_versions: {}
+notes: 'Auto-enriched (skipped: Requires special hardware (CUDA/GPU/TPU))'
+enriched: true
+clone_depth: 50
+import_name: null

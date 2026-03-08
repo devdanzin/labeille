@@ -1,0 +1,18 @@
+package: z3-solver
+repo: https://github.com/Z3Prover/z3
+pypi_url: https://pypi.org/project/z3-solver/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install z3-solver
+test_command: python src/api/python/z3test.py z3
+test_framework: other
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: 'Auto-enriched. Backend: CMake (requires C++ build). Install from PyPI wheel instead of source. Tests via z3test.py which uses doctest on z3 module docstrings.'
+enriched: true
+clone_depth: null
+import_name: null

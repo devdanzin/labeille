@@ -1,7 +1,7 @@
 package: ratelimit
 repo: https://github.com/tomasbasham/ratelimit
 pypi_url: https://pypi.org/project/ratelimit/
-extension_type: unknown
+extension_type: pure
 python_versions: []
 install_method: pip
 install_command: ''

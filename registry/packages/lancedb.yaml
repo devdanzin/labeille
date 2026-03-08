@@ -1,0 +1,18 @@
+package: lancedb
+repo: https://github.com/lancedb/lancedb
+pypi_url: https://pypi.org/project/lancedb/
+extension_type: rust
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: true
+skip_reason: PyO3/maturin build; requires Rust toolchain and many C extension deps
+skip_versions: {}
+notes: 'Auto-enriched (skipped: maturin + heavy C deps)'
+enriched: true
+clone_depth: null
+import_name: null

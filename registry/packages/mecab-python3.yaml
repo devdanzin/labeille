@@ -1,0 +1,18 @@
+package: mecab-python3
+repo: https://github.com/SamuraiT/mecab-python3
+pypi_url: https://pypi.org/project/mecab-python3/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: git fetch --tags --depth 1 && pip install -e . && pip install unidic_lite
+test_command: python -m unittest discover test -v
+test_framework: unittest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: 'Uses setuptools-scm (needs git fetch --tags). Bundles libmecab; no system libmecab needed. MeCab (PyPI) is a different unofficial fork and must NOT be installed.'
+enriched: true
+clone_depth: null
+import_name: null

@@ -6,7 +6,7 @@ python_versions: []
 install_method: pip
 install_command: pip install -e . && pip install pytest
 test_command: python -m pytest . -p no:xdist -o "addopts="
-test_framework: pytest
+test_framework: unittest
 uses_xdist: false
 timeout: null
 skip: false

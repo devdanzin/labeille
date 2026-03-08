@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/mkdocs-material-extensions/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install -r requirements/test.txt
-test_command: python -m pytest tests
+install_command: pip install -e . && pip install beautifulsoup4 markdown pymdown-extensions mkdocs-material pytest pytest-cov
+test_command: python -m pytest tests/
 test_framework: pytest
 uses_xdist: false
-timeout: null
+timeout: 600
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: "Auto-enriched"
+notes: 'Auto-enriched. Backend: hatchling. Tests in tests/.'
 enriched: true
 clone_depth: null
 import_name: materialx

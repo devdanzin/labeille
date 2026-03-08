@@ -10,9 +10,9 @@ test_framework: pytest
 uses_xdist: false
 timeout: null
 skip: true
-skip_reason: "Subpackage of googleapis/google-cloud-python monorepo. Complex monorepo testing setup."
+skip_reason: "Depends on google-cloud-bigquery/grpcio (C extensions), won't build on 3.15"
 skip_versions: {}
-notes: "Auto-triaged: monorepo_google"
+notes: "Has own repo (not a monorepo subpackage). Unit tests mock BigQuery but require google-cloud-bigquery/grpcio."
 enriched: true
 clone_depth: null
 import_name: null

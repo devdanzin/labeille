@@ -4,16 +4,16 @@ pypi_url: https://pypi.org/project/jupyterlab-widgets/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e .
-test_command: python -m pytest tests
+install_command: pip install -e python/ipywidgets/ && pip install pytest jsonschema ipykernel pytz
+test_command: python -m pytest python/ipywidgets/ipywidgets/widgets/tests/
 test_framework: pytest
 uses_xdist: false
-timeout: null
+timeout: 600
 skip: false
 skip_reason: null
 skip_versions:
-  '3.15': "Jupyter ecosystem dependency failure on 3.15"
-notes: "Auto-enriched"
+  '3.15': Jupyter ecosystem dependency failure on 3.15
+notes: 'Monorepo: jupyterlab-widgets is in repo root, ipywidgets (with tests) is in python/ipywidgets/. Install ipywidgets package for tests. Test deps from setup.cfg [test] extras: jsonschema, ipykernel, pytz.'
 enriched: true
 clone_depth: null
 import_name: null

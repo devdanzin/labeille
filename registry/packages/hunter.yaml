@@ -1,0 +1,18 @@
+package: hunter
+repo: https://github.com/ionelmc/python-hunter
+pypi_url: https://pypi.org/project/hunter/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: git fetch --tags --depth 1 && pip install -e . && pip install aspectlib process_tests py pytest pytest-cov six
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: 'Auto-enriched. Backend: setuptools. Uses setuptools-scm. Tests in tests/. Reviewed: removed difflib (stdlib), eviltracer (local Cython test fixture). Has optional Cython extensions.'
+enriched: true
+clone_depth: null
+import_name: null

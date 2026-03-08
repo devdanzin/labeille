@@ -4,8 +4,8 @@ pypi_url: https://pypi.org/project/openpyxl/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest pytest-cov lxml pillow
-test_command: python -m pytest openpyxl/tests/
+install_command: ''
+test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: 600

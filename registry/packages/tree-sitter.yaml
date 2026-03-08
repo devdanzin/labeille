@@ -1,19 +1,18 @@
 package: tree-sitter
 repo: https://github.com/tree-sitter/py-tree-sitter
 pypi_url: https://pypi.org/project/tree-sitter/
-extension_type: extensions
+extension_type: c_extension
 python_versions: []
 install_method: pip
-install_command: ''
-test_command: ''
-test_framework: pytest
+install_command: pip install -e ".[tests]"
+test_command: python -m unittest discover tests -v
+test_framework: unittest
 uses_xdist: false
 timeout: null
 skip: false
 skip_reason: null
-skip_versions:
-  '3.15': "PyO3/Rust extension, won't build on 3.15"
-notes: "Auto-triaged: extension with 3.15 build blocker"
+skip_versions: {}
+notes: Python bindings for tree-sitter. C extension (setuptools Extension). Has Python test suite in tests/.
 enriched: true
 clone_depth: null
 import_name: null

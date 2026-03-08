@@ -1,0 +1,18 @@
+package: minify-html
+repo: https://github.com/wilsonzlin/minify-html.git
+pypi_url: https://pypi.org/project/minify-html/
+extension_type: rust
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: true
+skip_reason: Rust binding with no Python tests (tests are in Rust)
+skip_versions: {}
+notes: 'Auto-enriched (skipped: Rust binding with no Python tests (tests are in Rust))'
+enriched: true
+clone_depth: null
+import_name: null

@@ -4,16 +4,16 @@ pypi_url: https://pypi.org/project/qdrant-client/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest
-test_command: python -m pytest tests
+install_command: pip install -e . && pip install grpcio httpx numpy pytest pytest-asyncio pytest-timeout pytest-mock
+test_command: python -m pytest tests/test_common.py tests/test_in_memory.py tests/test_local_persistence.py -p no:xdist
 test_framework: pytest
 uses_xdist: false
-timeout: null
+timeout: 600
 skip: false
 skip_reason: null
 skip_versions:
-  '3.15': "Depends on numpy (C ext build failure on 3.15)"
-notes: "Auto-enriched"
+  '3.15': Depends on numpy (C ext build failure on 3.15)
+notes: 'Backend: poetry. Tests in tests/. Most tests (test_qdrant_client.py, test_async_qdrant_client.py, test_migrate.py) require a running Qdrant server on localhost:6333 with no skip guards — only local/in-memory test files are run. pytest-asyncio and pytest-timeout required per pyproject.toml dev deps.'
 enriched: true
 clone_depth: null
 import_name: null

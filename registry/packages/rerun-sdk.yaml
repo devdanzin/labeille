@@ -1,0 +1,18 @@
+package: rerun-sdk
+repo: https://github.com/rerun-io/rerun
+pypi_url: https://pypi.org/project/rerun-sdk/
+extension_type: rust
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: 'requires-python: >=3.10,<3.13 (incompatible with 3.15)'
+skip_versions: {}
+notes: 'Auto-enriched (skipped: requires-python: >=3.10,<3.13 (incompatible with 3.15))'
+enriched: true
+clone_depth: null
+import_name: null

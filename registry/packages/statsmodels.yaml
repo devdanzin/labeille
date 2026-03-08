@@ -9,11 +9,10 @@ test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
-skip_versions:
-  '3.15': "Depends on numpy/scipy Cython extensions"
-notes: "Auto-triaged: extension with 3.15 build blocker"
+skip: true
+skip_reason: "Depends on numpy/scipy Cython extensions, won't build on 3.15"
+skip_versions: {}
+notes: "Heavy Cython extension (numpy/scipy ecosystem). No 3.15 support."
 enriched: true
 clone_depth: null
 import_name: null

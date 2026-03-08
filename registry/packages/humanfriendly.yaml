@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/humanfriendly/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: ''
-test_command: ''
+install_command: pip install -e . && pip install pytest pytest-cov capturer coloredlogs docutils mock
+test_command: python -m pytest humanfriendly/tests.py
 test_framework: pytest
 uses_xdist: false
-timeout: null
-skip: true
-skip_reason: No test directory or test files found
+timeout: 300
+skip: false
+skip_reason: null
 skip_versions: {}
-notes: Reset for re-resolution (improved repo URL detection)
+notes: Tests in humanfriendly/tests.py module. Test deps from requirements-tests.txt.
 enriched: true
 clone_depth: null
 import_name: null

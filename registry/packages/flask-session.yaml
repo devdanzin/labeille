@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/flask-session/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install -r requirements/dev.txt && pip install pytest
-test_command: python -m pytest tests
+install_command: pip install -e . && pip install pytest pytest-cov cachelib msgspec
+test_command: python -m pytest tests/test_basic.py tests/test_filesystem.py tests/test_cachelib.py -o "addopts="
 test_framework: pytest
 uses_xdist: false
-timeout: null
+timeout: 600
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: "Auto-enriched"
+notes: 'Auto-enriched. Backend: flit. Tests limited to basic/filesystem/cachelib (redis/mongo/postgres/memcached/dynamodb tests need external services). pytest.ini addopts overridden to remove --cov flags.'
 enriched: true
 clone_depth: null
 import_name: null

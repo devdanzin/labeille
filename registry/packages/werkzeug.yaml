@@ -4,9 +4,8 @@ pypi_url: https://pypi.org/project/werkzeug/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest pytest-timeout pytest-xprocess
-  cryptography ephemeral_port_reserve
-test_command: python -m pytest tests/
+install_command: pip install -e . && pip install pytest pytest-timeout pytest-xprocess cryptography ephemeral-port-reserve cffi watchdog
+test_command: python -m pytest -p no:xdist tests/
 test_framework: pytest
 uses_xdist: false
 timeout: null

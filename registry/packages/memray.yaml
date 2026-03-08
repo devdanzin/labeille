@@ -1,7 +1,7 @@
 package: memray
 repo: https://github.com/bloomberg/memray
 pypi_url: https://pypi.org/project/memray/
-extension_type: extensions
+extension_type: c_extension
 python_versions: []
 install_method: pip
 install_command: ''
@@ -9,10 +9,10 @@ test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
-skip_versions: null
-notes: "Auto-triaged: extension with 3.15 build blocker"
+skip: true
+skip_reason: C extension (Cython/C++) memory profiler. Requires Cython build and relies on CPython internals that may not be compatible with 3.15.
+skip_versions: {}
+notes: Bloomberg memray memory profiler. Cython/C++ extension that hooks into CPython memory allocator internals.
 enriched: true
 clone_depth: null
 import_name: null

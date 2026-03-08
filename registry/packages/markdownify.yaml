@@ -1,5 +1,5 @@
 package: markdownify
-repo: http://github.com/matthewwithanm/python-markdownify
+repo: https://github.com/matthewwithanm/python-markdownify
 pypi_url: https://pypi.org/project/markdownify/
 extension_type: pure
 python_versions: []

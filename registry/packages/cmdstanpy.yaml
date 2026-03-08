@@ -10,9 +10,9 @@ test_framework: pytest
 uses_xdist: false
 timeout: null
 skip: true
-skip_reason: No test directory or test files found in repository
+skip_reason: Tests require CmdStan external binary to be installed (statistical modeling tool, separate download).
 skip_versions: {}
-notes: Reset for re-enrichment (improved test directory detection)
+notes: Tests exist at test/ (20+ files) but require CmdStan binary installation via install_cmdstan() and network access.
 enriched: true
 clone_depth: null
 import_name: null

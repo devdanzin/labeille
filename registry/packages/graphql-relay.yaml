@@ -4,9 +4,8 @@ pypi_url: https://pypi.org/project/graphql-relay/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest pytest-asyncio pytest-describe
-  graphql-core
-test_command: python -m pytest tests -o "python_classes=PyTest*" -o "asyncio_mode=auto"
+install_command: pip install -e . && pip install pytest pytest-asyncio pytest-describe graphql-core
+test_command: python -m pytest tests -o "python_classes=PyTest*" -o "asyncio_mode=auto" -p no:xdist
 test_framework: pytest
 uses_xdist: false
 timeout: 300

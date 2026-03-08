@@ -4,16 +4,15 @@ pypi_url: https://pypi.org/project/streamlit/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: null
-test_command: null
+install_command: ''
+test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
-skip_versions:
-  '3.15': Depends on pyarrow/numpy C extensions
-notes: 'Re-enriched: Depends on pyarrow/numpy C extensions'
+skip: true
+skip_reason: "Depends on pyarrow/numpy C extensions, won't build on 3.15"
+skip_versions: {}
+notes: "Depends on pyarrow/numpy C extensions. No 3.15 support."
 enriched: true
 clone_depth: null
 import_name: null

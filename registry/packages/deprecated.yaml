@@ -4,8 +4,8 @@ pypi_url: https://pypi.org/project/deprecated/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest setuptools
-test_command: python -m pytest tests/ --ignore=tests/test.py
+install_command: pip install -e . && pip install pytest setuptools wrapt
+test_command: python -m pytest tests/
 test_framework: pytest
 uses_xdist: false
 timeout: null

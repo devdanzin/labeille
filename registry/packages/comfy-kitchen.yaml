@@ -1,0 +1,18 @@
+package: comfy-kitchen
+repo: https://github.com/Comfy-Org/comfy-kitchen
+pypi_url: https://pypi.org/project/comfy-kitchen/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e ".[dev]" && pip install pytest torch
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: true
+skip_reason: Requires CUDA toolkit and torch (GPU hardware)
+skip_versions: {}
+notes: 'Auto-enriched (skipped: CUDA required)'
+enriched: true
+clone_depth: null
+import_name: null

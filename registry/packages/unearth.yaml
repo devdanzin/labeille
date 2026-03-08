@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/unearth/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e ".[test]"
-test_command: python -m pytest tests
+install_command: git fetch --tags --depth 1 && pip install -e . && pip install flask pytest pytest-httpserver pytest-mock requests-wsgi-adapter trustme
+test_command: python -m pytest tests/ -p no:xdist
 test_framework: pytest
 uses_xdist: false
-timeout: null
+timeout: 600
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: "Auto-enriched"
+notes: 'Auto-enriched. Backend: pdm. Tests in tests/. Uses PDM scm versioning (needs git tags). trustme skipped on 3.13+ by conftest.'
 enriched: true
 clone_depth: null
 import_name: null

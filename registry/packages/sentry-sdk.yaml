@@ -5,7 +5,7 @@ extension_type: pure
 python_versions: []
 install_method: pip
 install_command: pip install -e . && pip install pytest pytest-forked responses brotli pytest-localserver
-test_command: python -m pytest tests/ -k 'not integrations'
+test_command: python -m pytest tests/ -k 'not integrations' -p no:xdist
 test_framework: pytest
 uses_xdist: false
 timeout: 600

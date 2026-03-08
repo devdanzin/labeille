@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/dash/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install -r requirements/dev.txt
-test_command: python -m pytest tests
+install_command: pip install -e . && pip install pytest mock beautifulsoup4 lxml multiprocess psutil flask
+test_command: python -m pytest tests/unit/
 test_framework: pytest
 uses_xdist: false
-timeout: null
+timeout: 600
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: "Auto-enriched"
+notes: 'Auto-enriched. Backend: setuptools. Integration tests need selenium/browser; only unit tests are runnable. dash_test_components is a local repo package, not on PyPI.'
 enriched: true
 clone_depth: null
 import_name: null

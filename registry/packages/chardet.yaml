@@ -4,18 +4,14 @@ pypi_url: https://pypi.org/project/chardet/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: git fetch --tags --depth 1 && pip install -e . && pip install pytest
-  pytest-timeout
-test_command: python -m pytest test.py -o "addopts=" --timeout=60 -p no:xdist
+install_command: git fetch --tags --depth 1 && pip install -e . && pip install pytest pytest-timeout
+test_command: python -m pytest tests/ -p no:xdist -m "not benchmark"
 test_framework: pytest
 uses_xdist: false
 timeout: 600
 skip: false
 skip_reason: null
-notes: "Character encoding auto-detection. Uses hatch-vcs for versioning (needs git
-  tags). pyproject.toml addopts has -n auto which requires xdist, cleared. Uses
-  norecursedirs=* and python_files=test.py to only run test.py. Test suite may be
-  slow with large corpora."
+notes: Character encoding auto-detection. Uses hatch-vcs for versioning (needs git tags). pyproject.toml uses [tool.pytest] (non-standard, not read by pytest). Test suite may be slow with large corpora. Uses -m "not benchmark" to skip slow benchmark tests.
 enriched: true
 clone_depth: null
 import_name: null

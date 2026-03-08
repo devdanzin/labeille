@@ -1,5 +1,5 @@
 package: ecdsa
-repo: http://github.com/tlsfuzzer/python-ecdsa
+repo: https://github.com/tlsfuzzer/python-ecdsa
 pypi_url: https://pypi.org/project/ecdsa/
 extension_type: pure
 python_versions: []

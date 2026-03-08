@@ -12,7 +12,7 @@ timeout: null
 skip: false
 skip_reason: null
 skip_versions:
-  '3.15': "Depends on thrift/PyO3 packages that don't build on 3.15"
+  '3.15': "Depends on thrift (C extension) which may not build on 3.15"
 notes: "xdist disabled for JIT testing"
 enriched: true
 clone_depth: null

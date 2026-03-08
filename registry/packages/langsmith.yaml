@@ -9,13 +9,10 @@ test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
-skip_versions:
-  '3.15': Requires LangSmith API key for most tests. Depends on pydantic which requires
-    pydantic-core (PyO3).
-notes: LangSmith observability SDK. Python package in python/ subdirectory. Most tests
-  require API access.
+skip: true
+skip_reason: Depends on pydantic v2 (requires pydantic-core, PyO3). Most tests require LangSmith API key.
+skip_versions: {}
+notes: LangSmith observability SDK. Python package in python/ subdirectory. Most tests require API access.
 enriched: true
 clone_depth: null
 import_name: null

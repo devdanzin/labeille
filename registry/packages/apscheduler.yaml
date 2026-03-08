@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/apscheduler/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: git fetch --tags --depth 1 && pip install -e ".[test]"
-test_command: python -m pytest tests
+install_command: git fetch --tags --depth 1 && pip install -e . && pip install pytest pytest-lazy-fixtures pytest-mock anyio[trio] time-machine aiosqlite
+test_command: python -m pytest tests -p no:xdist -m "not external_service"
 test_framework: pytest
 uses_xdist: false
 timeout: null
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: "Uses setuptools-scm (needs git tags)"
+notes: Uses setuptools-scm (needs git tags). [test] extras pull in Redis, MongoDB, PostgreSQL, MySQL, MQTT drivers; install minimal deps and skip external_service tests instead.
 enriched: true
 clone_depth: 50
 import_name: null

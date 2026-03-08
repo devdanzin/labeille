@@ -4,16 +4,15 @@ pypi_url: https://pypi.org/project/psycopg-pool/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest
-test_command: python -m pytest tests
+install_command: pip install -e . && pip install psycopg pytest anyio pproxy pytest-randomly
+test_command: python -m pytest tests/pool/
 test_framework: pytest
 uses_xdist: false
-timeout: null
-skip: false
-skip_reason: null
-skip_versions:
-  '3.15': "Depends on psycopg (C extension build failure on 3.15)"
-notes: "Auto-enriched"
+timeout: 600
+skip: true
+skip_reason: Requires a running PostgreSQL server (live external service); tests live under tests/pool/ in the monorepo
+skip_versions: {}
+notes: 'Tests need PSYCOPG_TEST_DSN env var pointing to a live PostgreSQL instance. acompat/adapters_example/fix_crdb are local test modules (not PyPI). selectors is stdlib. Pool tests are in tests/pool/ subdirectory of the psycopg monorepo.'
 enriched: true
 clone_depth: null
 import_name: null

@@ -1,18 +1,18 @@
 package: pycryptodomex
 repo: https://github.com/Legrandin/pycryptodome/
 pypi_url: https://pypi.org/project/pycryptodomex/
-extension_type: extensions
+extension_type: c_extension
 python_versions: []
 install_method: pip
-install_command: null
-test_command: null
+install_command: ''
+test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
-skip_versions: null
-notes: 'Re-enriched: C extension build'
+skip: true
+skip_reason: Same repo as pycryptodome (Legrandin/pycryptodome). Use pycryptodome instead.
+skip_versions: {}
+notes: Same repo as pycryptodome with separate namespace. Tested via pycryptodome.
 enriched: true
 clone_depth: null
-import_name: null
+import_name: Cryptodome

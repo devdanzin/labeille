@@ -1,0 +1,18 @@
+package: azure-cognitiveservices-speech
+repo: null
+pypi_url: https://pypi.org/project/azure-cognitiveservices-speech/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Requires Azure Cognitive Services cloud connection; no public source repo; platform wheels only (no Python 3.15 support)
+skip_versions: {}
+notes: Binary SDK wrapping native C++ speech libraries. Wheels are py3-none-{platform} (no cp315 builds). All tests require live Azure Speech Service credentials.
+enriched: true
+clone_depth: null
+import_name: null

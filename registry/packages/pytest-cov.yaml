@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/pytest-cov/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install process-tests
-test_command: python -m pytest tests -p no:xdist
+install_command: pip install -e . && pip install process-tests pytest-xdist virtualenv
+test_command: python -m pytest tests -p no:xdist -o "addopts="
 test_framework: pytest
 uses_xdist: false
 timeout: 600
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: Pytest coverage plugin.
+notes: Pytest coverage plugin. addopts cleared (has -p pytester, --doctest-modules). Tests need process-tests, pytest-xdist, virtualenv.
 enriched: true
 clone_depth: null
 import_name: pytest_cov

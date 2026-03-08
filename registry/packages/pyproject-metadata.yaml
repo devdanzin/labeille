@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/pyproject-metadata/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e ".[test]"
-test_command: python -m pytest tests
+install_command: pip install -e . && pip install pytest pytest-cov
+test_command: python -m pytest tests/
 test_framework: pytest
 uses_xdist: false
-timeout: null
+timeout: 600
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: "Auto-enriched"
+notes: 'Auto-enriched. Backend: flit. Tests in tests/. Uses dependency-groups not [test] extras; deps installed manually. On Python 3.15 tomli/exceptiongroup not needed. pytest-cov required (in test group, filterwarnings=error).'
 enriched: true
 clone_depth: null
 import_name: null

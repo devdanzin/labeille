@@ -1,0 +1,18 @@
+package: mypy-boto3-license-manager-linux-subscriptions
+repo: https://github.com/youtype/mypy_boto3_builder
+pypi_url: https://pypi.org/project/mypy-boto3-license-manager-linux-subscriptions/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest pytest-mock
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: true
+skip_reason: Auto-generated boto3 type stubs package with no tests of its own; repo points to builder, not this package
+skip_versions: {}
+notes: 'Auto-generated type stubs for boto3 LicenseManagerLinuxSubscriptions service. The repo is the mypy_boto3_builder generator, not a package with a test suite for these stubs.'
+enriched: true
+clone_depth: null
+import_name: null

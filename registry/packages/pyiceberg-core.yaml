@@ -1,0 +1,18 @@
+package: pyiceberg-core
+repo: null
+pypi_url: https://pypi.org/project/pyiceberg-core/
+extension_type: rust
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Rust extension (iceberg-rust powered core), no repo URL, PyO3 won't build on 3.15
+skip_versions: {}
+notes: Internal dependency of pyiceberg, built with Rust/PyO3.
+enriched: true
+clone_depth: null
+import_name: null

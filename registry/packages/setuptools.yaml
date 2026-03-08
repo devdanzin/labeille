@@ -7,9 +7,9 @@ python_versions:
 - '3.14'
 install_method: pip
 install_command: pip install -e ".[test]" && pip install coverage
-test_command: python -m pytest setuptools/tests/ -k "not integration"
+test_command: python -m pytest setuptools/tests/ -k "not integration" -p no:xdist
 test_framework: pytest
-uses_xdist: false
+uses_xdist: true
 timeout: 1800
 skip: false
 skip_reason: null

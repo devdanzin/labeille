@@ -4,16 +4,16 @@ pypi_url: https://pypi.org/project/flask-appbuilder/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install -r requirements/dev.txt
-test_command: python -m unittest discover tests -v
-test_framework: unittest
+install_command: pip install -e . && pip install pytest nose2 mockldap hiro jsonschema<4.18
+test_command: python -m pytest tests/
+test_framework: pytest
 uses_xdist: false
-timeout: null
+timeout: 600
 skip: false
 skip_reason: null
 skip_versions:
-  '3.15': "Transitive dependency pulls pydantic-core (PyO3), won't build on 3.15."
-notes: "Auto-enriched"
+  '3.15': jsonschema>=4.18 pulls rpds-py (PyO3/maturin), won't build on 3.15. Pinned jsonschema<4.18 as workaround.
+notes: 'Auto-enriched. Backend: setuptools. Tests use unittest.TestCase but discoverable by pytest. Needs nose2/mockldap/hiro for test deps.'
 enriched: true
 clone_depth: null
 import_name: null

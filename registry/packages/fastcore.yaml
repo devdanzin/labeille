@@ -10,9 +10,9 @@ test_framework: pytest
 uses_xdist: false
 timeout: null
 skip: true
-skip_reason: No test directory or test files found in repository
+skip_reason: Tests are nbdev notebooks, not standard pytest/unittest files
 skip_versions: {}
-notes: Reset for re-enrichment (improved test directory detection)
+notes: nbdev project - tests are in Jupyter notebooks (nbs/), not standard test files
 enriched: true
 clone_depth: null
 import_name: null

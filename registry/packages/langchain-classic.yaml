@@ -1,5 +1,5 @@
 package: langchain-classic
-repo: https://github.com/langchain-ai/langchain/tree/master/libs/langchain
+repo: https://github.com/langchain-ai/langchain
 pypi_url: https://pypi.org/project/langchain-classic/
 extension_type: pure
 python_versions: []
@@ -10,7 +10,7 @@ test_framework: pytest
 uses_xdist: false
 timeout: null
 skip: true
-skip_reason: "Monorepo subpackage (langchain-ai/langchain)."
+skip_reason: Monorepo subpackage (langchain-ai/langchain, libs/langchain/ subdirectory).
 skip_versions: {}
 notes: "Auto-triaged: monorepo/clone-fail"
 enriched: true

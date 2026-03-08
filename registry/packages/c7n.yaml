@@ -4,16 +4,16 @@ pypi_url: https://pypi.org/project/c7n/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: null
-test_command: null
+install_command: pip install "jsonschema<4.18" && pip install -e . && pip install pytest pytest-xdist moto freezegun placebo pytest-recording pytest-sugar
+test_command: python -m pytest tests/ -p no:xdist -m "not functional and not skiplive"
 test_framework: pytest
-uses_xdist: false
-timeout: null
+uses_xdist: true
+timeout: 900
 skip: false
 skip_reason: null
 skip_versions:
-  '3.15': Depends on pydantic-core (PyO3)
-notes: 'Re-enriched: Depends on pydantic-core (PyO3)'
+  '3.15': Depends on rpds-py (PyO3 via jsonschema>=4.18)
+notes: Cloud policy engine. Uses placebo/moto for AWS mocking (no real credentials needed). Pre-installs jsonschema<4.18 to avoid rpds-py (PyO3). Functional tests skipped (need live AWS).
 enriched: true
 clone_depth: null
 import_name: null

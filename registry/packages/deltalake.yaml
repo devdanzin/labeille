@@ -1,7 +1,7 @@
 package: deltalake
-repo: https://github.com/delta-io/delta-rs/tree/main/python/
+repo: https://github.com/delta-io/delta-rs
 pypi_url: https://pypi.org/project/deltalake/
-extension_type: extensions
+extension_type: rust
 python_versions: []
 install_method: pip
 install_command: ''
@@ -9,11 +9,10 @@ test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
-skip_versions:
-  '3.15': "PyO3/Rust extension, won't build on 3.15"
-notes: "Auto-triaged: extension with 3.15 build blocker"
+skip: true
+skip_reason: "PyO3/Rust extension, won't build on 3.15"
+skip_versions: {}
+notes: Delta Lake Python bindings (delta-rs). Rust extension using PyO3.
 enriched: true
 clone_depth: null
 import_name: null

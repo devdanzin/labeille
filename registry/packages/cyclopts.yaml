@@ -4,7 +4,7 @@ pypi_url: https://pypi.org/project/cyclopts/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: git fetch --tags --depth 1 && pip install -e .
+install_command: git fetch --tags --depth 1 && pip install -e . && pip install pytest pytest-mock syrupy
 test_command: python -m pytest tests
 test_framework: pytest
 uses_xdist: false
@@ -12,7 +12,7 @@ timeout: null
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: "Uses setuptools-scm (needs git tags)"
+notes: "Uses hatch-vcs for versioning (needs git tags)"
 enriched: true
 clone_depth: 50
 import_name: null

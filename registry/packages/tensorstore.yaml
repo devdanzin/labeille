@@ -1,0 +1,19 @@
+package: tensorstore
+repo: https://github.com/google/tensorstore
+pypi_url: https://pypi.org/project/tensorstore/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install tensorstore && pip install pytest
+test_command: python -m pytest python/tensorstore/tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': No pre-built wheels for Python 3.15; building from source requires Bazel
+notes: 'C++ extension package built with Bazel; pip install -e . requires Bazel, use pip install tensorstore from PyPI instead. Uses setuptools-scm. Tests in python/tensorstore/tests/. Latest wheels only go up to cp311.'
+enriched: true
+clone_depth: 50
+import_name: null

@@ -1,11 +1,11 @@
 package: msgpack
 repo: https://github.com/msgpack/msgpack-python/
 pypi_url: https://pypi.org/project/msgpack/
-extension_type: extensions
+extension_type: c_extension
 python_versions: []
 install_method: pip
 install_command: pip install cython && python -m cython msgpack/_cmsgpack.pyx && pip install . && pip install pytest
-test_command: python -m pytest test/
+test_command: python -m pytest test/ -p no:xdist
 test_framework: pytest
 uses_xdist: false
 timeout: null

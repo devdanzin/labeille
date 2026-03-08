@@ -11,8 +11,7 @@ uses_xdist: false
 timeout: null
 skip: false
 skip_reason: null
-notes: Better error reporting library by Poetry author. Uses poetry-core build backend.
-  Small test suite, pure Python, no external test deps.
+notes: Better error reporting library by Poetry author. Uses poetry-core build backend. Small test suite, pure Python, no external test deps.
 enriched: true
 clone_depth: null
 import_name: null

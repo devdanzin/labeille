@@ -1,7 +1,7 @@
 package: uv
 repo: https://github.com/astral-sh/uv
 pypi_url: https://pypi.org/project/uv/
-extension_type: extensions
+extension_type: rust
 python_versions: []
 install_method: pip
 install_command: ''

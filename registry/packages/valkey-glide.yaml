@@ -1,0 +1,18 @@
+package: valkey-glide
+repo: https://github.com/valkey-io/valkey-glide
+pypi_url: https://pypi.org/project/valkey-glide/
+extension_type: rust
+python_versions: []
+install_method: pip
+install_command: pip install valkey-glide && pip install pytest
+test_command: python -m pytest python/tests/async_tests/ -p no:xdist
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: true
+skip_reason: Requires a running Valkey/Redis server for all tests; also uses Rust/PyO3 core — no cp315 wheels available
+skip_versions: {}
+notes: 'Auto-enriched. Backend: maturin (Rust/PyO3 core). Tests in python/tests/async_tests/. All tests require external Valkey/Redis server instance.'
+enriched: true
+clone_depth: null
+import_name: null

@@ -10,9 +10,9 @@ test_framework: pytest
 uses_xdist: false
 timeout: null
 skip: true
-skip_reason: "Subpackage of Azure/azure-sdk-for-python monorepo. Complex monorepo testing setup."
+skip_reason: "Subpackage of Azure/azure-cli monorepo. Complex monorepo testing setup."
 skip_versions: {}
-notes: "Auto-triaged: monorepo_azure"
+notes: "Auto-triaged: monorepo_azure. Note: this package lives in Azure/azure-cli, not azure-sdk-for-python."
 enriched: true
 clone_depth: null
 import_name: null

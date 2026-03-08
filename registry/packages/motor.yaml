@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/motor/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e ".[test]"
-test_command: python -m pytest test
+install_command: ''
+test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
+skip: true
+skip_reason: Requires external service (database/cloud)
 skip_versions: {}
-notes: "Auto-enriched"
+notes: 'Auto-enriched (skipped: Requires external service (database/cloud))'
 enriched: true
 clone_depth: null
 import_name: null

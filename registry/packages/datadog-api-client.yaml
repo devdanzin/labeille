@@ -4,9 +4,8 @@ pypi_url: https://pypi.org/project/datadog-api-client/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest pytest-bdd pytest-recording pytest-asyncio
-  pytest-randomly glom jinja2 python-dateutil aiosonic zstandard
-test_command: python -m pytest tests/ --ignore=tests/v1 --ignore=tests/v2 -o "addopts="
+install_command: pip install -e . && pip install pytest pytest-bdd pytest-recording pytest-asyncio pytest-randomly glom jinja2 python-dateutil aiosonic zstandard
+test_command: python -m pytest tests/ --ignore=tests/v1 --ignore=tests/v2 -o "addopts=" -p no:xdist
 test_framework: pytest
 uses_xdist: false
 timeout: 300

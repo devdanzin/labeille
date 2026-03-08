@@ -10,9 +10,8 @@ test_framework: pytest
 uses_xdist: false
 timeout: null
 skip: true
-skip_reason: Tests require Google GenAI API keys.
-notes: 'Google GenAI SDK (Gemini). Tests require GOOGLE_API_KEY or GOOGLE_GENAI_API_KEY
-  environment variable. Repo: googleapis/python-genai.'
+skip_reason: Depends on pydantic-core (PyO3), won't build on 3.15.
+notes: Google GenAI SDK (Gemini). Depends on pydantic which requires pydantic-core (PyO3). Tests are unit tests with mocks (no API keys needed) but pydantic-core blocks 3.15.
 enriched: true
 clone_depth: null
-import_name: null
+import_name: google.genai

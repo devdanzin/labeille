@@ -1,0 +1,18 @@
+package: pyaudio
+repo: null
+pypi_url: https://pypi.org/project/pyaudio/
+extension_type: c_extension
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: No source repository URL available on PyPI. Requires PortAudio system library.
+skip_versions: {}
+notes: C extension wrapping PortAudio. No source repo on PyPI.
+enriched: true
+clone_depth: null
+import_name: null

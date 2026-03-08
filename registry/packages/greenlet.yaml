@@ -1,11 +1,11 @@
 package: greenlet
 repo: https://github.com/python-greenlet/greenlet
 pypi_url: https://pypi.org/project/greenlet/
-extension_type: extensions
+extension_type: c_extension
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest psutil objgraph objgraph
-test_command: python -m pytest src/greenlet/tests/
+install_command: pip install -e . && pip install pytest psutil objgraph
+test_command: python -m pytest src/greenlet/tests/ -p no:xdist
 test_framework: pytest
 uses_xdist: false
 timeout: 600

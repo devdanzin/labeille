@@ -1,0 +1,18 @@
+package: tree-sitter-toml
+repo: https://github.com/tree-sitter-grammars/tree-sitter-toml
+pypi_url: https://pypi.org/project/tree-sitter-toml/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest tree-sitter
+test_command: python -m pytest bindings/python/tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: 'Auto-enriched. Backend: setuptools. Tests in bindings/python/tests/.'
+enriched: true
+clone_depth: null
+import_name: null

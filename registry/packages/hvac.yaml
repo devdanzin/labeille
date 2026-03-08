@@ -12,8 +12,7 @@ timeout: null
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: "Integration tests require a running Vault server. Unit tests only. Uses poetry
-  build backend. xdist disabled for JIT testing."
+notes: Integration tests require a running Vault server. Unit tests only. Uses poetry build backend. xdist disabled for JIT testing.
 enriched: true
 clone_depth: null
 import_name: null

@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/graphql-core/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e ".[test]"
-test_command: python -m pytest tests -o "addopts="
+install_command: pip install -e . && pip install pytest pytest-describe pytest-timeout
+test_command: python -m pytest tests -p no:xdist
 test_framework: pytest
 uses_xdist: false
 timeout: null
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: "addopts cleared (refs: pytest-benchmark)"
+notes: "Uses dependency-groups not extras. addopts has --benchmark-disable. Uses pytest-describe for test organization."
 enriched: true
 clone_depth: null
 import_name: graphql

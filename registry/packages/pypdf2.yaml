@@ -1,19 +1,18 @@
 package: pypdf2
-repo: https://github.com/py-pdf/PyPDF2
+repo: https://github.com/py-pdf/pypdf
 pypi_url: https://pypi.org/project/pypdf2/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install -r requirements/dev.txt
-test_command: python -m pytest tests -p no:xdist
+install_command: ''
+test_command: ''
 test_framework: pytest
-uses_xdist: true
+uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
-skip_versions:
-  '3.15': "Depends on Pillow (C ext)"
-notes: "xdist disabled for JIT testing"
+skip: true
+skip_reason: Deprecated and renamed to pypdf; same repo (py-pdf/pypdf)
+skip_versions: {}
+notes: "PyPDF2 was renamed to pypdf. Last release 3.0.1. Use pypdf entry instead."
 enriched: true
 clone_depth: null
-import_name: null
+import_name: PyPDF2

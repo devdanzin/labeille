@@ -5,8 +5,8 @@ extension_type: pure
 python_versions: []
 install_method: pip
 install_command: pip install -e . && pip install pytest pyasn1
-test_command: python -m pytest tests/
-test_framework: pytest
+test_command: python -m unittest discover -s tests
+test_framework: unittest
 uses_xdist: false
 timeout: null
 skip: false

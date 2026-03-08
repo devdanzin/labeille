@@ -5,8 +5,7 @@ extension_type: pure
 python_versions: []
 install_method: pip
 install_command: pip install -e . && pip install pytest
-test_command: python -m pytest dill/tests/ --ignore=dill/tests/test_module.py
-  --ignore=dill/tests/test_session.py
+test_command: python -m pytest dill/tests/ --ignore=dill/tests/test_module.py --ignore=dill/tests/test_session.py
 test_framework: pytest
 uses_xdist: false
 timeout: null

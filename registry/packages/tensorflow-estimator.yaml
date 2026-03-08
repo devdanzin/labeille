@@ -4,16 +4,16 @@ pypi_url: https://pypi.org/project/tensorflow-estimator/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: null
-test_command: null
-test_framework: pytest
+install_command: ''
+test_command: ''
+test_framework: unknown
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
+skip: true
+skip_reason: "Archived repo (Apr 2025). Uses Bazel build. Depends on TensorFlow C extensions."
 skip_versions:
   '3.15': Depends on tensorflow C extensions
-notes: 'Re-enriched: Depends on tensorflow C extensions'
+notes: "Archived TensorFlow Estimator. Uses Bazel, not pip-installable from source."
 enriched: true
 clone_depth: null
 import_name: null

@@ -1,18 +1,18 @@
 package: stringcase
 repo: https://github.com/okunishinishi/python-stringcase
 pypi_url: https://pypi.org/project/stringcase/
-extension_type: unknown
+extension_type: pure
 python_versions: []
 install_method: pip
-install_command: ''
-test_command: ''
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest stringcase_test.py -p no:xdist
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: true
-skip_reason: "Unmaintained string case converter, no tests"
+skip: false
+skip_reason: null
 skip_versions: {}
-notes: "Auto-triaged: skip"
+notes: "Unmaintained but has unittest tests in stringcase_test.py. Pure Python, single module."
 enriched: true
 clone_depth: null
 import_name: null

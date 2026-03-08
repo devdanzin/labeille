@@ -1,18 +1,18 @@
 package: pypandoc-binary
 repo: https://github.com/JessicaTegner/pypandoc
 pypi_url: https://pypi.org/project/pypandoc-binary/
-extension_type: extensions
+extension_type: pure
 python_versions: []
 install_method: pip
-install_command: null
-test_command: null
-test_framework: pytest
+install_command: ''
+test_command: ''
+test_framework: unittest
 uses_xdist: false
 timeout: null
 skip: true
-skip_reason: No meaningful test suite available
+skip_reason: Tests require pandoc binary; pypandoc-binary bundles it but tests use unittest with system pandoc
 skip_versions: {}
-notes: Reset for re-enrichment (improved test directory detection)
+notes: "Pure Python wrapper around pandoc. Tests in tests.py use unittest. Requires pandoc installed."
 enriched: true
 clone_depth: null
-import_name: null
+import_name: pypandoc

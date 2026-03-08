@@ -9,8 +9,8 @@ test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: 1800
-skip: false
-skip_reason: null
+skip: true
+skip_reason: Hard depends on pydantic v2 which requires pydantic-core (PyO3/Rust), not buildable on Python 3.15 alpha
 skip_versions:
   '3.15': Hard depends on pydantic v2 which requires pydantic-core (PyO3/Rust), not
     buildable on Python 3.15 alpha

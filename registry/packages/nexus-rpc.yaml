@@ -1,18 +1,18 @@
 package: nexus-rpc
-repo: null
+repo: https://github.com/nexus-rpc/sdk-python
 pypi_url: https://pypi.org/project/nexus-rpc/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: ''
-test_command: ''
+install_command: pip install -e . && pip install pytest pytest-asyncio pytest-cov
+test_command: python -m pytest tests/
 test_framework: pytest
 uses_xdist: false
-timeout: null
-skip: true
-skip_reason: No source repository URL available on PyPI.
+timeout: 120
+skip: false
+skip_reason: null
 skip_versions: {}
-notes: 'Confirmed: no repo available after improved URL detection'
+notes: Nexus Python SDK (Temporal). Pure Python with async tests.
 enriched: true
 clone_depth: null
 import_name: null

@@ -1,0 +1,18 @@
+package: pyppmd
+repo: https://github.com/miurahr/pyppmd
+pypi_url: https://pypi.org/project/pyppmd/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: git fetch --tags --depth 1 && pip install -e ".[test]" && pip install pytest pytest-benchmark pytest-cov pytest-timeout hypothesis coverage
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: 'Auto-enriched. Backend: setuptools. Uses setuptools-scm. Has [test] extras. Tests in tests/. atheris is in [fuzzer] extras only, not [test].'
+enriched: true
+clone_depth: 50
+import_name: null

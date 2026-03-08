@@ -1,0 +1,18 @@
+package: pymupdfb
+repo: https://github.com/pymupdf/pymupdf
+pypi_url: https://pypi.org/project/pymupdfb/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest fonttools pymupdf-fonts psutil pillow
+test_command: python -m pytest tests/ -p no:xdist
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: true
+skip_reason: pymupdfb is the binary companion wheel for pymupdf; requires SWIG+libclang+MuPDF C libs to build from source, and only supports Python 3.10-3.14 (not 3.15). difflib is stdlib (removed), gentle_compare is a local test file not a PyPI package (removed).
+skip_versions: {}
+notes: 'Repo is pymupdf/pymupdf (binary companion wheel). conftest.py auto-installs fonttools/pymupdf-fonts/psutil/pillow. difflib is stdlib; gentle_compare is a local tests/ file. Unsupported on Python 3.15.'
+enriched: true
+clone_depth: null
+import_name: null

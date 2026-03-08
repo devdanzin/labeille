@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/pygtrie/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: null
-test_command: null
-test_framework: pytest
+install_command: pip install -e .
+test_command: python -m unittest test -v
+test_framework: unittest
 uses_xdist: false
-timeout: null
-skip: true
-skip_reason: No test directory or test files found in repository
+timeout: 120
+skip: false
+skip_reason: null
 skip_versions: {}
-notes: Reset for re-enrichment (improved test directory detection)
+notes: Single test.py at repo root using unittest. Single-file module (pygtrie.py).
 enriched: true
 clone_depth: null
 import_name: null

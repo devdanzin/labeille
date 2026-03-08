@@ -4,9 +4,8 @@ pypi_url: https://pypi.org/project/kubernetes/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest pytest-asyncio
-test_command: python -m pytest kubernetes/e2e_test/ --ignore=kubernetes/e2e_test/test_client.py
-  -k 'not test_' || python -m pytest kubernetes/
+install_command: ''
+test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: 600

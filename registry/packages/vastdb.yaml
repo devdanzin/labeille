@@ -4,16 +4,15 @@ pypi_url: https://pypi.org/project/vastdb/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install -r requirements-dev.txt
-test_command: python -m pytest vastdb/tests
+install_command: pip install -e . && pip install duckdb pytest requests
+test_command: python -m pytest vastdb/tests/
 test_framework: pytest
 uses_xdist: false
-timeout: null
-skip: false
-skip_reason: null
-skip_versions:
-  '3.15': "Depends on pyarrow (C ext build failure)"
-notes: "Auto-enriched"
+timeout: 600
+skip: true
+skip_reason: All tests require a live VAST DB server connection (and S3-compatible storage); cannot run in CI without external infrastructure
+skip_versions: {}
+notes: 'Auto-enriched. Backend: unknown. Tests in vastdb/tests/. All tests use live VAST DB server fixtures. Removed bogus deps table_metadata and util (local test modules).'
 enriched: true
 clone_depth: null
 import_name: null

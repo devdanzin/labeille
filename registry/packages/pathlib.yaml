@@ -9,8 +9,8 @@ test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
+skip: true
+skip_reason: Archived stdlib backport, no longer maintained
 skip_versions:
   '3.15': Backport of stdlib pathlib, archived
 notes: Repo found by improved URL detection. Backport of stdlib pathlib, archived

@@ -11,8 +11,7 @@ uses_xdist: false
 timeout: null
 skip: false
 skip_reason: null
-notes: HTTP transport library. Uses hatchling build backend. Tests require trio for
-  async, h2 for HTTP/2, socksio for SOCKS, trustme for SSL test certs.
+notes: HTTP transport library. Uses hatchling build backend. Tests require trio for async, h2 for HTTP/2, socksio for SOCKS, trustme for SSL test certs.
 enriched: true
 clone_depth: null
 import_name: null

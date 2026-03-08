@@ -7,7 +7,7 @@ python_versions:
 - '3.14'
 install_method: pip
 install_command: pip install -e . && pip install pytest setuptools
-test_command: python -m pytest tests/
+test_command: python -m pytest -p no:xdist tests/
 test_framework: pytest
 uses_xdist: false
 timeout: null

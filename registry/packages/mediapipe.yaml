@@ -1,0 +1,18 @@
+package: mediapipe
+repo: https://github.com/google/mediapipe
+pypi_url: https://pypi.org/project/mediapipe/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest mediapipe/tasks/python/test/vision/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: true
+skip_reason: Requires Bazel to build from source (pip install -e . is impossible); test model .tflite files are not present in the repo (downloaded via Bazel); officially supports Python 3.9-3.12 only; complex system deps (OpenCV, absl-py, numpy)
+skip_versions: {}
+notes: 'Build requires Bazel. Model files needed by tests are not committed to the repo. Tests also depend on absl-py, numpy, opencv-contrib-python.'
+enriched: true
+clone_depth: null
+import_name: null

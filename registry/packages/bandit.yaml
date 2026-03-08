@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/bandit/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install -r test-requirements.txt
-test_command: python -m pytest tests
-test_framework: pytest
+install_command: pip install -e ".[yaml,toml,baseline,sarif]" && pip install stestr testtools fixtures beautifulsoup4
+test_command: python -m stestr run
+test_framework: stestr
 uses_xdist: false
-timeout: null
+timeout: 600
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: "Auto-enriched"
+notes: 'Auto-enriched. Backend: setuptools+pbr. Tests in tests/ using stestr+testtools.'
 enriched: true
 clone_depth: null
 import_name: null

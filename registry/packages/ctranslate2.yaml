@@ -1,0 +1,18 @@
+package: ctranslate2
+repo: https://github.com/OpenNMT/CTranslate2
+pypi_url: https://pypi.org/project/ctranslate2/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest python/tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: true
+skip_reason: Requires pre-built libctranslate2 C++ library (CMake build with MKL/OpenBLAS); tests require pre-downloaded model data
+skip_versions: {}
+notes: 'Auto-enriched. Backend: unknown. Tests in python/tests/.'
+enriched: true
+clone_depth: null
+import_name: null

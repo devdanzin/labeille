@@ -1,0 +1,18 @@
+package: zstd
+repo: https://github.com/sergey-dryabzhinsky/python-zstd
+pypi_url: https://pypi.org/project/zstd/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest tests/ -p no:xdist
+test_framework: unittest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: 'Auto-enriched. Backend: setuptools with C extension. Tests in tests/ using unittest.TestCase. get_memory_usage is a local module inside tests/ — not a pip package.'
+enriched: true
+clone_depth: null
+import_name: null

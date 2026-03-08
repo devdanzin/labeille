@@ -1,5 +1,5 @@
 package: click-repl
-repo: https://github.com/untitaker/click-repl
+repo: https://github.com/click-contrib/click-repl
 pypi_url: https://pypi.org/project/click-repl/
 extension_type: pure
 python_versions: []

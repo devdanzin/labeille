@@ -6,7 +6,7 @@ python_versions: []
 install_method: pip
 install_command: pip install -e context/opencensus-context && pip install -e . && pip install
   pytest mock
-test_command: python -m pytest tests/unit
+test_command: python -m pytest tests/unit -p no:xdist
 test_framework: pytest
 uses_xdist: false
 timeout: null

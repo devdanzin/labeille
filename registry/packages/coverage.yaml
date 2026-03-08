@@ -11,8 +11,7 @@ uses_xdist: false
 timeout: 1200
 skip: false
 skip_reason: null
-notes: Code coverage measurement. Has C extensions that should build on 3.15. Large
-  test suite.
+notes: Code coverage measurement. Has C extensions that should build on 3.15. Large test suite.
 enriched: true
 clone_depth: null
 import_name: coverage

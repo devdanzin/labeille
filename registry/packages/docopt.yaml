@@ -1,7 +1,7 @@
 package: docopt
 repo: https://github.com/docopt/docopt
 pypi_url: https://pypi.org/project/docopt/
-extension_type: unknown
+extension_type: pure
 python_versions: []
 install_method: pip
 install_command: pip install -e . && pip install pytest
@@ -12,7 +12,7 @@ timeout: null
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: Repo found by improved URL detection. Tests in ./
+notes: Command-line argument parser using docstring conventions. 100% Python. Tests in root dir.
 enriched: true
 clone_depth: null
 import_name: null

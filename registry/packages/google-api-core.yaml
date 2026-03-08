@@ -4,14 +4,13 @@ pypi_url: https://pypi.org/project/google-api-core/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest pytest-cov pytest-asyncio
-  pytest-mock mock google-auth
-test_command: python -m pytest tests/unit/ -p no:xdist
+install_command: ''
+test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: 300
 skip: true
-skip_reason: "Monorepo subpackage - no pyproject.toml in cloned dir"
+skip_reason: Standalone repo archived, moved to googleapis/google-cloud-python monorepo. Cloned repo has no source code.
 notes: 'Core Google API client library. Has unit tests in tests/unit/ that work without
   credentials. Standalone repo: googleapis/python-api-core.'
 enriched: true

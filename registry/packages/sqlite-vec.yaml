@@ -1,0 +1,18 @@
+package: sqlite-vec
+repo: https://github.com/asg017/sqlite-vec
+pypi_url: https://pypi.org/project/sqlite-vec/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: "C/Rust SQLite extension; tests require building native code and custom test harness"
+skip_versions: {}
+notes: "SQLite vector search extension. Tests are C/Rust-based, not standard Python test suite."
+enriched: true
+clone_depth: null
+import_name: null

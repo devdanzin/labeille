@@ -4,8 +4,8 @@ pypi_url: https://pypi.org/project/pyee/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: git fetch --tags --depth 1 && pip install -e .
-test_command: python -m pytest tests
+install_command: git fetch --tags --depth 1 && pip install -e . && pip install pytest pytest-asyncio trio
+test_command: python -m pytest tests -p no:xdist
 test_framework: pytest
 uses_xdist: false
 timeout: null

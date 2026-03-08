@@ -6,13 +6,12 @@ python_versions:
 - '3.15'
 - '3.14'
 install_method: pip
-install_command: pip install -e ".[test]"
-test_command: python -m pytest
+install_command: git fetch --tags --depth 1 && pip install -e ".[test]"
+test_command: python -m pytest tests/ -p no:xdist -o "addopts="
 test_framework: pytest
 uses_xdist: false
 timeout: null
 skip: false
 skip_reason: null
-notes: Uses setuptools with setuptools_scm. Tests include doctests (--doctest-modules
-  enabled).
+notes: Uses setuptools with setuptools_scm (needs tags). Has --doctest-modules in pytest.ini, override addopts to avoid doctest issues.
 enriched: true

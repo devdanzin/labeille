@@ -4,16 +4,16 @@ pypi_url: https://pypi.org/project/sagemaker/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: null
-test_command: null
+install_command: ''
+test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
+skip: true
+skip_reason: Depends on sagemaker-core which requires pydantic (PyO3), numpy, scipy — not buildable on 3.15.
 skip_versions:
-  '3.15': Depends on numpy/scipy C extensions
-notes: 'Re-enriched: Depends on numpy/scipy C extensions'
+  '3.15': Depends on sagemaker-core (pydantic-core PyO3, numpy/scipy)
+notes: Thin wrapper v3. Depends on sagemaker-core, sagemaker-train, sagemaker-serve, sagemaker-mlops.
 enriched: true
 clone_depth: null
 import_name: null

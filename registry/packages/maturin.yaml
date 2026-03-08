@@ -1,7 +1,7 @@
 package: maturin
 repo: https://github.com/PyO3/maturin
 pypi_url: https://pypi.org/project/maturin/
-extension_type: extensions
+extension_type: rust
 python_versions: []
 install_method: pip
 install_command: ''

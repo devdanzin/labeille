@@ -1,0 +1,18 @@
+package: typed-ast
+repo: https://github.com/python/typed_ast
+pypi_url: https://pypi.org/project/typed-ast/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest ast3/tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: true
+skip_reason: Archived/EOL package (no releases since 2023), no wheels for Python 3.12+ and C extension build fails on modern Python; use stdlib ast instead
+skip_versions: {}
+notes: 'Auto-enriched. Backend: unknown. Tests in ast3/tests/.'
+enriched: true
+clone_depth: null
+import_name: null

@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/hypothesis/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest
-test_command: python -m pytest whole_repo_tests -p no:xdist -o "addopts="
+install_command: pip install -e hypothesis-python/ && pip install pytest pexpect sortedcontainers
+test_command: python -m pytest hypothesis-python/tests/cover -p no:xdist -o "addopts="
 test_framework: pytest
 uses_xdist: false
 timeout: null
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: Re-enriched with improved test detection. Tests in whole_repo_tests/
+notes: Monorepo. Package in hypothesis-python/. Tests in hypothesis-python/tests/. whole_repo_tests/ is repo meta-tooling.
 enriched: true
 clone_depth: null
 import_name: null

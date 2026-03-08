@@ -1,0 +1,18 @@
+package: imagecodecs
+repo: https://github.com/cgohlke/imagecodecs
+pypi_url: https://pypi.org/project/imagecodecs/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install numcodecs numpy pytest zarr
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: true
+skip_reason: Requires extensive system C libraries (libpng, libjpeg, libtiff, zlib, zstd, brotli, lz4, etc.) and Cython to build from source; not practical without pre-built wheels
+skip_versions: {}
+notes: 'Auto-enriched. Backend: setuptools+cython. Requires dozens of system codec libraries to build. Tests in tests/.'
+enriched: true
+clone_depth: null
+import_name: null

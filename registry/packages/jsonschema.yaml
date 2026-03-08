@@ -4,9 +4,8 @@ pypi_url: https://pypi.org/project/jsonschema/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install 'jsonschema<4.18' && pip install -e . && pip install
-  pytest
-test_command: python -m pytest tests/
+install_command: pip install 'jsonschema<4.18' && pip install -e . && pip install pytest virtue jsonpath-ng
+test_command: python -m pytest jsonschema/tests/
 test_framework: pytest
 uses_xdist: false
 timeout: 300

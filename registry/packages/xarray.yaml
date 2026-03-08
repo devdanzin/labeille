@@ -9,11 +9,10 @@ test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
-skip_versions:
-  '3.15': Depends on numpy/scipy C extensions
-notes: Repo found by improved URL detection. Depends on numpy/scipy C extensions
+skip: true
+skip_reason: Depends on numpy/scipy C extensions that won't build on 3.15.
+skip_versions: {}
+notes: Repo found by improved URL detection. Depends on numpy/scipy C extensions.
 enriched: true
 clone_depth: null
 import_name: null

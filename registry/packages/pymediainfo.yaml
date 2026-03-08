@@ -1,0 +1,18 @@
+package: pymediainfo
+repo: https://github.com/sbraz/pymediainfo
+pypi_url: https://pypi.org/project/pymediainfo/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install pymediainfo[tests]
+test_command: python -m pytest -p no:xdist tests/
+test_framework: pytest
+uses_xdist: true
+timeout: 600
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: 'pdm backend with SCM versioning. Needs system libmediainfo - install from PyPI wheel (bundles library). Uses xdist (disabled for JIT). Tests in tests/.'
+enriched: true
+clone_depth: 50
+import_name: null

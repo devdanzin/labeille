@@ -5,7 +5,7 @@ extension_type: pure
 python_versions: []
 install_method: pip
 install_command: pip install -e . && pip install pytest pytest-mock
-test_command: python -m pytest tests/
+test_command: python -m pytest -p no:xdist tests/
 test_framework: pytest
 uses_xdist: false
 timeout: null

@@ -1,10 +1,10 @@
 package: ml-dtypes
 repo: https://github.com/jax-ml/ml_dtypes
 pypi_url: https://pypi.org/project/ml-dtypes/
-extension_type: extensions
+extension_type: c_extension
 python_versions: []
 install_method: pip
-install_command: pip install -e .
+install_command: pip install -e . && pip install pytest absl-py
 test_command: python -m pytest ml_dtypes/tests -p no:xdist
 test_framework: pytest
 uses_xdist: true

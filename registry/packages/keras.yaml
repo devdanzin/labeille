@@ -4,16 +4,16 @@ pypi_url: https://pypi.org/project/keras/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: null
-test_command: null
+install_command: ''
+test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
+skip: true
+skip_reason: Depends on tensorflow/jax C extensions which won't build on 3.15
 skip_versions:
   '3.15': Depends on tensorflow C extensions
-notes: 'Re-enriched: Depends on tensorflow C extensions'
+notes: Depends on tensorflow/jax C extensions for backend.
 enriched: true
 clone_depth: null
 import_name: null

@@ -1,12 +1,12 @@
 package: ruff
 repo: https://github.com/astral-sh/ruff
 pypi_url: https://pypi.org/project/ruff/
-extension_type: extensions
+extension_type: rust
 python_versions: []
 install_method: pip
 install_command: ''
 test_command: ''
-test_framework: pytest
+test_framework: none
 uses_xdist: false
 timeout: null
 skip: true

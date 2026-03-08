@@ -4,16 +4,14 @@ pypi_url: https://pypi.org/project/google-resumable-media/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest pytest-cov google-auth mock
-  requests brotli
+install_command: pip install -e ".[requests]" && pip install pytest mock brotli
 test_command: python -m pytest tests/unit/ -p no:xdist
 test_framework: pytest
 uses_xdist: false
 timeout: 180
 skip: false
 skip_reason: null
-notes: 'Resumable upload/download library for Google APIs. Has unit tests in tests/unit/.
-  Standalone repo: googleapis/google-resumable-media-python.'
+notes: 'Resumable upload/download library for Google APIs. Has unit tests in tests/unit/. Repo is archived; code moved to googleapis/google-cloud-python monorepo but archived repo still clonable.'
 enriched: true
 clone_depth: null
 import_name: google.resumable_media

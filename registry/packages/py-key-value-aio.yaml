@@ -1,18 +1,18 @@
 package: py-key-value-aio
-repo: https://github.com/jlowin/fastmcp
+repo: null
 pypi_url: https://pypi.org/project/py-key-value-aio/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest
-test_command: python -m pytest tests -p no:xdist -o "addopts="
+install_command: ''
+test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
+skip: true
+skip_reason: No source repository URL available on PyPI.
 skip_versions: {}
-notes: Repo found by improved URL detection. Tests in tests/
+notes: No repo available. fastmcp is a consumer, not the source.
 enriched: true
 clone_depth: null
 import_name: null

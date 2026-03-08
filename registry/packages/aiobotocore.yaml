@@ -14,10 +14,8 @@ timeout: null
 skip: false
 skip_reason: null
 skip_versions:
-  '3.15': moto requires pydantic-core (Rust/PyO3) which doesn't support Python 3.15
-    yet
-notes: Tests need moto[server] which requires pydantic → pydantic-core (PyO3). Cannot
-  run until PyO3 supports 3.15.
+  '3.15': moto requires pydantic-core (Rust/PyO3) which doesn't support Python 3.15 yet
+notes: Tests need moto[server] which requires pydantic -> pydantic-core (PyO3). Cannot run until PyO3 supports 3.15.
 enriched: true
 clone_depth: null
 import_name: null

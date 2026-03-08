@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/logfire-api/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest
-test_command: python -m pytest tests -p no:xdist -o "addopts="
+install_command: ''
+test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
+skip: true
+skip_reason: Stub/shim package with no tests of its own. Part of logfire monorepo.
 skip_versions: {}
-notes: Repo found by improved URL detection. Tests in tests/
+notes: "logfire-api is a no-op shim for the Logfire SDK. No test files in logfire-api/ subpackage."
 enriched: true
 clone_depth: null
 import_name: null

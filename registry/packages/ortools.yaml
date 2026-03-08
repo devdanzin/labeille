@@ -1,0 +1,18 @@
+package: ortools
+repo: https://github.com/google/or-tools
+pypi_url: https://pypi.org/project/ortools/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest ortools/math_opt/python/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: true
+skip_reason: No Python 3.14+ wheels on PyPI; source build requires Bazel/CMake (no setup.py/pyproject.toml in repo root); pip install -e . is not supported.
+skip_versions: {}
+notes: 'Auto-enriched. Backend: unknown. Tests in ortools/math_opt/python/.'
+enriched: true
+clone_depth: null
+import_name: null

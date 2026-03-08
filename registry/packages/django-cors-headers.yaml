@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/django-cors-headers/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e ".[test]"
-test_command: python -m pytest tests
+install_command: pip install -e . && pip install pytest pytest-django
+test_command: python -m pytest tests/
 test_framework: pytest
 uses_xdist: false
-timeout: null
+timeout: 600
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: "Auto-enriched"
+notes: 'Auto-enriched. Backend: setuptools. corsheaders is the package import name, not a separate dep. Tests use Django TestCase run via pytest.'
 enriched: true
 clone_depth: null
 import_name: corsheaders

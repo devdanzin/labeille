@@ -4,16 +4,16 @@ pypi_url: https://pypi.org/project/google-ads/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e ".[tests]"
-test_command: python -m pytest tests
-test_framework: pytest
+install_command: pip install -e . && pip install pyfakefs
+test_command: python -m unittest discover -s tests -p "*_test.py" -v
+test_framework: unittest
 uses_xdist: false
-timeout: null
+timeout: 600
 skip: false
 skip_reason: null
 skip_versions:
-  '3.15': "Install error on 3.15 (deps issue)"
-notes: "Auto-enriched"
+  '3.15': Install error on 3.15 (deps issue)
+notes: 'Auto-enriched. Backend: setuptools. Tests in tests/ with *_test.py pattern. Needs pyfakefs. requires-python <3.15.'
 enriched: true
 clone_depth: null
 import_name: null

@@ -1,0 +1,19 @@
+package: hf-transfer
+repo: https://github.com/huggingface/hf_transfer.git
+pypi_url: https://pypi.org/project/hf-transfer/
+extension_type: rust
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: true
+skip_reason: Rust binding with no Python tests
+skip_versions:
+  '3.15': PyO3/maturin package, not yet supporting 3.15
+notes: 'Auto-enriched (skipped: Rust binding with no Python tests)'
+enriched: true
+clone_depth: null
+import_name: null

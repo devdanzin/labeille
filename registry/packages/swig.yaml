@@ -1,0 +1,18 @@
+package: swig
+repo: https://github.com/nightlark/swig-pypi
+pypi_url: https://pypi.org/project/swig/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install swig
+test_command: swig -version
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: true
+skip_reason: No Python test suite; package just wraps the SWIG binary. Tests are CLI invocations (swig -version), not pytest-runnable.
+skip_versions: {}
+notes: 'Backend: scikit-build-core. Uses setuptools-scm. No Python test suite - only CLI binary checks. Install from PyPI wheel avoids source build requiring cmake/ninja.'
+enriched: true
+clone_depth: null
+import_name: null

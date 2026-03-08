@@ -4,16 +4,15 @@ pypi_url: https://pypi.org/project/daff/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e .
-test_command: python -m pytest test
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest test/test_example.py test/test_sqlite.py
 test_framework: pytest
 uses_xdist: false
-timeout: null
-skip: false
-skip_reason: null
-skip_versions:
-  '3.15': "Build failure on 3.15"
-notes: "Auto-enriched"
+timeout: 600
+skip: true
+skip_reason: Package is generated from Haxe; daff/ directory does not exist in the git repo and must be built via make setup_py which requires Haxe toolchain
+skip_versions: {}
+notes: 'Auto-enriched. Backend: unknown. Python code is transpiled from Haxe. Only 2 Python test scripts (test_example.py, test_sqlite.py) exist.'
 enriched: true
 clone_depth: null
 import_name: null
