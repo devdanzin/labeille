@@ -7,6 +7,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+- `labeille registry sync` command to clone or update the laruche registry into the default location.
+- Schema version checking via `schema.yaml` at the registry root. labeille checks this at load time and gives an actionable error if the registry schema is incompatible.
+- `default_registry_dir()` and `LABEILLE_REGISTRY_DIR` environment variable for configuring the registry location.
+- `RegistrySchemaError` exception for incompatible registry schemas.
 - `--adaptive` flag for `labeille bench run`: stop iterating early when wall-time measurements converge (RSE below threshold).
 - `--adaptive-threshold` option (default 0.005 = 0.5% RSE) and `--adaptive-min-iterations` option (default 5) for fine-tuning convergence behavior.
 - `adaptive`, `adaptive_threshold`, and `adaptive_min_iterations` fields in YAML benchmark profiles.
@@ -115,6 +119,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Commit-aware run comparison: `analyze compare` and `analyze run` show git commit changes alongside status changes with heuristic annotations (e.g. "unchanged — likely a CPython/JIT regression").
 - `PackageComparison` dataclass with `commit_changed`/`commit_unchanged` properties for per-package comparison data.
 - New crash summary statistics in compare output showing repo unchanged/changed/unknown counts.
+
+### Changed
+- The package registry has been moved to its own repository: [laruche](https://github.com/devdanzin/laruche). Use `labeille registry sync` to fetch it.
+- Default `--registry-dir` changed from `registry/` (local) to `~/.local/share/labeille/registry/` (user-level). Override with `LABEILLE_REGISTRY_DIR` env var.
+- All documentation updated to reflect the split. Enrichment docs now live in laruche.
 
 ### Enhanced
 - Updated 63 registry packages with accurate skip reasons from compat analysis: cleared vague 3.15 skip_versions, added specific failure categories (Meson, CMake, removed APIs), reclassified non-3.15 issues as skip with precise reasons, and unskipped 5 packages that now build on 3.15.

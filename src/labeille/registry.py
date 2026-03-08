@@ -1,14 +1,16 @@
 """Registry for package test configurations.
 
 This module handles reading, writing, and validating the registry of packages
-and their test configurations. The registry consists of an index file
-(``registry/index.yaml``) listing all tracked packages, and per-package
-configuration files (``registry/packages/{name}.yaml``) with detailed test
-setup instructions.
+and their test configurations. The registry is maintained in the
+`laruche <https://github.com/devdanzin/laruche>`_ repository and consists
+of an index file (``index.yaml``) listing all tracked packages, and
+per-package configuration files (``packages/{name}.yaml``) with detailed
+test setup instructions.
 """
 
 from __future__ import annotations
 
+import os
 from dataclasses import asdict, dataclass, field, fields
 from datetime import datetime, timezone
 from pathlib import Path
@@ -19,6 +21,83 @@ import yaml
 from labeille.logging import get_logger
 
 log = get_logger("registry")
+
+LARUCHE_REPO_URL = "https://github.com/devdanzin/laruche.git"
+
+SUPPORTED_SCHEMA_VERSION = 1
+
+_DEFAULT_REGISTRY_DIR = Path(
+    os.environ.get(
+        "LABEILLE_REGISTRY_DIR",
+        os.path.expanduser("~/.local/share/labeille/registry"),
+    )
+)
+
+
+def default_registry_dir() -> Path:
+    """Return the default registry directory path.
+
+    Resolution order:
+    1. ``LABEILLE_REGISTRY_DIR`` environment variable (if set)
+    2. ``~/.local/share/labeille/registry/``
+    """
+    return _DEFAULT_REGISTRY_DIR
+
+
+class RegistrySchemaError(Exception):
+    """Raised when the registry schema version is incompatible."""
+
+    def __init__(self, message: str) -> None:
+        self.message = message
+        super().__init__(message)
+
+
+def check_registry_schema(registry_path: Path) -> None:
+    """Check registry schema version compatibility.
+
+    Reads ``schema.yaml`` from the registry root and verifies that
+    the schema version is supported by this version of labeille.
+
+    Raises:
+        RegistrySchemaError: If the schema version is incompatible.
+
+    Does nothing if ``schema.yaml`` does not exist (backward
+    compatibility with registries that predate schema versioning).
+    """
+    schema_file = registry_path / "schema.yaml"
+    if not schema_file.exists():
+        return
+
+    try:
+        data = yaml.safe_load(schema_file.read_text(encoding="utf-8"))
+    except Exception:
+        log.warning("Could not parse schema.yaml in %s", registry_path)
+        return
+
+    if not isinstance(data, dict):
+        return
+
+    version = data.get("schema_version")
+    if version is None:
+        return
+
+    if not isinstance(version, int):
+        log.warning("schema_version in %s is not an integer: %r", registry_path, version)
+        return
+
+    if version > SUPPORTED_SCHEMA_VERSION:
+        min_version = data.get("min_labeille_version", "unknown")
+        raise RegistrySchemaError(
+            f"Registry schema v{version} detected at {registry_path}, "
+            f"but this version of labeille supports schema "
+            f"v{SUPPORTED_SCHEMA_VERSION}.\n"
+            f"\n"
+            f"The registry requires labeille >= {min_version}.\n"
+            f"\n"
+            f"To fix:\n"
+            f"  1. Update labeille: pip install --upgrade labeille\n"
+            f"  2. Or re-sync the registry: labeille registry sync"
+        )
 
 
 @dataclass
@@ -157,7 +236,11 @@ def load_index(registry_path: Path) -> Index:
 
     Returns:
         The parsed index.
+
+    Raises:
+        RegistrySchemaError: If the registry schema version is incompatible.
     """
+    check_registry_schema(registry_path)
     index_file = registry_path / "index.yaml"
     if not index_file.exists():
         return Index()

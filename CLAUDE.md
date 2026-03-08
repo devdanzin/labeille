@@ -40,7 +40,7 @@ ASAN_OPTIONS=detect_leaks=0 PYTHON_JIT=0 .venv/bin/python -m unittest discover t
 - `runner.py` — Clone repos, create venvs, run test suites, detect crashes
 - `crash.py` — Crash detection from exit codes and stderr patterns
 - `classifier.py` — Pure Python vs C extension classification from wheel tags
-- `registry.py` — YAML registry I/O (index + per-package configs)
+- `registry.py` — YAML registry I/O (reads from laruche registry or custom path)
 - `registry_cli.py` — Batch registry management CLI (add/remove/rename/set fields, validate, migrate)
 - `migrations.py` — Registry migration framework (named transformations with logging and dry-run)
 - `registry_ops.py` — Batch operations with filtering, atomic writes, dry-run previews
@@ -60,30 +60,16 @@ ASAN_OPTIONS=detect_leaks=0 PYTHON_JIT=0 .venv/bin/python -m unittest discover t
 
 ## Enriching packages
 
-Registry lives in `registry/` — `index.yaml` (package list) + `packages/<name>.yaml` (per-package config).
-Update index after editing package files: `load_index()` → `update_index_from_packages()` → `save_index()`.
+The package registry lives in [laruche](https://github.com/devdanzin/laruche).
+See laruche's README for the enrichment process, field schema, and rules.
 
-### Process
-1. Clone repo, examine pyproject.toml/setup.cfg/tox.ini/requirements*.txt for test deps
-2. Determine install_command, test_command, test_framework, uses_xdist, timeout
-3. Write the package YAML, set `enriched: true`
+Quick setup:
+- `labeille registry sync` to fetch the registry
+- Default location: `~/.local/share/labeille/registry/`
+- `--registry-dir` overrides for any command
 
-### Enrichment rules (learned from first 50 packages)
-1. Cross-check test imports against installed deps — scan conftest.py and first test files for non-stdlib imports; common missed deps: trustme, uvicorn, trio, tomli_w, appdirs, wcag_contrast_ratio, installer, setuptools, flask
-2. Check pytest config (pyproject.toml `[tool.pytest.ini_options]`, tox.ini `[pytest]`, pytest.ini) for plugin flags — if addopts uses `--cov`/`--timeout`/etc, install the plugin (pytest-cov, pytest-timeout)
-3. Check filterwarnings for module references (e.g. `coverage.exceptions.CoverageWarning`) — pytest tries to import the module, so it must be installed
-4. For setuptools-scm packages, add `git fetch --tags --depth 1` to install_command — shallow clones lose tags and version detection fails
-5. When `[test]` extras pull in heavy/problematic transitive deps (numpy, rpds-py, pydantic-core), install deps manually: `pip install -e . && pip install pytest <specific-deps>` instead of `pip install -e ".[test]"`
-6. For jsonschema dependency (pulls rpds-py via PyO3): pre-install `jsonschema<4.18` which uses pyrsistent instead
-7. For packages whose main branch pins unreleased dependency versions, set `skip: true` with skip_reason
-8. Never use `-x`/`--exitfirst` — a single unrelated failure shouldn't hide JIT crashes in later tests
-9. Always disable xdist for JIT testing (`-p no:xdist`) — parallel workers mask JIT-specific crashes
-10. For packages with src/ layout (e.g. pytz), verify install path — may need `pip install src/` not `pip install -e src/`
-
-### Common 3.15 alpha blockers
-- **PyO3/maturin** (rpds-py, pydantic-core, orjson): won't build until PyO3 supports 3.15
-- **meson-python** (numpy, pandas): need `pip install meson-python meson cython ninja` before `--no-build-isolation`
-- **moto[server]**: requires pydantic → pydantic-core (PyO3), blocks aiobotocore testing
+Registry batch operations (`labeille registry add-field`, `set-field`, etc.)
+work on whichever directory `--registry-dir` points to.
 
 ## Performance and resource usage
 
@@ -104,6 +90,7 @@ Update index after editing package files: `load_index()` → `update_index_from_
 
 ## Registry batch operations
 
+- Default registry location: `~/.local/share/labeille/registry/` (override with `--registry-dir`).
 - Always dry-run first (omit --apply), review the preview, then re-run with --apply.
 - Use --lenient when resuming an interrupted operation or when you expect some files to already have the field.
 - Use --after to control field placement in the YAML for readability.
@@ -113,7 +100,7 @@ Update index after editing package files: `load_index()` → `update_index_from_
 
 - `labeille registry migrate --list` shows available migrations and their applied status.
 - `labeille registry migrate <name>` previews changes (dry-run by default).
-- `labeille registry migrate <name> --apply` applies changes and logs to `migrations.log`.
+- `labeille registry migrate <name> --apply` applies changes and logs to `migrations.log` (lives in the laruche repo).
 - Each migration runs once — re-application is blocked with the original date shown.
 - Add new migrations by decorating a function with `@register_migration(name, description)` in `migrations.py`.
 

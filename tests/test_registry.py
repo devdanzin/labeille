@@ -2,14 +2,19 @@
 
 import tempfile
 import unittest
+import unittest.mock
 from pathlib import Path
 
 from labeille.registry import (
+    SUPPORTED_SCHEMA_VERSION,
     Index,
     IndexEntry,
     PackageEntry,
+    RegistrySchemaError,
     _dict_to_package,
     _package_to_dict,
+    check_registry_schema,
+    default_registry_dir,
     load_index,
     load_package,
     package_exists,
@@ -463,6 +468,84 @@ class TestPackageToDictOmitDefaults(unittest.TestCase):
         self.assertIn("skip_versions", data)
         self.assertIn("3.15", data["skip_versions"])
         self.assertIsInstance(list(data["skip_versions"].keys())[0], str)
+
+
+class TestDefaultRegistryDir(unittest.TestCase):
+    def test_returns_path(self) -> None:
+        result = default_registry_dir()
+        self.assertIsInstance(result, Path)
+
+    def test_default_ends_with_expected_suffix(self) -> None:
+        with unittest.mock.patch.dict("os.environ", {}, clear=False):
+            # Remove override if set.
+            env = dict(**__import__("os").environ)
+            env.pop("LABEILLE_REGISTRY_DIR", None)
+            with unittest.mock.patch.dict("os.environ", env, clear=True):
+                # Re-import to pick up env change.
+                import importlib
+
+                import labeille.registry
+
+                importlib.reload(labeille.registry)
+                result = labeille.registry.default_registry_dir()
+                self.assertTrue(
+                    str(result).endswith(".local/share/labeille/registry"),
+                    f"Expected suffix .local/share/labeille/registry, got {result}",
+                )
+                # Restore module state.
+                importlib.reload(labeille.registry)
+
+    def test_env_override(self) -> None:
+        import importlib
+
+        import labeille.registry
+
+        with unittest.mock.patch.dict("os.environ", {"LABEILLE_REGISTRY_DIR": "/tmp/custom-reg"}):
+            importlib.reload(labeille.registry)
+            result = labeille.registry.default_registry_dir()
+            self.assertEqual(result, Path("/tmp/custom-reg"))
+        # Restore module state.
+        importlib.reload(labeille.registry)
+
+
+class TestCheckRegistrySchema(unittest.TestCase):
+    def setUp(self) -> None:
+        self.tmpdir = tempfile.TemporaryDirectory()
+        self.registry = Path(self.tmpdir.name)
+
+    def tearDown(self) -> None:
+        self.tmpdir.cleanup()
+
+    def test_compatible_schema(self) -> None:
+        schema = self.registry / "schema.yaml"
+        schema.write_text(f"schema_version: {SUPPORTED_SCHEMA_VERSION}\n")
+        # Should not raise.
+        check_registry_schema(self.registry)
+
+    def test_incompatible_schema(self) -> None:
+        schema = self.registry / "schema.yaml"
+        schema.write_text("schema_version: 99\nmin_labeille_version: '9.0.0'\n")
+        with self.assertRaises(RegistrySchemaError) as ctx:
+            check_registry_schema(self.registry)
+        self.assertIn("schema v99", ctx.exception.message)
+        self.assertIn("registry sync", ctx.exception.message)
+
+    def test_missing_schema_file(self) -> None:
+        # No schema.yaml — should not raise (backward compat).
+        check_registry_schema(self.registry)
+
+    def test_schema_version_not_integer(self) -> None:
+        schema = self.registry / "schema.yaml"
+        schema.write_text('schema_version: "abc"\n')
+        # Should not raise — graceful handling.
+        check_registry_schema(self.registry)
+
+    def test_load_index_checks_schema(self) -> None:
+        (self.registry / "packages").mkdir()
+        schema = self.registry / "schema.yaml"
+        schema.write_text("schema_version: 99\n")
+        with self.assertRaises(RegistrySchemaError):
+            load_index(self.registry)
 
 
 if __name__ == "__main__":

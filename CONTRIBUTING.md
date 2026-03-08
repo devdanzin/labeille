@@ -96,18 +96,18 @@ The most important thing is that the message clearly describes what changed and 
 
 ## Adding Packages to the Registry
 
-To add a new package to the test registry:
-
-1. Create a YAML file in `registry/packages/{package_name}.yaml` following the
-   schema in an existing package file.
-2. Add an entry to `registry/index.yaml`.
-3. Test that the package installs and its test suite runs locally before submitting.
+The package registry is maintained in the separate
+[laruche](https://github.com/devdanzin/laruche) repository. To add or update
+packages, contribute to laruche directly. Use `labeille registry sync` to
+fetch the latest registry locally (default location:
+`~/.local/share/labeille/registry/`).
 
 ## Enriching Registry Packages
 
 Adding and improving package test configurations is one of the most valuable
-contributions. See [doc/enrichment.md](doc/enrichment.md) for the complete
-enrichment guide, including common pitfalls and troubleshooting.
+contributions. See [doc/enrichment.md](doc/enrichment.md) for a quick
+reference and the [laruche documentation](https://github.com/devdanzin/laruche)
+for the complete enrichment guide, field schema, and troubleshooting.
 
 ## AI-Assisted Development
 

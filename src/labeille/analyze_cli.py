@@ -57,8 +57,8 @@ _results_dir_option = click.option(
 _registry_dir_option = click.option(
     "--registry-dir",
     type=click.Path(path_type=Path),
-    default=Path("registry"),
-    show_default=True,
+    default=None,
+    help="Registry directory (default: ~/.local/share/labeille/registry/).",
 )
 
 
@@ -79,12 +79,16 @@ _registry_dir_option = click.option(
 @click.option("--where", "where_exprs", type=str, multiple=True)
 @click.option("--python-version", type=str, default=None)
 def registry_cmd(
-    registry_dir: Path,
+    registry_dir: Path | None,
     fmt: str,
     where_exprs: tuple[str, ...],
     python_version: str | None,
 ) -> None:
     """Analyze registry composition."""
+    from labeille.registry import default_registry_dir
+
+    if registry_dir is None:
+        registry_dir = default_registry_dir()
     packages = _load_all_packages(registry_dir, where_exprs)
 
     if fmt == "table":
@@ -235,7 +239,7 @@ _STATUS_ORDER: dict[str, int] = {
 @click.option("--no-reproduce", is_flag=True)
 def run_cmd(
     results_dir: Path,
-    registry_dir: Path,
+    registry_dir: Path | None,
     run_id: str,
     fmt: str,
     quiet: bool,
@@ -244,6 +248,10 @@ def run_cmd(
     no_reproduce: bool,
 ) -> None:
     """Analyze a single run."""
+    from labeille.registry import default_registry_dir
+
+    if registry_dir is None:
+        registry_dir = default_registry_dir()
     store = ResultsStore(results_dir)
 
     run = store.get(run_id)
@@ -902,11 +910,15 @@ def _print_history_timeline(history: HistoryAnalysis) -> None:
 @click.option("--last", "last_n", type=int, default=None)
 def package_cmd(
     results_dir: Path,
-    registry_dir: Path,
+    registry_dir: Path | None,
     package_name: str,
     last_n: int | None,
 ) -> None:
     """Deep dive on a specific package's history."""
+    from labeille.registry import default_registry_dir
+
+    if registry_dir is None:
+        registry_dir = default_registry_dir()
     store = ResultsStore(results_dir)
 
     entry: PackageEntry | None = None

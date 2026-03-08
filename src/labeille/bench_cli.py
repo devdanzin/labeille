@@ -106,9 +106,9 @@ def bench() -> None:
 )
 @click.option(
     "--registry-dir",
-    type=click.Path(exists=True),
-    required=True,
-    help="Registry directory.",
+    type=click.Path(),
+    default=None,
+    help="Registry directory (default: ~/.local/share/labeille/registry/).",
 )
 @click.option(
     "--repos-dir",
@@ -246,7 +246,7 @@ def run(  # noqa: PLR0913
     top_n: int | None,
     extra_deps: str | None,
     test_command_suffix: str | None,
-    registry_dir: str,
+    registry_dir: str | None,
     repos_dir: str | None,
     venvs_dir: str | None,
     work_dir: str | None,
@@ -278,18 +278,16 @@ def run(  # noqa: PLR0913
     Examples:
         # From a YAML profile
         labeille bench run --profile bench-coverage.yaml \\
-            --registry-dir ./registry --target-python /usr/bin/python3
+            --target-python /usr/bin/python3
 
         # Quick inline comparison
         labeille bench run \\
             --condition "baseline:" \\
             --condition "coverage:extra_deps=coverage,test_prefix=coverage run -m" \\
-            --target-python /usr/bin/python3 \\
-            --registry-dir ./registry --packages requests,click
+            --target-python /usr/bin/python3 --packages requests,click
 
         # Quick mode for development
-        labeille bench run --profile bench-jit.yaml \\
-            --registry-dir ./registry --quick
+        labeille bench run --profile bench-jit.yaml --quick
     """
     from labeille.bench.config import (
         BenchConfig,
@@ -298,6 +296,10 @@ def run(  # noqa: PLR0913
         parse_inline_condition,
     )
     from labeille.bench.runner import BenchRunner, quick_config
+    from labeille.registry import default_registry_dir
+
+    if registry_dir is None:
+        registry_dir = str(default_registry_dir())
 
     if verbose:
         logging.basicConfig(level=logging.DEBUG)

@@ -49,7 +49,6 @@ Repository = "https://github.com/devdanzin/labeille"
 [tool.hatch.build.targets.sdist]
 exclude = [
     "tests/",
-    "registry/",
     "results/",
     ".gitkeep",
     "doc/",

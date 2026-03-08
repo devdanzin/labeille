@@ -77,7 +77,10 @@ def ft() -> None:
     help="Output directory for results.",
 )
 @click.option(
-    "--registry-dir", type=click.Path(exists=True), default="registry", help="Registry directory."
+    "--registry-dir",
+    type=click.Path(),
+    default=None,
+    help="Registry directory (default: ~/.local/share/labeille/registry/).",
 )
 @click.option("--repos-dir", type=click.Path(), default="repos", help="Repos directory.")
 @click.option("--venvs-dir", type=click.Path(), default="venvs", help="Venvs directory.")
@@ -137,7 +140,7 @@ def run(
     test_command_suffix: str | None,
     test_command_override: str | None,
     results_dir: str,
-    registry_dir: str,
+    registry_dir: str | None,
     repos_dir: str,
     venvs_dir: str,
     env_pairs: tuple[str, ...],
@@ -170,6 +173,10 @@ def run(
             --tsan --iterations 5
     """
     from labeille.ft.runner import FTRunConfig, run_ft
+    from labeille.registry import default_registry_dir
+
+    if registry_dir is None:
+        registry_dir = str(default_registry_dir())
 
     env_overrides: dict[str, str] = {}
     for pair in env_pairs:

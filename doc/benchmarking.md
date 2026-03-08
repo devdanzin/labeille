@@ -25,7 +25,6 @@ Compare JIT-enabled vs JIT-disabled with two inline conditions:
 labeille bench run \
     --condition "jit:target_python=/opt/cpython-jit/python,env.PYTHON_JIT=1" \
     --condition "nojit:target_python=/opt/cpython-jit/python,env.PYTHON_JIT=0" \
-    --registry-dir registry \
     --work-dir ~/bench-work \
     --packages requests,click,flask
 ```
@@ -38,14 +37,14 @@ For a fast sanity check — 3 iterations, no warmup, top 20 packages:
 labeille bench run --quick \
     --condition "jit:target_python=/opt/cpython-jit/python,env.PYTHON_JIT=1" \
     --condition "nojit:target_python=/opt/cpython-jit/python,env.PYTHON_JIT=0" \
-    --registry-dir registry --work-dir ~/bench-work
+    --work-dir ~/bench-work
 ```
 
 ### YAML profile (recommended for repeated use)
 
 ```bash
 labeille bench run --profile jit-overhead.yaml \
-    --registry-dir registry --work-dir ~/bench-work
+    --work-dir ~/bench-work
 ```
 
 ### View and compare results
@@ -177,7 +176,6 @@ Same options as `labeille run`:
 ```bash
 --packages requests,click    # Specific packages
 --top 50                     # Top N by downloads
---registry-dir registry      # Required
 ```
 
 ### Persistent directories
@@ -453,7 +451,7 @@ EOF
 
 # Run the benchmark
 labeille bench run --profile jit-profile.yaml \
-    --registry-dir registry --work-dir ~/bench-work --top 30
+    --work-dir ~/bench-work --top 30
 
 # View results
 labeille bench show results/bench_*
@@ -469,7 +467,7 @@ labeille bench compare results/bench_*
 labeille bench track init jit-tracking -d "Track JIT overhead across CPython commits"
 
 # After each CPython build, run and add:
-labeille bench run --profile jit-profile.yaml --registry-dir registry --work-dir ~/bench
+labeille bench run --profile jit-profile.yaml --work-dir ~/bench
 labeille bench track add jit-tracking results/bench_* --commit sha=$(git -C ~/cpython rev-parse HEAD)
 
 # Check for regressions

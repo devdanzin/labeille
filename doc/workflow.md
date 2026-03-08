@@ -13,10 +13,15 @@ labeille resolve  →  enrich registry  →  labeille run  →  analyze results
  Fetch PyPI           Fill in YAML         Clone, build,     Crashes, timing,
  metadata,            install/test         test, detect      comparisons
  find repos           commands             crashes
+                       ↕
+                   laruche (external registry repo)
 ```
 
-The registry is the bridge: resolve creates it, enrichment fills it in, and run
-consumes it. Each phase can be run independently and repeatedly.
+The registry is maintained externally in
+[laruche](https://github.com/devdanzin/laruche) and synced locally via
+`labeille registry sync`. Resolve creates skeleton entries, enrichment fills
+them in, and run consumes them. Each phase can be run independently and
+repeatedly.
 
 
 ## Phase 1: Resolve
@@ -29,9 +34,9 @@ consumes it. Each phase can be run independently and repeatedly.
 2. **Extension type** — `pure`, `extensions`, or `unknown`, determined from wheel tag analysis
 3. **PyPI URL** — direct link to the package page
 
-It writes two things:
-- `registry/index.yaml` — a sorted list of all tracked packages with download counts
-- `registry/packages/{name}.yaml` — per-package YAML with the discovered metadata and
+It writes two things to the registry directory (default: `~/.local/share/labeille/registry/`):
+- `index.yaml` — a sorted list of all tracked packages with download counts
+- `packages/{name}.yaml` — per-package YAML with the discovered metadata and
   empty fields for enrichment
 
 ### Package sources
@@ -66,7 +71,7 @@ packages without touching ones you've already configured.
 | `--from-file FILE` | File with one package name per line |
 | `--from-json FILE` | JSON file with download counts |
 | `--top N` | Top N packages by downloads (requires `--from-json`) |
-| `--registry-dir PATH` | Output registry directory (default: `registry`) |
+| `--registry-dir PATH` | Registry directory (default: `~/.local/share/labeille/registry/`) |
 | `--workers N` | Parallel PyPI API requests (default: 1) |
 | `--timeout SECONDS` | PyPI API request timeout (default: 10) |
 | `--dry-run` | Show what would be done without writing files |
@@ -95,7 +100,7 @@ to enable the JIT and get crash tracebacks.
 
 ```bash
 # Run all enriched packages
-labeille run --target-python ~/cpython/python --registry-dir registry
+labeille run --target-python ~/cpython/python
 
 # Run specific packages
 labeille run --target-python ~/cpython/python --packages requests,click,flask
@@ -195,7 +200,7 @@ labeille run --target-python ~/cpython/python --repo-override "requests=https://
 | Option | Description |
 |--------|-------------|
 | `--target-python PATH` | Python interpreter to test with (required) |
-| `--registry-dir PATH` | Registry directory (default: `registry`) |
+| `--registry-dir PATH` | Registry directory (default: `~/.local/share/labeille/registry/`) |
 | `--results-dir PATH` | Output directory (default: `results`) |
 | `--packages CSV` | Comma-separated filter (supports `name@revision`) |
 | `--top N` | Top N packages by download count |
@@ -226,28 +231,32 @@ labeille run --target-python ~/cpython/python --repo-override "requests=https://
 
 ## The Registry Bridge
 
-The registry connects resolve and run:
+The registry connects resolve and run. It is maintained as a separate project,
+[laruche](https://github.com/devdanzin/laruche), and synced locally via
+`labeille registry sync`. By default, the registry lives at
+`~/.local/share/labeille/registry/`.
 
 1. **Resolve creates it** — writes skeleton YAML with repo URL and extension type
 2. **Enrichment fills it in** — adds install_command, test_command, dependencies
 3. **Run consumes it** — reads the commands and executes them
 
 This separation means you resolve once and run many times against different
-Python builds. See [enrichment.md](enrichment.md) for the complete enrichment guide.
+Python builds. See [enrichment.md](enrichment.md) for the enrichment guide and
+the [laruche repository](https://github.com/devdanzin/laruche) for the full
+field schema and enrichment documentation.
 
 
 ## Complete Workflow Example
 
 ```bash
 # 1. Build a registry from the top 100 PyPI packages
-labeille resolve --from-json top-pypi.json --top 100 --registry-dir registry
+labeille resolve --from-json top-pypi.json --top 100
 
 # 2. Enrich packages (see doc/enrichment.md)
 #    Fill in install_command, test_command, etc. for each package
 
 # 3. Run tests against a JIT-enabled CPython build
 labeille run --target-python ~/jit_cpython/python \
-    --registry-dir registry \
     --results-dir results \
     --work-dir ~/labeille-work \
     --workers 4
