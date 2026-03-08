@@ -1,18 +1,21 @@
 package: amazon-ion
-repo: http://github.com/amazon-ion/ion-python
+repo: https://github.com/amazon-ion/ion-python
 pypi_url: https://pypi.org/project/amazon-ion/
 extension_type: extensions
 python_versions: []
 install_method: pip
 install_command: pip install -e ".[test]"
-test_command: python -m pytest tests
+test_command: python -m pytest -p no:xdist --ignore tests/test_benchmark_cli.py --ignore tests/test_benchmark_spec.py
 test_framework: pytest
 uses_xdist: false
-timeout: null
+timeout: 300
 skip: false
 skip_reason: null
-skip_versions: null
-notes: "Auto-enriched"
+skip_versions:
+  '3.15': "C extension build backend (py-build-cmake/CMake) has no wheel for 3.15 and source build requires CMake. Pure Python fallback is available but not via pip install -e ."
+  '3.14': "C extension build backend (py-build-cmake/CMake) has no wheel for 3.14 and source build requires CMake."
+  '3.13': "No wheel available for cp313; source build requires CMake via py-build-cmake backend."
+notes: Uses py-build-cmake as build backend for C extension (ion-c). C extension is optional and gracefully falls back to pure Python at runtime, but source installation from git requires CMake. Latest PyPI wheels only cover cp39-cp311. Benchmark tests excluded per upstream recommendation.
 enriched: true
 clone_depth: null
 import_name: null

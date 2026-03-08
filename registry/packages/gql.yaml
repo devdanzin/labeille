@@ -5,8 +5,7 @@ extension_type: pure
 python_versions: []
 install_method: pip
 install_command: pip install -e . && pip install pytest pytest-asyncio graphql-core
-test_command: python -m pytest tests/test_client.py tests/test_graphql_request.py
-  tests/test_async_client_validation.py -o "asyncio_default_fixture_loop_scope=function"
+test_command: python -m pytest tests/test_client.py tests/test_graphql_request.py tests/test_async_client_validation.py -o "asyncio_default_fixture_loop_scope=function" -p no:xdist
 test_framework: pytest
 uses_xdist: false
 timeout: 300

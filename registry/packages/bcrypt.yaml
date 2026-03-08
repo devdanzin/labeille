@@ -1,20 +1,18 @@
 package: bcrypt
 repo: https://github.com/pyca/bcrypt/
 pypi_url: https://pypi.org/project/bcrypt/
-extension_type: extensions
+extension_type: rust
 python_versions: []
 install_method: pip
-install_command: ''
-test_command: ''
+install_command: pip install bcrypt && pip install pytest
+test_command: python -m pytest tests/ -p no:xdist
 test_framework: pytest
 uses_xdist: false
 timeout: null
 skip: false
 skip_reason: null
-skip_versions:
-  '3.15': Uses Rust/PyO3 via setuptools-rust for bcrypt C bindings. Not buildable
-    until PyO3 supports 3.15.
-notes: Bcrypt password hashing. Rust/C extension via setuptools-rust.
+skip_versions: {}
+notes: "Bcrypt password hashing. Rust extension via setuptools-rust. Ships cp38-abi3 wheels installable on 3.15+. Use pip install bcrypt to avoid source build."
 enriched: true
 clone_depth: null
 import_name: null

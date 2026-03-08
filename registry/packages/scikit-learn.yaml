@@ -1,7 +1,7 @@
 package: scikit-learn
 repo: https://github.com/scikit-learn/scikit-learn
 pypi_url: https://pypi.org/project/scikit-learn/
-extension_type: extensions
+extension_type: c_extension
 python_versions: []
 install_method: pip
 install_command: ''

@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/cytoolz/
 extension_type: extensions
 python_versions: []
 install_method: pip
-install_command: pip install -e ".[test]"
-test_command: python -m pytest cytoolz/tests
+install_command: git fetch --tags --depth 1 && pip install -e ".[test]"
+test_command: python -m pytest cytoolz/tests/
 test_framework: pytest
 uses_xdist: false
-timeout: null
+timeout: 600
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: "Auto-enriched"
+notes: 'Auto-enriched. Backend: setuptools. Has [test] extras. Tests in cytoolz/tests/.'
 enriched: true
 clone_depth: null
 import_name: null

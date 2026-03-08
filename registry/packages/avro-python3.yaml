@@ -9,11 +9,10 @@ test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
-skip_versions:
-  '3.15': Monorepo (apache/avro), complex setup
-notes: Repo found by improved URL detection. Monorepo (apache/avro), complex setup
+skip: true
+skip_reason: Deprecated package (superseded by avro). Lives in apache/avro monorepo at lang/py/ which is not pip-installable from repo root; complex polyglot monorepo setup.
+skip_versions: {}
+notes: Repo found by improved URL detection. Monorepo (apache/avro), complex setup. Package is deprecated in favor of avro.
 enriched: true
 clone_depth: null
 import_name: null

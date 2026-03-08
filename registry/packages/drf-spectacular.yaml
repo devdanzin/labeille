@@ -4,16 +4,16 @@ pypi_url: https://pypi.org/project/drf-spectacular/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest
-test_command: python -m pytest tests
+install_command: pip install -e . && pip install django-allauth djangorestframework pytest pytest-django typing_extensions
+test_command: python -m pytest tests/
 test_framework: pytest
 uses_xdist: false
-timeout: null
+timeout: 600
 skip: false
 skip_reason: null
 skip_versions:
-  '3.15': "Transitive dependency on pydantic-core/rpds-py (PyO3)"
-notes: "Auto-enriched"
+  '3.15': Transitive dependency on pydantic-core/rpds-py (PyO3)
+notes: 'Auto-enriched. Backend: setuptools. Tests in tests/. rest_framework is not a pip package (it is djangorestframework). Needs pytest-django for Django test settings.'
 enriched: true
 clone_depth: null
 import_name: null

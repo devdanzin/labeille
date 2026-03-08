@@ -1,0 +1,18 @@
+package: delta-kernel-rust-sharing-wrapper
+repo: null
+pypi_url: https://pypi.org/project/delta-kernel-rust-sharing-wrapper/
+extension_type: rust
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: No repo URL available and Rust/PyO3 extension unlikely to build on 3.15
+skip_versions: {}
+notes: Rust extension (delta-kernel wrapper). No source repo found.
+enriched: true
+clone_depth: null
+import_name: null

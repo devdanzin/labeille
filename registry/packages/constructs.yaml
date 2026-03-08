@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/constructs/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e .
-test_command: python -m pytest test
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest
 test_framework: pytest
 uses_xdist: false
-timeout: null
+timeout: 600
 skip: true
-skip_reason: "Monorepo - no pyproject.toml in cloned dir"
+skip_reason: jsii-generated Python package (TypeScript-first); all tests are in TypeScript, no Python test suite exists.
 skip_versions: {}
-notes: "Auto-enriched"
+notes: Auto-generated Python bindings from TypeScript via jsii. The GitHub repo only contains TypeScript tests.
 enriched: true
 clone_depth: null
 import_name: null

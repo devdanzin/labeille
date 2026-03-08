@@ -5,14 +5,14 @@ extension_type: pure
 python_versions: []
 install_method: pip
 install_command: pip install -e . && pip install pytest
-test_command: python -m pytest tests
+test_command: python -m pytest tests/ -p no:xdist
 test_framework: pytest
 uses_xdist: false
-timeout: null
+timeout: 600
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: "Auto-enriched"
+notes: 'Backend: setuptools. Tests use unittest with conditional skipping per clipboard backend. AppKit/Foundation are macOS-only pyobjc wrappers (not Linux PyPI packages, removed). PyQt5 requires X11 display (removed). On Linux headless most tests skip gracefully (xclip/xsel/wl-clipboard are system tools, not PyPI deps).'
 enriched: true
 clone_depth: null
 import_name: null

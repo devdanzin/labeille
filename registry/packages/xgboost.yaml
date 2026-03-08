@@ -1,7 +1,7 @@
 package: xgboost
 repo: https://github.com/dmlc/xgboost
 pypi_url: https://pypi.org/project/xgboost/
-extension_type: extensions
+extension_type: cpp_extension
 python_versions: []
 install_method: pip
 install_command: ''
@@ -11,7 +11,7 @@ uses_xdist: false
 timeout: null
 skip: true
 skip_reason: Requires CMake to build from source (not a 3.15-specific issue).
-skip_versions: null
+skip_versions: {}
 notes: "Auto-triaged: extension with 3.15 build blocker"
 enriched: true
 clone_depth: null

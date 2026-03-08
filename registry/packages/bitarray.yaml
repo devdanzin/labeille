@@ -4,15 +4,16 @@ pypi_url: https://pypi.org/project/bitarray/
 extension_type: extensions
 python_versions: []
 install_method: pip
-install_command: null
-test_command: null
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest bitarray/ -p no:xdist
 test_framework: pytest
 uses_xdist: false
 timeout: null
 skip: false
 skip_reason: null
-skip_versions: null
-notes: 'Re-enriched: C extension (bitarray/_bitarray.c)'
+skip_versions:
+  '3.15': "No cp315 wheel on PyPI; C extension (_bitarray.c) requires compilation from source on 3.15."
+notes: "Efficient boolean array C extension (standard Python C API). Tests in bitarray/ (pytest.ini testpaths=bitarray). Build from source with pip install -e .; no abi3 wheel available."
 enriched: true
 clone_depth: null
 import_name: null

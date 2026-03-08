@@ -1,11 +1,11 @@
 package: pyzmq
 repo: https://github.com/zeromq/pyzmq
 pypi_url: https://pypi.org/project/pyzmq/
-extension_type: extensions
+extension_type: c_extension
 python_versions: []
 install_method: pip
 install_command: pip install -e . && pip install pytest
-test_command: python -m pytest tests/ -k 'not test_socket'
+test_command: python -m pytest tests/ -p no:xdist -k 'not test_socket'
 test_framework: pytest
 uses_xdist: false
 timeout: 600
@@ -17,4 +17,4 @@ notes: ZeroMQ Python bindings. C extension (Cython). Some socket tests may need 
   zmq.
 enriched: true
 clone_depth: null
-import_name: null
+import_name: zmq

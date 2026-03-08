@@ -1,0 +1,18 @@
+package: anki
+repo: https://github.com/ankitects/anki
+pypi_url: https://pypi.org/project/anki/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Requires complex Rust/N2/Ninja build system; cannot be built from source with pip
+skip_versions: {}
+notes: Anki requires Rust toolchain and custom N2/Ninja build system to compile from source. Pre-built wheels are published to PyPI but the source repo is not pip-installable.
+enriched: true
+clone_depth: null
+import_name: null

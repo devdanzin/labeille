@@ -1,0 +1,18 @@
+package: pyahocorasick
+repo: https://github.com/WojciechMula/pyahocorasick
+pypi_url: https://pypi.org/project/pyahocorasick/
+extension_type: c_extension
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest tests/ -p no:xdist
+test_framework: unittest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: C extension Aho-Corasick string search. Tests use unittest in tests/ directory.
+enriched: true
+clone_depth: null
+import_name: null

@@ -1,18 +1,18 @@
 package: ydb
-repo: http://github.com/ydb-platform/ydb-python-sdk
+repo: https://github.com/ydb-platform/ydb-python-sdk
 pypi_url: https://pypi.org/project/ydb/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install -r test-requirements.txt && pip install pytest
-test_command: python -m pytest tests
+install_command: ''
+test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
+skip: true
+skip_reason: Tests require Docker (docker-compose) and grpc/protobuf dependencies.
 skip_versions: {}
-notes: "Auto-enriched"
+notes: YDB Python SDK. Tests need running YDB instance via docker-compose.
 enriched: true
 clone_depth: null
 import_name: null

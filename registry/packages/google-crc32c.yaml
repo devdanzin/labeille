@@ -1,11 +1,11 @@
 package: google-crc32c
 repo: https://github.com/googleapis/python-crc32c
 pypi_url: https://pypi.org/project/google-crc32c/
-extension_type: extensions
+extension_type: c_extension
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest pytest-cov
-test_command: python -m pytest tests/ -p no:xdist
+install_command: ''
+test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: 120

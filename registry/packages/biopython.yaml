@@ -4,16 +4,16 @@ pypi_url: https://pypi.org/project/biopython/
 extension_type: extensions
 python_versions: []
 install_method: pip
-install_command: null
-test_command: null
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest Tests/ -p no:xdist --ignore=Tests/test_Entrez.py --ignore=Tests/test_NCBI.py
 test_framework: pytest
 uses_xdist: false
-timeout: null
+timeout: 600
 skip: false
 skip_reason: null
 skip_versions:
-  '3.15': "Meson build system: 'Python dependency not found' on 3.15."
-notes: 'Re-enriched: C extension build fails on 3.15'
+  '3.15': "No cp315 wheel; setuptools C extensions may fail to compile on 3.15 dev build."
+notes: "Bioinformatics library with 13 C extension modules (setuptools build). Tests in Tests/ dir with pytest-discoverable test_*.py files. Ignore online tests (Entrez, NCBI)."
 enriched: true
 clone_depth: null
 import_name: null

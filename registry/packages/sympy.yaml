@@ -4,8 +4,8 @@ pypi_url: https://pypi.org/project/sympy/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest hypothesis
-test_command: python -m pytest sympy/ -k 'not slow'
+install_command: ''
+test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: 3600

@@ -9,11 +9,10 @@ test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
-skip_versions:
-  '3.15': Requires browser drivers
-notes: Repo found by improved URL detection. Requires browser drivers
+skip: true
+skip_reason: Requires browser drivers (Chrome, Firefox, etc.) and webdrivers to run tests
+skip_versions: {}
+notes: Monorepo with Python code in py/ subdirectory. Tests require browser drivers.
 enriched: true
 clone_depth: null
 import_name: null

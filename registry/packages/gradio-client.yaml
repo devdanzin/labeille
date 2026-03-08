@@ -4,16 +4,15 @@ pypi_url: https://pypi.org/project/gradio-client/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: null
-test_command: null
+install_command: ''
+test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
-skip_versions:
-  '3.15': Depends on pydantic-core (PyO3)
-notes: 'Re-enriched: Depends on pydantic-core (PyO3)'
+skip: true
+skip_reason: Tests import gradio which depends on pydantic-core (PyO3), won't build on 3.15. Monorepo package (gradio-app/gradio).
+skip_versions: {}
+notes: 'Lives in gradio-app/gradio monorepo under client/python/. Tests import the main gradio package which depends on pydantic (PyO3).'
 enriched: true
 clone_depth: null
 import_name: null

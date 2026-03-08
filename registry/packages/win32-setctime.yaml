@@ -1,0 +1,18 @@
+package: win32-setctime
+repo: https://github.com/Delgan/win32-setctime
+pypi_url: https://pypi.org/project/win32-setctime/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: true
+skip_reason: Windows-only package
+skip_versions: {}
+notes: 'Auto-enriched (skipped: Windows-only)'
+enriched: true
+clone_depth: null
+import_name: null

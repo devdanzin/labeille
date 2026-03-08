@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/yapf/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: null
-test_command: null
-test_framework: pytest
+install_command: pip install -e .
+test_command: python -m unittest discover -p '*_test.py' yapftests/
+test_framework: unittest
 uses_xdist: false
 timeout: null
-skip: true
-skip_reason: No test directory or test files found in repository
+skip: false
+skip_reason: null
 skip_versions: {}
-notes: Reset for re-enrichment (improved test directory detection)
+notes: Google's Python code formatter. Tests in yapftests/ dir using unittest.
 enriched: true
 clone_depth: null
 import_name: null

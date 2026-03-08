@@ -10,8 +10,7 @@ test_framework: pytest
 uses_xdist: false
 timeout: null
 skip: true
-skip_reason: AWS data wrangling. Requires AWS credentials and heavy deps (pyarrow,
-  pandas).
+skip_reason: AWS data wrangling library requiring AWS credentials and heavy deps (pyarrow, pandas) that are difficult to build on Python 3.15.
 notes: AWS data wrangling library.
 enriched: true
 clone_depth: null

@@ -1,7 +1,7 @@
 package: mypy
 repo: https://github.com/python/mypy
 pypi_url: https://pypi.org/project/mypy/
-extension_type: extensions
+extension_type: c_extension
 python_versions: []
 install_method: pip
 install_command: pip install -e . && pip install pytest pytest-xdist attrs filelock tomli
@@ -18,4 +18,4 @@ notes: Type checker. Uses setuptools build backend. Has optional mypyc C extensi
   test suite. Uses xdist, disabled for JIT.
 enriched: true
 clone_depth: null
-import_name: null
+import_name: mypy

@@ -1,0 +1,18 @@
+package: habluetooth
+repo: https://github.com/bluetooth-devices/habluetooth
+pypi_url: https://pypi.org/project/habluetooth/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install freezegun pytest pytest-asyncio pytest-cov pytest-codspeed dbus-fast
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: 'Auto-enriched. Backend: poetry/setuptools+cython. Tests in tests/. Reviewed: removed runtime deps already installed by pip install -e ., added dbus-fast test dep, fixed package name formats. Cython extensions optional with pure Python fallback.'
+enriched: true
+clone_depth: null
+import_name: null

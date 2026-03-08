@@ -1,12 +1,11 @@
 package: pymongo
 repo: https://github.com/mongodb/mongo-python-driver
 pypi_url: https://pypi.org/project/pymongo/
-extension_type: extensions
+extension_type: c_extension
 python_versions: []
 install_method: pip
 install_command: pip install -e . && pip install pytest mockupdb pytest-asyncio
-test_command: python -m pytest test/test_uri_parser.py test/test_common.py test/test_read_preferences.py
-  test/test_collation.py
+test_command: python -m pytest test/test_uri_parser.py test/test_common.py test/test_read_preferences.py test/test_collation.py
 test_framework: pytest
 uses_xdist: false
 timeout: 300

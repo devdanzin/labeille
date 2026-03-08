@@ -1,0 +1,19 @@
+package: granian
+repo: https://github.com/emmett-framework/granian
+pypi_url: https://pypi.org/project/granian/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install httpx pytest pytest-asyncio sniffio websockets
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': PyO3/maturin package, not yet supporting 3.15
+notes: 'Auto-enriched. Backend: maturin (PyO3/Rust). Tests in tests/. sniffio used in test ASGI app.'
+enriched: true
+clone_depth: null
+import_name: null

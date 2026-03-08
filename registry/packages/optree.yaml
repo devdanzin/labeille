@@ -5,15 +5,15 @@ extension_type: extensions
 python_versions: []
 install_method: pip
 install_command: pip install -e ".[test]"
-test_command: python -m pytest tests
+test_command: python -m pytest tests/
 test_framework: pytest
 uses_xdist: false
-timeout: null
+timeout: 600
 skip: false
 skip_reason: null
 skip_versions:
   '3.15': CMake FindPython fails with Python 3.15.
-notes: "Auto-enriched"
+notes: 'Auto-enriched. Backend: setuptools. Has [test] extras. Tests in tests/.'
 enriched: true
 clone_depth: null
 import_name: null

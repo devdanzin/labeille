@@ -4,16 +4,15 @@ pypi_url: https://pypi.org/project/pyspnego/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install -r requirements-test.txt && pip install pytest
-test_command: python -m pytest tests
+install_command: pip install -e . && pip install pytest pytest-cov pytest-mock ruamel.yaml k5test
+test_command: python -m pytest tests/
 test_framework: pytest
 uses_xdist: false
-timeout: null
+timeout: 600
 skip: false
 skip_reason: null
-skip_versions:
-  '3.15': "Depends on gssapi (C ext build failure)"
-notes: "Auto-enriched"
+skip_versions: {}
+notes: 'win32net/win32netcon are not PyPI packages (part of pywin32, Windows-only); spnego is not a separate package (it is pyspnego itself). gssapi/k5test tests use pytest.importorskip and skip gracefully. k5test installs fine without system Kerberos but live K5Realm tests are skipped.'
 enriched: true
 clone_depth: null
 import_name: null

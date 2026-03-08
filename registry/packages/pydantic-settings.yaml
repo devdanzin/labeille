@@ -9,8 +9,8 @@ test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
+skip: true
+skip_reason: Depends on pydantic which requires pydantic-core (Rust/PyO3).
 skip_versions:
   '3.15': Depends on pydantic which requires pydantic-core (PyO3).
 notes: Settings management for Pydantic. Requires pydantic at runtime.

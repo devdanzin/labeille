@@ -1,0 +1,18 @@
+package: mdanalysis
+repo: https://github.com/mdanalysis/mdanalysis
+pypi_url: https://pypi.org/project/mdanalysis/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e package/ && pip install -e testsuite/ && pip install pytest
+test_command: python -m pytest testsuite/MDAnalysisTests/coordinates/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: 'Backend: setuptools+Cython. Main package in package/, test data in testsuite/ (MDAnalysisTests PyPI package). Tests import from MDAnalysisTests so testsuite/ must be installed. Coordinates tests only (avoid full suite which needs many optional deps). No cp315 wheels yet - builds from source.'
+enriched: true
+clone_depth: null
+import_name: null

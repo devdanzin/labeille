@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/ffmpeg-python/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: null
-test_command: null
+install_command: pip install -e . && pip install pytest pytest-mock
+test_command: python -m pytest ffmpeg/tests
 test_framework: pytest
 uses_xdist: false
-timeout: null
-skip: true
-skip_reason: No test directory or test files found in repository
+timeout: 300
+skip: false
+skip_reason: null
 skip_versions: {}
-notes: Reset for re-enrichment (improved test directory detection)
+notes: Tests are at ffmpeg/tests/. Depends on `future` package. Very old project (Python 2 compat).
 enriched: true
 clone_depth: null
 import_name: null

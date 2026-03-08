@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/flask-limiter/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: git fetch --tags --depth 1 && pip install -e ".[test]"
-test_command: python -m pytest tests
+install_command: git fetch --tags --depth 1 && pip install -e . && pip install pytest pytest-cov pytest-check pytest-mock redis pymemcache pymongo hiro
+test_command: python -m pytest tests -p no:cov -o "addopts="
 test_framework: pytest
 uses_xdist: false
 timeout: null
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: "Uses setuptools-scm (needs git tags)"
+notes: "Uses hatch-vcs (needs git tags). pytest.ini has --cov, disabled. Some tests need Docker (redis/memcached/mongo)."
 enriched: true
 clone_depth: 50
 import_name: null

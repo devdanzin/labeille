@@ -4,7 +4,7 @@ pypi_url: https://pypi.org/project/python-telegram-bot/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e ".[tests]"
+install_command: pip install -e . && pip install pytest pytest-asyncio flaky
 test_command: python -m pytest tests -p no:xdist
 test_framework: pytest
 uses_xdist: true
@@ -12,7 +12,7 @@ timeout: null
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: "xdist disabled for JIT testing"
+notes: Test deps in dependency-group (not extras). xdist disabled for JIT testing.
 enriched: true
 clone_depth: null
 import_name: telegram

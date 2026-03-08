@@ -4,7 +4,7 @@ pypi_url: https://pypi.org/project/pylint/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e ".[test]"
+install_command: pip install -e ".[testutils]" && pip install pytest pytest-benchmark pytest-timeout
 test_command: python -m pytest tests -p no:xdist
 test_framework: pytest
 uses_xdist: true

@@ -12,7 +12,7 @@ timeout: null
 skip: false
 skip_reason: null
 skip_versions:
-  '3.15': "Depends on valkey-glide (build failure on 3.15)"
+  '3.15': valkey-glide in requirements-dev.txt has no Python 3.15 wheels and conftest.py imports it unconditionally
 notes: "addopts cleared (refs: pytest-cov)"
 enriched: true
 clone_depth: null

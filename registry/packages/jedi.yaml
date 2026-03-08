@@ -4,9 +4,8 @@ pypi_url: https://pypi.org/project/jedi/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: git submodule update --init && pip install -e . && pip install pytest
-  parso
-test_command: python -m pytest test/
+install_command: git submodule update --init && pip install -e . && pip install pytest parso
+test_command: python -m pytest test/ -p no:xdist
 test_framework: pytest
 uses_xdist: false
 timeout: 900

@@ -1,0 +1,19 @@
+package: pyxirr
+repo: https://github.com/Anexen/pyxirr
+pypi_url: https://pypi.org/project/pyxirr/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: true
+skip_reason: No Python test suite; all tests are Rust-only (.rs files). PyO3/maturin package.
+skip_versions:
+  '3.15': PyO3/maturin package, not yet supporting 3.15
+notes: 'Backend: maturin. Tests in tests/ are Rust-only (test_conversion.rs, test_periodic.rs, test_scheduled.rs) — no Python test files exist.'
+enriched: true
+clone_depth: null
+import_name: null

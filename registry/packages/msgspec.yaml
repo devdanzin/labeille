@@ -1,19 +1,18 @@
 package: msgspec
 repo: https://github.com/jcrist/msgspec
 pypi_url: https://pypi.org/project/msgspec/
-extension_type: extensions
+extension_type: c_extension
 python_versions: []
 install_method: pip
-install_command: ''
-test_command: ''
+install_command: git fetch --tags --depth 1 && pip install -e . && pip install pytest
+test_command: python -m pytest tests/ -p no:xdist
 test_framework: pytest
 uses_xdist: false
 timeout: null
 skip: false
 skip_reason: null
-skip_versions:
-  '3.15': "PyO3/Rust extension, won't build on 3.15"
-notes: "Auto-triaged: extension with 3.15 build blocker"
+skip_versions: {}
+notes: High-performance serialization/validation library. C extension (not PyO3/Rust). Uses setuptools + setuptools-scm.
 enriched: true
 clone_depth: null
 import_name: null

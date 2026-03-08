@@ -10,9 +10,9 @@ test_framework: pytest
 uses_xdist: false
 timeout: null
 skip: true
-skip_reason: No test directory or test files found in repository
+skip_reason: Tests require running Docker daemon, not suitable for JIT testing
 skip_versions: {}
-notes: Reset for re-enrichment (improved test directory detection)
+notes: Has tests in core/tests/ and modules/*/tests/ but all require Docker daemon.
 enriched: true
 clone_depth: null
 import_name: null

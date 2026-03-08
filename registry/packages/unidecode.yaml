@@ -1,18 +1,18 @@
 package: unidecode
-repo: https://github.com/miurahr/unihandecode
+repo: https://github.com/avian2/unidecode
 pypi_url: https://pypi.org/project/unidecode/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: git fetch --tags --depth 1 && pip install -e . && pip install pytest
-test_command: python -m pytest tests -p no:xdist -o "addopts="
-test_framework: pytest
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest tests/
+test_framework: unittest
 uses_xdist: false
 timeout: null
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: Repo found by improved URL detection. Tests in tests/
+notes: ASCII transliterations of Unicode text. Tests use unittest. Uses setuptools.
 enriched: true
 clone_depth: null
 import_name: null

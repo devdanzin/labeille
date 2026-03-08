@@ -1,18 +1,18 @@
 package: inputimeout
-repo: http://github.com/johejo/inutimeout
+repo: https://github.com/johejo/inputimeout
 pypi_url: https://pypi.org/project/inputimeout/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: ''
-test_command: ''
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest tests/ -p no:xdist
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: true
-skip_reason: "Broken repo URL (typo in PyPI metadata)."
+skip: false
+skip_reason: null
 skip_versions: {}
-notes: "Auto-triaged: monorepo/clone-fail"
+notes: "Multi-platform stdin input with timeout. Repo URL was previously wrong (typo)."
 enriched: true
 clone_depth: null
 import_name: null

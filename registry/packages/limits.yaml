@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/limits/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: git fetch --tags --depth 1 && pip install -e ".[test]"
-test_command: python -m pytest tests
+install_command: git fetch --tags --depth 1 && pip install -e . && pip install pytest pytest-asyncio pytest-mock pytest-lazy-fixtures pytest-cov flaky hiro packaging
+test_command: python -m pytest tests -p no:xdist --ignore=tests/integration --ignore=tests/benchmarks
 test_framework: pytest
 uses_xdist: false
 timeout: null
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: "Uses setuptools-scm (needs git tags)"
+notes: "Uses hatch-vcs (needs git tags). No [test] extra; test deps in dependency-groups. Some tests need redis/memcached/mongodb services."
 enriched: true
 clone_depth: 50
 import_name: null

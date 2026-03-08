@@ -1,7 +1,7 @@
 package: mysqlclient
 repo: https://github.com/PyMySQL/mysqlclient
 pypi_url: https://pypi.org/project/mysqlclient/
-extension_type: extensions
+extension_type: c_extension
 python_versions: []
 install_method: pip
 install_command: ''

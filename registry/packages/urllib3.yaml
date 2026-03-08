@@ -9,7 +9,7 @@ install_method: pip
 install_command: pip install -e ".[socks,h2,dev]" && pip install pytest trustme cryptography
   pytest-socket pytest-timeout trio quart quart_trio anyio[trio] build coverage h2 httpx
   hypercorn idna pyopenssl towncrier
-test_command: python -m pytest -q --disable-socket --allow-unix-socket --allow-hosts=localhost,127.0.0.1,::1
+test_command: python -m pytest -p no:xdist -q --disable-socket --allow-unix-socket --allow-hosts=localhost,127.0.0.1,::1
   -k "not integration and not emscripten and not requires_network" test/
 test_framework: pytest
 uses_xdist: false

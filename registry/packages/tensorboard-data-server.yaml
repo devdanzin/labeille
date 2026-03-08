@@ -1,7 +1,7 @@
 package: tensorboard-data-server
 repo: https://github.com/tensorflow/tensorboard/tree/master/tensorboard/data/server
 pypi_url: https://pypi.org/project/tensorboard-data-server/
-extension_type: extensions
+extension_type: rust
 python_versions: []
 install_method: pip
 install_command: ''

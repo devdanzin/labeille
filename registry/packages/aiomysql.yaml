@@ -9,10 +9,10 @@ test_command: python -m pytest tests
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
+skip: true
+skip_reason: All tests require a running MySQL server; conftest.py connects to 127.0.0.1:3306 at session scope with no mocking.
 skip_versions: {}
-notes: "Uses setuptools-scm (needs git tags)"
+notes: "Uses setuptools-scm (needs git tags). Requires live MySQL server for all tests."
 enriched: true
 clone_depth: 50
 import_name: null

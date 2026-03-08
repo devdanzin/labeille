@@ -1,0 +1,18 @@
+package: gssapi
+repo: https://github.com/pythongssapi/python-gssapi
+pypi_url: https://pypi.org/project/gssapi/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install k5test parameterized
+test_command: python -m unittest discover gssapi/tests -v
+test_framework: unittest
+uses_xdist: false
+timeout: 600
+skip: true
+skip_reason: Requires Kerberos system libraries (libkrb5-dev) to build Cython extensions and run tests
+skip_versions: {}
+notes: 'Auto-enriched. Backend: setuptools. Tests in gssapi/tests/. Reviewed: requires MIT Kerberos system libs for build and k5test for tests.'
+enriched: true
+clone_depth: null
+import_name: null

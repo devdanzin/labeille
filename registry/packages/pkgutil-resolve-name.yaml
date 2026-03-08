@@ -4,8 +4,8 @@ pypi_url: https://pypi.org/project/pkgutil-resolve-name/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: null
-test_command: null
+install_command: ''
+test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: null

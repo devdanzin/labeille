@@ -7,7 +7,7 @@ install_method: pip
 install_command: pip install -e . && pip install pytest pytest-asyncio pytest-mock httpx a2wsgi wsproto websockets trustme cryptography pytest-xdist pyyaml httptools
 test_command: python -m pytest tests/ -p no:xdist -o "addopts=-rxXs --strict-config --strict-markers" --ignore=tests/supervisors
 test_framework: pytest
-uses_xdist: false
+uses_xdist: true
 timeout: null
 skip: false
 skip_reason: null

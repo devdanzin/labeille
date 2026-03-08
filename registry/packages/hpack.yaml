@@ -5,13 +5,13 @@ extension_type: pure
 python_versions: []
 install_method: pip
 install_command: pip install -e . && pip install pytest hypothesis
-test_command: python -m pytest tests/
+test_command: python -m pytest tests/ -p no:xdist
 test_framework: pytest
-uses_xdist: false
+uses_xdist: true
 timeout: null
 skip: false
 skip_reason: null
-notes: HTTP/2 header compression (HPACK). Tests use hypothesis. Tests in test/ dir.
+notes: HTTP/2 header compression (HPACK). Tests use hypothesis. xdist disabled for JIT testing.
 enriched: true
 clone_depth: null
 import_name: null

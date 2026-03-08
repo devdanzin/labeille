@@ -1,0 +1,18 @@
+package: shiboken6
+repo: https://code.qt.io/cgit/pyside/pyside-setup.git/
+pypi_url: https://pypi.org/project/shiboken6/
+extension_type: c_extension
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: C++ extension requiring Qt toolkit and CMake build system. Repo URL is CGit web view, not directly clonable.
+skip_versions: {}
+notes: Part of PySide/Qt for Python. Requires full Qt SDK and C++ compilation toolchain.
+enriched: true
+clone_depth: null
+import_name: null

@@ -1,0 +1,18 @@
+package: pyzbar
+repo: https://github.com/NaturalHistoryMuseum/pyzbar/
+pypi_url: https://pypi.org/project/pyzbar/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install numpy pillow pytest
+test_command: python -m unittest discover pyzbar/tests -v
+test_framework: unittest
+uses_xdist: false
+timeout: 600
+skip: true
+skip_reason: Requires libzbar0 system library (sudo apt-get install libzbar0); not available in standard test environments.
+skip_versions: {}
+notes: 'Backend: unknown. Tests in pyzbar/tests/. Requires libzbar0 system lib. numpy and Pillow are hard test deps (unconditional imports in test_pyzbar.py). cv2/imageio are optional (unittest.skipIf). mock/coveralls/nose are Python 2 relics.'
+enriched: true
+clone_depth: null
+import_name: null

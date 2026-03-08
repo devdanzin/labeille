@@ -1,0 +1,18 @@
+package: brotlicffi
+repo: https://github.com/python-hyper/brotlicffi
+pypi_url: https://pypi.org/project/brotlicffi/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: git submodule update --init && pip install -e . && pip install hypothesis pytest pytest-cov
+test_command: python -m pytest test/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: 'Auto-enriched. Backend: setuptools. Needs git submodule for libbrotli C sources. Tests in test/.'
+enriched: true
+clone_depth: null
+import_name: null

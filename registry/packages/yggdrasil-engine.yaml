@@ -1,0 +1,18 @@
+package: yggdrasil-engine
+repo: null
+pypi_url: https://pypi.org/project/yggdrasil-engine/
+extension_type: rust
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: No source repository URL available. Rust extension (PyO3).
+skip_versions: {}
+notes: Unleash Yggdrasil engine Rust bindings. No repo found.
+enriched: true
+clone_depth: null
+import_name: null

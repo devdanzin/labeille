@@ -4,8 +4,8 @@ pypi_url: https://pypi.org/project/locust/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: git fetch --tags --depth 1 && pip install -e ".[test]"
-test_command: python -m pytest locust/test
+install_command: git fetch --tags --depth 1 && pip install -e . && pip install cryptography pyquery retry
+test_command: python -m pytest locust/test -p no:xdist
 test_framework: pytest
 uses_xdist: false
 timeout: null
@@ -13,7 +13,7 @@ skip: false
 skip_reason: null
 skip_versions:
   '3.15': "Build failure with ASAN on 3.15"
-notes: "Uses setuptools-scm (needs git tags)"
+notes: "Uses hatch-vcs (needs git tags). No [test] extra; test deps in dependency-groups. pytest already in main deps."
 enriched: true
 clone_depth: 50
 import_name: null

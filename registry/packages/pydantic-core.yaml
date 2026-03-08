@@ -1,7 +1,7 @@
 package: pydantic-core
 repo: https://github.com/pydantic/pydantic-core
 pypi_url: https://pypi.org/project/pydantic-core/
-extension_type: extensions
+extension_type: rust
 python_versions:
 - '3.15'
 - '3.14'
@@ -11,8 +11,8 @@ test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
+skip: true
+skip_reason: Rust/PyO3 extension, requires maturin build. Not practical for pip-based testing.
 skip_versions:
   '3.15': Requires Rust toolchain and maturin for source builds. Not practical for
     pip-based testing.

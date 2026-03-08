@@ -5,8 +5,8 @@ extension_type: pure
 python_versions: []
 install_method: pip
 install_command: git fetch --tags --depth 1 && pip install -e . && pip install -r test-requirements.txt
-test_command: python -m pytest test
-test_framework: pytest
+test_command: python -m nose2 --verbose
+test_framework: nose2
 uses_xdist: false
 timeout: null
 skip: false

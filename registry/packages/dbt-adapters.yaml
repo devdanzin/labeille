@@ -10,8 +10,8 @@ test_framework: pytest
 uses_xdist: false
 timeout: null
 skip: true
-skip_reason: Depends on dbt-core.
-notes: dbt database adapters.
+skip_reason: Monorepo subpackage (dbt-labs/dbt-adapters). Tests use -n auto (xdist) and require database adapter infrastructure.
+notes: Base adapter protocols and functionality for dbt integrations. Part of dbt-labs/dbt-adapters monorepo.
 enriched: true
 clone_depth: null
 import_name: null

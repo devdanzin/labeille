@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/pip-audit/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e ".[test]"
-test_command: python -m pytest test
+install_command: pip install -e ".[test]" && pip install pretend pytest
+test_command: python -m pytest test/
 test_framework: pytest
 uses_xdist: false
-timeout: null
+timeout: 600
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: "Auto-enriched"
+notes: 'Auto-enriched. Backend: flit. Has [test] extras. Tests in test/.'
 enriched: true
 clone_depth: null
 import_name: null

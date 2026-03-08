@@ -4,7 +4,7 @@ pypi_url: https://pypi.org/project/trio-typing/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest
+install_command: pip install -e . && pip install pytest attrs
 test_command: python -m pytest trio_typing/_tests -p no:xdist
 test_framework: pytest
 uses_xdist: false
@@ -12,7 +12,7 @@ timeout: null
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: Re-enriched with improved test detection. Tests in trio_typing/_tests/
+notes: Static type checking for Trio. Tests in trio_typing/_tests/. Needs attrs for test fixtures.
 enriched: true
 clone_depth: null
 import_name: null

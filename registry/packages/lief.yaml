@@ -1,0 +1,18 @@
+package: lief
+repo: https://github.com/lief-project/LIEF
+pypi_url: https://pypi.org/project/lief/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install lief && pip install pytest requests progressbar2
+test_command: python tests/dl_samples.py && python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: true
+skip_reason: Tests require downloading large binary samples from S3 (tests/dl_samples.py) and building from source requires CMake + Rust toolchain; pip install uses prebuilt wheels but test suite structure is tightly coupled to the full source build environment
+skip_versions: {}
+notes: 'Source build needs CMake+Rust; tests need binary samples from S3. Tests live in tests/ subdirs (macho, pe, elf, etc.). Test deps: pytest, requests, progressbar2.'
+enriched: true
+clone_depth: null
+import_name: lief

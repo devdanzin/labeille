@@ -1,19 +1,18 @@
 package: librt
 repo: https://github.com/mypyc/librt
 pypi_url: https://pypi.org/project/librt/
-extension_type: extensions
+extension_type: c_extension
 python_versions: []
 install_method: pip
-install_command: ''
-test_command: ''
+install_command: pip install -e . && pip install pytest mypy_extensions
+test_command: python -m pytest smoke_tests.py
 test_framework: pytest
 uses_xdist: false
 timeout: null
 skip: false
 skip_reason: null
-skip_versions:
-  '3.15': "System library wrapper"
-notes: "Auto-triaged: extension with 3.15 build blocker"
+skip_versions: {}
+notes: "Mypyc runtime library with C extensions. Tests in smoke_tests.py, needs mypy_extensions."
 enriched: true
 clone_depth: null
 import_name: null

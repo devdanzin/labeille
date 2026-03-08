@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/ghp-import/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest
-test_command: python -m pytest . -p no:xdist
+install_command: ''
+test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
+skip: true
+skip_reason: No test files found in repository. Single-file package (ghp_import.py) with no tests.
 skip_versions: {}
-notes: Re-enriched with improved test detection. Tests in ./
+notes: Single-file package for importing content into GitHub Pages branches. No test files exist.
 enriched: true
 clone_depth: null
 import_name: null

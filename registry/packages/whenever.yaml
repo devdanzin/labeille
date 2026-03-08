@@ -1,0 +1,19 @@
+package: whenever
+repo: https://github.com/ariebovenberg/whenever
+pypi_url: https://pypi.org/project/whenever/
+extension_type: rust
+python_versions: []
+install_method: pip
+install_command: pip install whenever && pip install hypothesis pydantic pytest time-machine
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+skip_versions:
+  '3.15': Rust/maturin package; no pre-built wheels for Python 3.15
+notes: 'Auto-enriched. Backend: maturin (Rust extension). Tests in tests/. Install from PyPI wheel; source build requires Rust toolchain.'
+enriched: true
+clone_depth: null
+import_name: null

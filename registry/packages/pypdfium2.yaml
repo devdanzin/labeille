@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/pypdfium2/
 extension_type: extensions
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest
-test_command: python -m pytest tests
+install_command: pip install -e . && pip install numpy pillow pytest
+test_command: python -m pytest tests/ -p no:xdist
 test_framework: pytest
 uses_xdist: false
-timeout: null
+timeout: 600
 skip: false
 skip_reason: null
-skip_versions: null
-notes: "Auto-enriched"
+skip_versions: {}
+notes: 'Backend: setuptools with ctypesgen (ctypes-based PDF bindings, not a C extension). Removed packaging (build-only dep). Tests need numpy and pillow (confirmed in test_rendering.py).'
 enriched: true
 clone_depth: null
 import_name: null

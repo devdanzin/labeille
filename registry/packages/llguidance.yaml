@@ -1,0 +1,19 @@
+package: llguidance
+repo: https://github.com/microsoft/llguidance
+pypi_url: https://pypi.org/project/llguidance/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest numpy torch transformers
+test_command: python -m pytest python/torch_tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: true
+skip_reason: Tests in python/torch_tests/ require torch, numpy, and transformers; test_hf.py downloads large LLM models (LLaMA-3.1-8B, SmolLM-135M) at runtime. Too heavy for automated testing. Also a maturin package blocked on 3.15.
+skip_versions:
+  '3.15': PyO3/maturin package, not yet supporting 3.15
+notes: 'Maturin/Rust package. Tests in python/torch_tests/ require torch, numpy, transformers; test_hf.py downloads multi-GB HuggingFace models (Meta-Llama-3.1-8B-Instruct, SmolLM-135M-Instruct) at test time.'
+enriched: true
+clone_depth: null
+import_name: null

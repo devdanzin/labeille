@@ -4,9 +4,9 @@ pypi_url: https://pypi.org/project/tomli/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest
-test_command: python -m pytest
-test_framework: pytest
+install_command: pip install -e .
+test_command: python -m unittest discover tests
+test_framework: unittest
 uses_xdist: false
 timeout: null
 skip: false

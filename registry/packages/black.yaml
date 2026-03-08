@@ -4,10 +4,8 @@ pypi_url: https://pypi.org/project/black/
 extension_type: extensions
 python_versions: []
 install_method: pip
-install_command: git fetch --tags --depth 1 && pip install -e . && pip install pytest
-  pytest-xdist ipynb click
-test_command: python -m pytest tests/ -p no:xdist --ignore=tests/test_blackd.py -o
-  "addopts="
+install_command: git fetch --tags --depth 1 && pip install -e ".[jupyter]" && pip install pytest pytest-xdist
+test_command: python -m pytest tests/ -p no:xdist --ignore=tests/test_blackd.py -o "addopts="
 test_framework: pytest
 uses_xdist: true
 timeout: 600

@@ -1,5 +1,5 @@
 package: azure-eventhub
-repo: https://github.com/Azure/azure-sdk-for-python/tree/main/sdk
+repo: https://github.com/Azure/azure-sdk-for-python/tree/main/sdk/eventhub/azure-eventhub
 pypi_url: https://pypi.org/project/azure-eventhub/
 extension_type: pure
 python_versions: []

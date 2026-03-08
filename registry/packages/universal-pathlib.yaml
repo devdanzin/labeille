@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/universal-pathlib/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: null
-test_command: null
+install_command: git fetch --tags --depth 1 && pip install -e ".[tests]"
+test_command: python -m pytest upath/tests/ -p no:xdist -o "addopts="
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: true
-skip_reason: No test directory or test files found in repository
+skip: false
+skip_reason: null
 skip_versions: {}
-notes: Reset for re-enrichment (improved test directory detection)
+notes: Tests in upath/tests/. Uses setuptools-scm (needs tags). addopts cleared (has pytest-cov).
 enriched: true
 clone_depth: 50
-import_name: null
+import_name: upath

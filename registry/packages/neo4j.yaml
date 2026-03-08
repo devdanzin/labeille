@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/neo4j/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e ".[test]"
-test_command: python -m pytest tests
+install_command: pip install -e . && pip install pytest pytest-asyncio pytest-benchmark pytest-mock mock freezegun pytz
+test_command: python -m pytest tests/unit/ -p no:xdist
 test_framework: pytest
 uses_xdist: false
-timeout: null
+timeout: 600
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: "Auto-enriched"
+notes: 'Auto-enriched. Backend: setuptools. Unit tests in tests/unit/. Integration tests in tests/integration/ require a running Neo4j server and are excluded. async_ and sync in original install_command were bogus packages from YAML multiline split of pytest-asyncio.'
 enriched: true
 clone_depth: null
 import_name: null

@@ -1,0 +1,18 @@
+package: stagehand
+repo: https://github.com/browserbase/stagehand-python
+pypi_url: https://pypi.org/project/stagehand/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install dirty_equals pytest pytest-asyncio pytest-xdist respx time-machine typing_extensions
+test_command: python -m pytest -p no:xdist tests/
+test_framework: pytest
+uses_xdist: true
+timeout: 600
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: 'Auto-enriched. Backend: hatchling. Uses xdist (disabled for JIT). Tests in tests/.'
+enriched: true
+clone_depth: null
+import_name: null

@@ -5,7 +5,7 @@ extension_type: pure
 python_versions: []
 install_method: pip
 install_command: pip install -e . && pip install pytest six
-test_command: python -m pytest pasta/ -k "test" -p no:xdist
+test_command: python -m pytest pasta/ -p no:xdist
 test_framework: pytest
 uses_xdist: false
 timeout: 300

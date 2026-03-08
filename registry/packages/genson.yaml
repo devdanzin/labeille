@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/genson/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e .
-test_command: python -m pytest test
-test_framework: pytest
+install_command: pip install -e . && pip install jsonschema
+test_command: python -m unittest discover test -v
+test_framework: unittest
 uses_xdist: false
-timeout: null
+timeout: 600
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: "Auto-enriched"
+notes: 'Auto-enriched. Backend: setuptools. Tests in test/. Added jsonschema test dep from tox.ini.'
 enriched: true
 clone_depth: null
 import_name: null

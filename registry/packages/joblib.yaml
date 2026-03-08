@@ -4,9 +4,8 @@ pypi_url: https://pypi.org/project/joblib/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest pytest-timeout threadpoolctl
-  lz4
-test_command: python -m pytest joblib/test/
+install_command: pip install -e . && pip install pytest pytest-timeout threadpoolctl lz4
+test_command: python -m pytest joblib/test/ -p no:xdist
 test_framework: pytest
 uses_xdist: false
 timeout: 1200

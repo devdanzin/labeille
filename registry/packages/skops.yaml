@@ -1,5 +1,5 @@
 package: skops
-repo: http://github.com/skops-dev/skops
+repo: https://github.com/skops-dev/skops
 pypi_url: https://pypi.org/project/skops/
 extension_type: pure
 python_versions: []
@@ -11,7 +11,8 @@ uses_xdist: false
 timeout: null
 skip: false
 skip_reason: null
-skip_versions: {}
+skip_versions:
+  '3.15': Depends on numpy/scipy/scikit-learn (C ext build failure on 3.15)
 notes: Re-enriched with improved test detection. Tests in skops/
 enriched: true
 clone_depth: null

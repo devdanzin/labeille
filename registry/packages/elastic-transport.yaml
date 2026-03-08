@@ -4,9 +4,8 @@ pypi_url: https://pypi.org/project/elastic-transport/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest pytest-mock pytest-asyncio
-  pytest-httpserver trustme respx opentelemetry-api opentelemetry-sdk
-test_command: python -m pytest tests/ -o "addopts=" --ignore=tests/test_httpbin.py
+install_command: pip install -e . && pip install pytest pytest-mock pytest-asyncio pytest-httpserver trustme respx opentelemetry-api opentelemetry-sdk
+test_command: python -m pytest tests/ -o "addopts=" --ignore=tests/test_httpbin.py -p no:xdist
 test_framework: pytest
 uses_xdist: false
 timeout: 300

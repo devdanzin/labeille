@@ -1,7 +1,7 @@
 package: cramjam
 repo: https://github.com/milesgranger/pyrus-cramjam
 pypi_url: https://pypi.org/project/cramjam/
-extension_type: extensions
+extension_type: rust
 python_versions: []
 install_method: pip
 install_command: null
@@ -9,11 +9,10 @@ test_command: null
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
-skip_versions:
-  '3.15': PyO3/Rust extension
-notes: 'Re-enriched: PyO3/Rust extension'
+skip: true
+skip_reason: "PyO3/Rust extension (maturin) - no Python 3.15 wheels and source build requires Rust toolchain."
+skip_versions: {}
+notes: Compression bindings in Rust via PyO3. Wheels available cp38-cp314 but not cp315. Tests exist at tests/.
 enriched: true
 clone_depth: null
 import_name: null

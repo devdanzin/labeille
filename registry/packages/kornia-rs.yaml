@@ -1,0 +1,19 @@
+package: kornia-rs
+repo: https://github.com/kornia/kornia-rs
+pypi_url: https://pypi.org/project/kornia-rs/
+extension_type: rust
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: true
+skip_reason: PyO3/maturin project; Python package is in kornia-py/ subdirectory (requires
+  special build setup)
+skip_versions: {}
+notes: 'Auto-enriched (skipped: maturin + non-root Python package)'
+enriched: true
+clone_depth: null
+import_name: null

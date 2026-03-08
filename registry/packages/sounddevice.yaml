@@ -1,0 +1,20 @@
+package: sounddevice
+repo: https://github.com/spatialaudio/python-sounddevice/
+pypi_url: https://pypi.org/project/sounddevice/
+extension_type: pure
+python_versions: []
+install_method: pip
+install_command: git fetch --tags --depth 1 && pip install -e . && pip install pytest
+test_command: python -m pytest
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: true
+skip_reason: No tests in repository; requires libportaudio2 system library (not bundled in Linux wheels)
+skip_versions: {}
+notes: 'Auto-enriched. Backend: setuptools. Uses setuptools-scm. Uses cffi ABI mode
+  (no compiled extensions in sounddevice itself). No test directory found; test group
+  in pyproject.toml is empty.'
+enriched: true
+clone_depth: 50
+import_name: null

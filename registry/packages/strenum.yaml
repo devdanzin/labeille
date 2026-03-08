@@ -4,16 +4,15 @@ pypi_url: https://pypi.org/project/strenum/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e .
-test_command: python -m pytest tests
+install_command: pip install -e . && pip install pytest pytest-cov
+test_command: python -m pytest -p no:xdist tests/
 test_framework: pytest
 uses_xdist: false
-timeout: null
+timeout: 600
 skip: false
 skip_reason: null
-skip_versions:
-  '3.15': "Build failure on 3.15"
-notes: "Auto-enriched"
+skip_versions: {}
+notes: 'Auto-enriched. Backend: unknown. Tests in tests/.'
 enriched: true
 clone_depth: null
 import_name: null

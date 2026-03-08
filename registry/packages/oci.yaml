@@ -9,11 +9,10 @@ test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
-skip_versions:
-  '3.15': Complex Oracle SDK
-notes: Repo found by improved URL detection. Complex Oracle SDK
+skip: true
+skip_reason: Complex Oracle SDK with many internal dependencies, tests require Oracle service credentials.
+skip_versions: {}
+notes: Repo found by improved URL detection. Complex Oracle SDK with internal test infrastructure.
 enriched: true
 clone_depth: null
 import_name: null

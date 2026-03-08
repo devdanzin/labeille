@@ -1,0 +1,18 @@
+package: pymoo
+repo: https://github.com/anyoptimization/pymoo
+pypi_url: https://pypi.org/project/pymoo/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install numpy Cython && pip install -e . && pip install pytest numpy scipy
+test_command: python -m pytest tests/ --ignore=tests/test_docs.py -p no:xdist
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: 'Repo was wrong (pymoo-data vs pymoo). Needs numpy+Cython at build time. test_docs.py requires jupytext/nbconvert (heavy, skip). Tests in tests/.'
+enriched: true
+clone_depth: null
+import_name: null

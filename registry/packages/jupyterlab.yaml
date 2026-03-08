@@ -10,9 +10,9 @@ test_framework: pytest
 uses_xdist: false
 timeout: null
 skip: true
-skip_reason: No test directory or test files found in repository
+skip_reason: Tests require heavy Jupyter ecosystem dependencies (jupyter_server, ipykernel, jupyterlab_server, traitlets, pytest-jupyter)
 skip_versions: {}
-notes: Reset for re-enrichment (improved test directory detection)
+notes: Has Python tests in jupyterlab/tests/ but requires jupyter_server, ipykernel, jupyterlab_server, traitlets, pytest-jupyter and heavy JS build infrastructure.
 enriched: true
 clone_depth: null
 import_name: null

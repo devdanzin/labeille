@@ -1,19 +1,18 @@
 package: lupa
 repo: https://github.com/scoder/lupa
 pypi_url: https://pypi.org/project/lupa/
-extension_type: extensions
+extension_type: c_extension
 python_versions: []
 install_method: pip
 install_command: ''
 test_command: ''
-test_framework: pytest
+test_framework: unittest
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
-skip_versions:
-  '3.15': "Needs Lua runtime"
-notes: "Auto-triaged: extension with 3.15 build blocker"
+skip: true
+skip_reason: Requires Cython compilation of .pyx files wrapping bundled Lua C libraries. Build is fragile on newer Python versions.
+skip_versions: {}
+notes: Cython wrapper around Lua runtime. Bundles Lua source but requires Cython build step. Tests use unittest.
 enriched: true
 clone_depth: null
 import_name: null

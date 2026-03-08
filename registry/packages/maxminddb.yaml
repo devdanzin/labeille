@@ -1,10 +1,10 @@
 package: maxminddb
 repo: https://github.com/maxmind/MaxMind-DB-Reader-python
 pypi_url: https://pypi.org/project/maxminddb/
-extension_type: extensions
+extension_type: c_extension
 python_versions: []
 install_method: pip
-install_command: git fetch --tags --depth 1 && pip install -e .
+install_command: git fetch --tags --depth 1 && pip install -e . && pip install pytest
 test_command: python -m pytest tests
 test_framework: pytest
 uses_xdist: false

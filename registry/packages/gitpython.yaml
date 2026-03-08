@@ -4,9 +4,8 @@ pypi_url: https://pypi.org/project/gitpython/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: git fetch --unshallow || true && pip install -e . && pip install pytest
-  pytest-cov ddt
-test_command: python -m pytest test/
+install_command: git fetch --unshallow || true && pip install -e . && pip install pytest pytest-cov ddt
+test_command: python -m pytest test/ -p no:xdist
 test_framework: pytest
 uses_xdist: false
 timeout: 600

@@ -11,8 +11,7 @@ uses_xdist: false
 timeout: null
 skip: false
 skip_reason: null
-notes: Async file I/O wrapper. Pure Python, minimal test deps. Uses hatchling build
-  backend.
+notes: Async file I/O wrapper. Pure Python, minimal test deps. Uses hatchling build backend.
 enriched: true
 clone_depth: null
 import_name: null

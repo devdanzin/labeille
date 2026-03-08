@@ -1,5 +1,5 @@
 package: pymupdf4llm
-repo: https://github.com/pymupdf/pymupdf4llm/tree/main/pymupdf4llm
+repo: https://github.com/pymupdf/pymupdf4llm
 pypi_url: https://pypi.org/project/pymupdf4llm/
 extension_type: pure
 python_versions: []
@@ -10,9 +10,9 @@ test_framework: pytest
 uses_xdist: false
 timeout: null
 skip: true
-skip_reason: "Monorepo subpackage (pymupdf/pymupdf4llm). Depends on pymupdf C ext."
+skip_reason: "Package in subdirectory (pymupdf4llm/). Depends on pymupdf C extension."
 skip_versions: {}
-notes: "Auto-triaged: monorepo/clone-fail"
+notes: "Package lives in pymupdf4llm/ subdir of repo. Requires pymupdf (C ext) as core dep."
 enriched: true
 clone_depth: null
 import_name: null

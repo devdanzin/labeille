@@ -1,7 +1,7 @@
 package: tree-sitter-languages
 repo: https://github.com/grantjenks/py-tree-sitter-languages
 pypi_url: https://pypi.org/project/tree-sitter-languages/
-extension_type: extensions
+extension_type: c_extension
 python_versions: []
 install_method: pip
 install_command: ''
@@ -9,11 +9,10 @@ test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
-skip_versions:
-  '3.15': "PyO3/Rust extension, won't build on 3.15"
-notes: "Auto-triaged: extension with 3.15 build blocker"
+skip: true
+skip_reason: PyO3/Rust extension, won't build on 3.15
+skip_versions: {}
+notes: Binary Python wheels for all tree-sitter languages. Rust/PyO3 extension.
 enriched: true
 clone_depth: null
 import_name: null

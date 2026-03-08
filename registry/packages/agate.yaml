@@ -6,7 +6,7 @@ python_versions:
 - '3.15'
 - '3.14'
 install_method: pip
-install_command: pip install -e . && pip install pytest pytest-cov cssselect coverage
+install_command: pip install -e . && pip install pytest pytest-cov coverage
 test_command: python -m pytest tests/
 test_framework: pytest
 uses_xdist: false
@@ -14,7 +14,7 @@ timeout: null
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: "Data analysis library. Tests use unittest-style but run via pytest. Sets locale en_US.UTF-8. Skipping lxml and PyICU from test extras (need system C libraries)."
+notes: "Data analysis library. Tests use unittest-style but run via pytest. Skipping lxml, cssselect and PyICU from test extras (lxml/PyICU need system C libraries; cssselect is only used alongside lxml which is excluded)."
 enriched: true
 clone_depth: null
 import_name: null

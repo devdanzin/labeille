@@ -1,0 +1,18 @@
+package: viztracer
+repo: https://github.com/gaogaotiantian/viztracer
+pypi_url: https://pypi.org/project/viztracer/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install coredumpy ipywidgets loky psutil pytest
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: 'Auto-enriched. Backend: setuptools. Tests in tests/. Removed bogus deps: ast and cProfile (stdlib), base_tmpl/cmdline_tmpl/package_env/util (local test helpers in tests/). Added coredumpy, ipywidgets, loky, psutil from requirements-dev.txt.'
+enriched: true
+clone_depth: null
+import_name: null

@@ -1,12 +1,11 @@
 package: oauth2client
-repo: http://github.com/google/oauth2client/
+repo: https://github.com/google/oauth2client
 pypi_url: https://pypi.org/project/oauth2client/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest mock flask keyring sqlalchemy fasteners
-  webtest
-test_command: python -m pytest tests --ignore=tests/contrib/appengine --ignore=tests/contrib/django_util
+install_command: pip install -e . && pip install pytest mock flask keyring sqlalchemy fasteners webtest
+test_command: python -m pytest tests --ignore=tests/contrib/appengine --ignore=tests/contrib/django_util -p no:xdist
 test_framework: pytest
 uses_xdist: false
 timeout: null

@@ -4,16 +4,16 @@ pypi_url: https://pypi.org/project/dask-expr/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest
-test_command: python -m pytest dask_expr/tests
+install_command: pip install -e . && pip install distributed numpy pytest
+test_command: python -m pytest dask_expr/tests/
 test_framework: pytest
 uses_xdist: false
-timeout: null
-skip: false
-skip_reason: null
+timeout: 600
+skip: true
+skip_reason: Repository archived and no longer maintained; code moved to dask/dask
 skip_versions:
-  '3.15': "Depends on pyarrow (C extension build failure on 3.15)"
-notes: "Auto-enriched"
+  '3.15': Depends on pyarrow (C extension build failure on 3.15)
+notes: 'Auto-enriched. Backend: setuptools. Tests in dask_expr/tests/.'
 enriched: true
 clone_depth: null
 import_name: null

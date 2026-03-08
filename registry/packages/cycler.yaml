@@ -11,7 +11,7 @@ uses_xdist: false
 timeout: null
 skip: false
 skip_reason: null
-notes: Composable style cycles for matplotlib. Uses setuptools-scm. Small test suite.
+notes: Composable style cycles for matplotlib. Small test suite.
 enriched: true
-clone_depth: 50
+clone_depth: null
 import_name: null

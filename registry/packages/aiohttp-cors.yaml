@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/aiohttp-cors/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install -r requirements-dev.txt && pip install pytest
-test_command: python -m pytest tests -o "addopts="
+install_command: pip install -e . && pip install pytest pytest-aiohttp aiohttp
+test_command: python -m pytest tests/unit -o "addopts="
 test_framework: pytest
 uses_xdist: false
 timeout: null
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: "addopts cleared (refs: pytest-cov)"
+notes: "Integration tests use selenium (real browser), restricted to tests/unit. requirements-dev.txt includes selenium, avoided. pytest-aiohttp needed for aiohttp_client fixture."
 enriched: true
 clone_depth: null
 import_name: null

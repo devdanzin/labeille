@@ -1,10 +1,10 @@
 package: locket
-repo: http://github.com/mwilliamson/locket.py
+repo: https://github.com/mwilliamson/locket.py
 pypi_url: https://pypi.org/project/locket/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install -r test-requirements.txt && pip install pytest
+install_command: pip install -e . && pip install pytest spur
 test_command: python -m pytest tests
 test_framework: pytest
 uses_xdist: false
@@ -12,7 +12,7 @@ timeout: null
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: "Auto-enriched"
+notes: "Tests in tests/, need spur.local for subprocess testing. Repo URL fixed to HTTPS."
 enriched: true
 clone_depth: null
 import_name: null

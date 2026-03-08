@@ -1,7 +1,7 @@
 package: yarl
 repo: https://github.com/aio-libs/yarl
 pypi_url: https://pypi.org/project/yarl/
-extension_type: extensions
+extension_type: c_extension
 python_versions: []
 install_method: pip
 install_command: pip install -e . && pip install pytest pytest-cov covdefaults pytest-xdist hypothesis

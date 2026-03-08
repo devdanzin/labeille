@@ -1,18 +1,18 @@
 package: rich-toolkit
-repo: https://github.com/Textualize/rich
+repo: https://github.com/patrick91/rich-toolkit
 pypi_url: https://pypi.org/project/rich-toolkit/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest
-test_command: python -m pytest tests -p no:xdist
+install_command: pip install -e . && pip install pytest inline-snapshot
+test_command: python -m pytest tests/ -p no:xdist
 test_framework: pytest
 uses_xdist: false
 timeout: null
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: Repo found by improved URL detection. Tests in tests/
+notes: By Patrick Arminio. Uses inline-snapshot for tests. Src layout (src/rich_toolkit/).
 enriched: true
 clone_depth: null
-import_name: rich
+import_name: rich_toolkit

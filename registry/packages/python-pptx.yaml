@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/python-pptx/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: null
-test_command: null
+install_command: pip install -e . && pip install pytest behave pyparsing
+test_command: python -m pytest tests/ -p no:xdist
 test_framework: pytest
-uses_xdist: false
-timeout: null
-skip: true
-skip_reason: No test directory or test files found in repository
+uses_xdist: true
+timeout: 300
+skip: false
+skip_reason: null
 skip_versions: {}
-notes: Reset for re-enrichment (improved test directory detection)
+notes: Has tests/ directory with pytest tests and behave BDD tests. Uses pytest-xdist in dev.
 enriched: true
 clone_depth: null
-import_name: null
+import_name: pptx

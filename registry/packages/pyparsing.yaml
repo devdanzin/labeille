@@ -1,11 +1,11 @@
 package: pyparsing
-repo: https://github.com/pyparsing/pyparsing.git
+repo: https://github.com/pyparsing/pyparsing
 pypi_url: https://pypi.org/project/pyparsing/
 extension_type: pure
 python_versions: []
 install_method: pip
 install_command: pip install -e . && pip install pytest railroad-diagrams jinja2
-test_command: python -m pytest tests/
+test_command: python -m pytest tests/ -p no:xdist
 test_framework: pytest
 uses_xdist: false
 timeout: null

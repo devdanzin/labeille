@@ -1,0 +1,18 @@
+package: tensorflow-text
+repo: https://github.com/tensorflow/text
+pypi_url: https://pypi.org/project/tensorflow-text/
+extension_type: c_extension
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: Bazel-based build system, depends on TensorFlow, not pip-installable from source
+skip_versions: {}
+notes: Uses Bazel build, C++ extensions, depends on tensorflow. Not testable from source.
+enriched: true
+clone_depth: null
+import_name: null

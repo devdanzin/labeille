@@ -4,7 +4,7 @@ pypi_url: https://pypi.org/project/llama-parse/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest
+install_command: pip install -e . && pip install pytest pytest-asyncio respx dirty-equals
 test_command: python -m pytest tests -p no:xdist -o "addopts="
 test_framework: pytest
 uses_xdist: false
@@ -12,7 +12,7 @@ timeout: null
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: Repo found by improved URL detection. Tests in tests/
+notes: "llama-cloud Python SDK. Tests need respx for HTTP mocking, pytest-asyncio for async tests."
 enriched: true
 clone_depth: null
 import_name: null

@@ -1,5 +1,5 @@
 package: nbformat
-repo: https://github.com/jupyter/nbformat.git
+repo: https://github.com/jupyter/nbformat
 pypi_url: https://pypi.org/project/nbformat/
 extension_type: pure
 python_versions: []

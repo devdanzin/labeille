@@ -4,16 +4,17 @@ pypi_url: https://pypi.org/project/bottleneck/
 extension_type: extensions
 python_versions: []
 install_method: pip
-install_command: pip install -e ".[test]"
-test_command: python -m pytest bottleneck/tests
+install_command: pip install -e . && pip install pytest hypothesis
+test_command: python -m pytest bottleneck/tests/
 test_framework: pytest
 uses_xdist: false
-timeout: null
+timeout: 600
 skip: false
 skip_reason: null
 skip_versions:
-  '3.15': "Meson build system: 'Python dependency not found' on 3.15 (numpy build dep fails)."
-notes: "Auto-enriched"
+  '3.15': 'Meson build system: ''Python dependency not found'' on 3.15 (numpy build
+    dep fails).'
+notes: 'Auto-enriched. Backend: setuptools. Tests in bottleneck/tests/.'
 enriched: true
 clone_depth: null
 import_name: null

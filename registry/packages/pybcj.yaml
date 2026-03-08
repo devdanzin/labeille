@@ -1,0 +1,19 @@
+package: pybcj
+repo: https://github.com/miurahr/pybcj
+pypi_url: https://pypi.org/project/pybcj/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: git fetch --tags --depth 1 && pip install -e ".[test]"
+test_command: python -m pytest tests/ -p no:xdist
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: 'Auto-enriched. Backend: setuptools. Uses setuptools-scm. Has [test] extras.
+  Tests in tests/.'
+enriched: true
+clone_depth: 50
+import_name: null

@@ -6,7 +6,7 @@ python_versions: []
 install_method: pip
 install_command: git fetch --tags --depth 1 && pip install -e . && pip install pytest allpairspy
   tcolorpy click pytest-md-report pytest-discord
-test_command: python -m pytest test
+test_command: python -m pytest test -p no:xdist
 test_framework: pytest
 uses_xdist: false
 timeout: null

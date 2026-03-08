@@ -1,0 +1,19 @@
+package: biotite
+repo: https://github.com/biotite-dev/biotite
+pypi_url: https://pypi.org/project/biotite/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: git fetch --tags --depth 1 && pip install -e ".[test]" && pip install pytest cython
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: 'Auto-enriched. Backend: hatchling. Has [test] extras. Uses hatch-vcs (needs tags).
+  Tests in tests/. conftest.py uses pyximport (part of Cython).'
+enriched: true
+clone_depth: null
+import_name: null

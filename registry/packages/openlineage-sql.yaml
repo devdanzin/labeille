@@ -1,7 +1,7 @@
 package: openlineage-sql
 repo: https://github.com/OpenLineage/OpenLineage
 pypi_url: https://pypi.org/project/openlineage-sql/
-extension_type: extensions
+extension_type: rust
 python_versions: []
 install_method: pip
 install_command: ''
@@ -9,11 +9,10 @@ test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
-skip_versions:
-  '3.15': Rust extension
-notes: Repo found by improved URL detection. Rust extension
+skip: true
+skip_reason: "Rust extension (maturin/PyO3) in monorepo subpackage (OpenLineage/OpenLineage/integration/sql). Not buildable until PyO3 supports 3.15."
+skip_versions: {}
+notes: "Rust extension built with maturin. Monorepo subpackage at integration/sql/iface-py/."
 enriched: true
 clone_depth: null
 import_name: null

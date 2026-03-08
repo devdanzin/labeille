@@ -1,18 +1,18 @@
 package: psycopg-binary
 repo: https://github.com/psycopg/psycopg
 pypi_url: https://pypi.org/project/psycopg-binary/
-extension_type: extensions
+extension_type: c_extension
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest
-test_command: python -m pytest tests
+install_command: ''
+test_command: ''
 test_framework: pytest
 uses_xdist: false
-timeout: null
+timeout: 600
 skip: true
 skip_reason: Binary-only distribution on PyPI, no source available for sdist build.
 skip_versions: null
-notes: "Auto-enriched"
+notes: 'Auto-enriched. Backend: setuptools. Tests in tests/.'
 enriched: true
 clone_depth: null
 import_name: null

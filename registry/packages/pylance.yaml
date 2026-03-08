@@ -1,0 +1,18 @@
+package: pylance
+repo: https://github.com/lance-format/lance
+pypi_url: https://pypi.org/project/pylance/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install pylance pytest pyarrow numpy pandas polars ml-dtypes psutil tqdm pillow duckdb
+test_command: python -m pytest python/python/tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: 'Maturin/Rust build backend - install from PyPI wheel instead of editable. Tests in python/python/tests/. Heavy deps (tensorflow, datasets, boto3) omitted.'
+enriched: true
+clone_depth: null
+import_name: null

@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/llama-index-indices-managed-llama-cloud/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest
-test_command: python -m pytest py/tests -p no:xdist
+install_command: ''
+test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
+skip: true
+skip_reason: Tests require LlamaCloud API key (same repo as llama-cloud-services)
 skip_versions: {}
-notes: Repo found by improved URL detection. Tests in py/tests/
+notes: "Points to same repo as llama-cloud-services. Tests need API keys."
 enriched: true
 clone_depth: null
 import_name: null

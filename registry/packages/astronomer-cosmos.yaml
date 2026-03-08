@@ -4,16 +4,14 @@ pypi_url: https://pypi.org/project/astronomer-cosmos/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest
-test_command: python -m pytest tests
+install_command: pip install -e . && pip install apache-airflow dbt-core psutil pytest
+test_command: python -m pytest tests/
 test_framework: pytest
 uses_xdist: false
-timeout: null
-skip: false
-skip_reason: null
-skip_versions:
-  '3.15': "Install timeout (heavy deps)"
-notes: "Auto-enriched"
+timeout: 600
+skip: true
+skip_reason: Requires Apache Airflow test infrastructure (DB init, configs)
+notes: 'Auto-enriched. Backend: hatchling. Tests in tests/.'
 enriched: true
 clone_depth: null
 import_name: null

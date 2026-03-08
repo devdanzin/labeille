@@ -1,7 +1,7 @@
 package: lxml
 repo: https://github.com/lxml/lxml
 pypi_url: https://pypi.org/project/lxml/
-extension_type: extensions
+extension_type: c_extension
 python_versions: []
 install_method: pip
 install_command: ''

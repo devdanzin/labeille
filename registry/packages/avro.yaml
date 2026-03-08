@@ -9,11 +9,10 @@ test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
-skip_versions:
-  '3.15': Monorepo (apache/avro), complex setup
-notes: Repo found by improved URL detection. Monorepo (apache/avro), complex setup
+skip: true
+skip_reason: Lives in apache/avro monorepo at lang/py/; repo root cannot be pip-installed directly; tests are under lang/py/avro/test/ which requires special monorepo checkout handling.
+skip_versions: {}
+notes: Repo found by improved URL detection. Monorepo (apache/avro), Python code in lang/py/ subdirectory. Tests are at lang/py/avro/test/. Pure Python (py3-none-any wheel).
 enriched: true
 clone_depth: null
 import_name: null

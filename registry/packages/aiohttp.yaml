@@ -4,18 +4,15 @@ pypi_url: https://pypi.org/project/aiohttp/
 extension_type: extensions
 python_versions: []
 install_method: pip
-install_command: git submodule update --init && pip install cython && pip install
-  -e . && pip install pytest pytest-asyncio pytest-mock trustme proxy.py brotli
-test_command: python -m pytest tests/ -k 'not test_client_functional and not test_web_functional
-  and not test_proxy_functional'
+install_command: git submodule update --init && pip install cython && pip install -e . && pip install pytest pytest-mock trustme proxy.py brotli
+test_command: python -m pytest tests/ -p no:xdist -o "addopts=" -k "not test_client_functional and not test_web_functional and not test_proxy_functional"
 test_framework: pytest
-uses_xdist: false
+uses_xdist: true
 timeout: 1800
 skip: false
 skip_reason: null
 skip_versions: null
-notes: aiohttp async HTTP framework. C extensions via Cython. Functional tests excluded
-  (need running server). 30min timeout.
+notes: aiohttp async HTTP framework. C extensions via Cython. Functional tests excluded (need running server). Uses xdist in CI (--numprocesses=auto). 30min timeout.
 enriched: true
 clone_depth: null
 import_name: null

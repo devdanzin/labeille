@@ -1,0 +1,19 @@
+package: nvidia-cudnn-frontend
+repo: https://github.com/nvidia/cudnn-frontend
+pypi_url: https://pypi.org/project/nvidia-cudnn-frontend/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: true
+skip_reason: NVIDIA/CUDA package (requires GPU hardware)
+skip_versions:
+  '3.15': Depends on torch/CUDA (not available for 3.15)
+notes: 'Auto-enriched (skipped: CUDA/GPU required)'
+enriched: true
+clone_depth: null
+import_name: null

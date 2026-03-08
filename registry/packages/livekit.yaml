@@ -1,0 +1,18 @@
+package: livekit
+repo: https://github.com/livekit/python-sdks/
+pypi_url: https://pypi.org/project/livekit/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e livekit-rtc/ && pip install numpy pytest pytest-asyncio
+test_command: python -m pytest tests/rtc/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: 'Monorepo with uv workspace (livekit-rtc/, livekit-api/, livekit-protocol/). Install from livekit-rtc/ subdir. Tests in tests/rtc/ are self-contained unit tests (emitter, resampler, apm, mixer, ffi_queue, import). test_e2e.py skips automatically without LIVEKIT_URL/KEY/SECRET env vars.'
+enriched: true
+clone_depth: null
+import_name: null

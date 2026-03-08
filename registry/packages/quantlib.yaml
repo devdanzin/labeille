@@ -1,0 +1,18 @@
+package: quantlib
+repo: https://github.com/lballabio/QuantLib-SWIG
+pypi_url: https://pypi.org/project/quantlib/
+extension_type: cpp_extension
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: C++ SWIG extension requiring QuantLib C++ library to be pre-installed; complex build
+skip_versions: {}
+notes: Python bindings for QuantLib C++ library via SWIG. Requires pre-built QuantLib C++ lib.
+enriched: true
+clone_depth: null
+import_name: QuantLib

@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/mkdocstrings-python/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest
-test_command: python -m pytest tests -p no:xdist
+install_command: pip install -e . && pip install pytest pytest-cov mkdocs griffe griffelib mkdocstrings
+test_command: python -m pytest tests -p no:xdist -o "addopts="
 test_framework: pytest
 uses_xdist: true
 timeout: null
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: "xdist disabled for JIT testing"
+notes: "Tests need mkdocs, griffe, griffelib, mkdocstrings. addopts cleared (refs: pytest-cov). xdist disabled for JIT testing."
 enriched: true
 clone_depth: null
 import_name: mkdocstrings_handlers.python

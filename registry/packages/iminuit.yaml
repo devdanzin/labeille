@@ -1,0 +1,18 @@
+package: iminuit
+repo: https://github.com/scikit-hep/iminuit
+pypi_url: https://pypi.org/project/iminuit/
+extension_type: cpp_extension
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: C++ extension (pybind11 + scikit-build-core), depends on numpy
+skip_versions: {}
+notes: C++ extension wrapping MINUIT2 via pybind11. Requires scikit-build-core to build.
+enriched: true
+clone_depth: null
+import_name: null

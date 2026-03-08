@@ -1,7 +1,7 @@
 package: playwright
 repo: https://github.com/Microsoft/playwright-python
 pypi_url: https://pypi.org/project/playwright/
-extension_type: extensions
+extension_type: pure
 python_versions: []
 install_method: pip
 install_command: ''
@@ -9,11 +9,10 @@ test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
-skip_versions:
-  '3.15': "Browser automation, binary downloads"
-notes: "Auto-triaged: extension with 3.15 build blocker"
+skip: true
+skip_reason: Browser automation requiring binary browser downloads; tests need browser binaries installed
+skip_versions: {}
+notes: Pure Python with greenlet dependency. Tests require browser binaries (playwright install).
 enriched: true
 clone_depth: null
 import_name: null

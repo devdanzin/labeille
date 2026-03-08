@@ -5,8 +5,8 @@ extension_type: pure
 python_versions: []
 install_method: pip
 install_command: pip install -e . && pip install pytest
-test_command: python -m pytest tests/
-test_framework: pytest
+test_command: python -m pytest tests/ -p no:xdist
+test_framework: unittest
 uses_xdist: false
 timeout: 300
 skip: false

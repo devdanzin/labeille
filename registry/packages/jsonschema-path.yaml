@@ -12,7 +12,7 @@ timeout: null
 skip: false
 skip_reason: null
 skip_versions:
-  '3.15': "Transitive dependency requires PyO3/pydantic-core"
+  '3.15': Depends on referencing which depends on rpds-py (PyO3, no 3.15 support).
 notes: "addopts cleared (refs: pytest-cov)"
 enriched: true
 clone_depth: null

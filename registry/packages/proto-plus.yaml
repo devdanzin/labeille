@@ -4,13 +4,13 @@ pypi_url: https://pypi.org/project/proto-plus/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest pytest-cov protobuf pytz
-test_command: python -m pytest tests/ -p no:xdist
+install_command: ''
+test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: 180
 skip: true
-skip_reason: "Monorepo subpackage - no pyproject.toml in cloned dir"
+skip_reason: Repository archived and source moved to googleapis/google-cloud-python. No buildable code in this repo.
 notes: 'Pythonic protobuf wrapper. Has unit tests that exercise proto message wrapping
   without live services. Repo: googleapis/proto-plus-python.'
 enriched: true

@@ -1,5 +1,5 @@
 package: grpcio-reflection
-repo: null
+repo: https://github.com/grpc/grpc
 pypi_url: https://pypi.org/project/grpcio-reflection/
 extension_type: pure
 python_versions: []
@@ -10,9 +10,9 @@ test_framework: pytest
 uses_xdist: false
 timeout: null
 skip: true
-skip_reason: No source repository URL available on PyPI.
+skip_reason: Part of grpc/grpc monorepo, depends on grpcio C extension build.
 skip_versions: {}
-notes: 'Confirmed: no repo available after improved URL detection'
+notes: gRPC server reflection. Lives in grpc/grpc monorepo at src/python/grpcio_reflection.
 enriched: true
 clone_depth: null
 import_name: null

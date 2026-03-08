@@ -1,7 +1,7 @@
 package: temporalio
 repo: https://github.com/temporalio/sdk-python
 pypi_url: https://pypi.org/project/temporalio/
-extension_type: extensions
+extension_type: rust
 python_versions: []
 install_method: pip
 install_command: ''
@@ -9,11 +9,11 @@ test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
+skip: true
+skip_reason: "Rust extension (PyO3), won't build on 3.15"
 skip_versions:
   '3.15': "Rust core with Python bindings"
-notes: "Auto-triaged: extension with 3.15 build blocker"
+notes: "Temporal Python SDK. Rust core with Python bindings via PyO3."
 enriched: true
 clone_depth: null
 import_name: null

@@ -4,8 +4,8 @@ pypi_url: https://pypi.org/project/rich-click/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest
-test_command: python -m pytest tests -o "addopts="
+install_command: pip install -e . && pip install pytest typer inline-snapshot
+test_command: python -m pytest tests -p no:xdist -o "addopts="
 test_framework: pytest
 uses_xdist: false
 timeout: null

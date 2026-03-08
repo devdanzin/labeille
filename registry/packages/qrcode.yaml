@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/qrcode/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e .
-test_command: python -m pytest qrcode/tests
+install_command: pip install -e . && pip install pillow pypng pytest
+test_command: python -m pytest qrcode/tests/
 test_framework: pytest
 uses_xdist: false
-timeout: null
+timeout: 600
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: "Auto-enriched"
+notes: 'Auto-enriched. Backend: poetry. Tests in qrcode/tests/.'
 enriched: true
 clone_depth: null
 import_name: null

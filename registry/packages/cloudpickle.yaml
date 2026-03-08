@@ -4,15 +4,14 @@ pypi_url: https://pypi.org/project/cloudpickle/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest psutil
-test_command: python -m pytest tests/
+install_command: pip install -e . && pip install pytest psutil tornado ipykernel && pip install tests/cloudpickle_testpkg
+test_command: python -m pytest tests/ -p no:xdist
 test_framework: pytest
 uses_xdist: false
 timeout: 600
 skip: false
 skip_reason: null
-notes: Pickle for distributed computing (PySpark, Dask). Tests use psutil and subprocess
-  spawning.
+notes: "Pickle for distributed computing (PySpark, Dask). Tests use psutil and subprocess spawning. Requires local cloudpickle_testpkg. Optional: tornado (coroutine tests), ipykernel (notebook tests)."
 enriched: true
 clone_depth: null
 import_name: null

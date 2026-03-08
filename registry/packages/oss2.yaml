@@ -1,16 +1,16 @@
 package: oss2
 repo: https://github.com/aliyun/aliyun-oss-python-sdk
 pypi_url: https://pypi.org/project/oss2/
-extension_type: unknown
+extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest
-test_command: python -m pytest tests -p no:xdist
+install_command: ''
+test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
+skip: true
+skip_reason: Tests require Alibaba Cloud (OSS) credentials and infrastructure
 skip_versions: {}
 notes: Repo found by improved URL detection. Tests in tests/
 enriched: true

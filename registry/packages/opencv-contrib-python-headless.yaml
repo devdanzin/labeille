@@ -1,0 +1,18 @@
+package: opencv-contrib-python-headless
+repo: https://github.com/opencv/opencv-python
+pypi_url: https://pypi.org/project/opencv-contrib-python-headless/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: true
+skip_reason: CI toolchain repo that generates pre-compiled wheels; pip install -e . requires full CMake + C++ compiler build of OpenCV (can take hours). Tests use unittest with only a minimal import/video check. No useful JIT surface.
+skip_versions: {}
+notes: 'Auto-enriched. Backend: scikit-build. Tests in tests/ use unittest; minimal test coverage (only import + video open).'
+enriched: true
+clone_depth: null
+import_name: null

@@ -1,0 +1,18 @@
+package: saxonche
+repo: https://github.com/Saxonica/saxonc-resources
+pypi_url: https://pypi.org/project/saxonche/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install saxonche pytest
+test_command: python -m pytest samples/python/test/ --import-mode=importlib --data-dir=samples/data
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: true
+skip_reason: Tests require external Saxon/C data files and specific directory structure; saxonche bundles a native libsaxon shared library that may not build on all platforms
+skip_versions: {}
+notes: 'saxonche is the official Saxonica PyPI wheel for Saxon/C-HE (XSLT 3.0, XQuery 3.1). Tests live in the separate saxonc-resources repo. Original YAML had wrong repo (tennom/saxonpy is a different unrelated package).'
+enriched: true
+clone_depth: null
+import_name: null

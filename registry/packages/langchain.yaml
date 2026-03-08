@@ -10,8 +10,7 @@ test_framework: pytest
 uses_xdist: false
 timeout: null
 skip: true
-skip_reason: Monorepo package in langchain-ai/langchain. Complex dependency management
-  with internal cross-references. Package lives in libs/langchain/ subdirectory.
+skip_reason: Monorepo package in langchain-ai/langchain. Complex dependency management with internal cross-references. Package lives in libs/langchain/ subdirectory.
 notes: LangChain framework. Part of langchain monorepo.
 enriched: true
 clone_depth: null

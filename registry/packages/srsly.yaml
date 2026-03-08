@@ -4,16 +4,16 @@ pypi_url: https://pypi.org/project/srsly/
 extension_type: extensions
 python_versions: []
 install_method: pip
-install_command: pip install -e .
-test_command: python -m pytest srsly/tests
+install_command: pip install -e . && pip install mock numpy pytest
+test_command: python -m pytest srsly/tests/
 test_framework: pytest
 uses_xdist: false
-timeout: null
+timeout: 600
 skip: false
 skip_reason: null
 skip_versions:
-  '3.15': "Package requires Python <3.14"
-notes: "Auto-enriched"
+  '3.15': Package requires Python <3.14 (python_requires=">=3.9,<3.14"); will not install
+notes: 'Auto-enriched. Backend: setuptools (Cython). Tests in srsly/tests/. ruamel_yaml and util are internal to the package, not pip deps.'
 enriched: true
 clone_depth: null
 import_name: null

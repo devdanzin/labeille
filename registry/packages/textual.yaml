@@ -4,9 +4,8 @@ pypi_url: https://pypi.org/project/textual/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest pytest-asyncio pytest-xdist
-  pytest-textual-snapshot time-machine linkify-it-py
-test_command: python -m pytest tests/ -p no:xdist --ignore=tests/test_slug.py
+install_command: pip install -e . && pip install pytest pytest-asyncio pytest-xdist pytest-textual-snapshot time-machine linkify-it-py
+test_command: python -m pytest tests/ -p no:xdist
 test_framework: pytest
 uses_xdist: true
 timeout: 1800

@@ -5,14 +5,14 @@ extension_type: pure
 python_versions: []
 install_method: pip
 install_command: pip install -e . && pip install pytest
-test_command: python -m pytest . -p no:xdist
+test_command: python -m pytest click_plugins_tests.py -p no:xdist
 test_framework: pytest
 uses_xdist: false
 timeout: null
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: Re-enriched with improved test detection. Tests in ./
+notes: Tests are in click_plugins_tests.py at repo root (not in tests/ dir, not named test_*.py so pytest . won't auto-discover). Uses unittest internally.
 enriched: true
 clone_depth: null
 import_name: null

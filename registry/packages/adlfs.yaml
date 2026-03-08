@@ -1,5 +1,5 @@
 package: adlfs
-repo: https://github.com/fsspec/filesystem_spec
+repo: https://github.com/fsspec/adlfs
 pypi_url: https://pypi.org/project/adlfs/
 extension_type: pure
 python_versions: []
@@ -9,11 +9,10 @@ test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
-skip_versions:
-  '3.15': Depends on azure C extensions
-notes: Repo found by improved URL detection. Depends on azure C extensions
+skip: true
+skip_reason: Tests require Docker + Azurite (Azure Blob Storage emulator) and azure-storage-blob C extensions; not suitable for automated JIT testing
+skip_versions: {}
+notes: Repo is fsspec/adlfs (not fsspec/filesystem_spec). Tests spin up Azurite via Docker and require azure-storage-blob, dask, numpy, pandas. Skip entirely.
 enriched: true
 clone_depth: null
 import_name: null

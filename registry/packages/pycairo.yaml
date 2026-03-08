@@ -1,0 +1,18 @@
+package: pycairo
+repo: https://github.com/pygobject/pycairo
+pypi_url: https://pypi.org/project/pycairo/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install meson-python meson ninja && pip install --no-build-isolation -e . && pip install pytest
+test_command: python -m pytest tests/ -p no:xdist
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: true
+skip_reason: Requires system library libcairo (cairo >= 1.15.10) and uses meson-python build backend; build will fail in standard environments without system cairo headers.
+skip_versions: {}
+notes: 'Auto-enriched. Backend: meson. Tests in tests/.'
+enriched: true
+clone_depth: null
+import_name: null

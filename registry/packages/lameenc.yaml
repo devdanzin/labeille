@@ -1,0 +1,18 @@
+package: lameenc
+repo: https://github.com/chrisstaite/lameenc
+pypi_url: https://pypi.org/project/lameenc/
+extension_type: c_extension
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: true
+skip_reason: C extension binding with no Python tests
+skip_versions: {}
+notes: 'Auto-enriched (skipped: C extension binding with no Python tests)'
+enriched: true
+clone_depth: 50
+import_name: null

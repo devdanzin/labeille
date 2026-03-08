@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/gcloud-aio-storage/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: null
-test_command: null
+install_command: cd storage && pip install -e . && pip install pytest pytest-asyncio pytest-mock gcloud-aio-auth
+test_command: cd storage && python -m pytest tests/unit/ -p no:xdist
 test_framework: pytest
 uses_xdist: false
-timeout: null
-skip: true
-skip_reason: No test directory or test files found in repository
+timeout: 300
+skip: false
+skip_reason: null
 skip_versions: {}
-notes: Reset for re-enrichment (improved test directory detection)
+notes: Monorepo (talkiq/gcloud-aio). Storage subpackage in storage/ dir. Uses poetry build backend. Dev dep on gcloud-aio-auth.
 enriched: true
 clone_depth: null
-import_name: null
+import_name: gcloud.aio.storage

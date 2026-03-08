@@ -5,8 +5,7 @@ extension_type: pure
 python_versions: []
 install_method: pip
 install_command: pip install -e . && pip install pytest pytest-timeout pyopenssl pyjks objgraph
-test_command: python -m pytest kazoo/tests/test_exceptions.py kazoo/tests/test_paths.py
-  kazoo/tests/test_hosts.py kazoo/tests/test_utils.py kazoo/tests/test_retry.py
+test_command: python -m pytest kazoo/tests/test_exceptions.py kazoo/tests/test_paths.py kazoo/tests/test_hosts.py kazoo/tests/test_utils.py kazoo/tests/test_retry.py -p no:xdist
 test_framework: pytest
 uses_xdist: false
 timeout: null

@@ -1,11 +1,11 @@
 package: regex
 repo: https://github.com/mrabarnett/mrab-regex
 pypi_url: https://pypi.org/project/regex/
-extension_type: extensions
+extension_type: c_extension
 python_versions: []
 install_method: pip
 install_command: pip install -e . && pip install pytest
-test_command: python -m pytest regex/tests/test_regex.py
+test_command: python -m pytest regex/tests/test_regex.py -p no:xdist
 test_framework: pytest
 uses_xdist: false
 timeout: 600

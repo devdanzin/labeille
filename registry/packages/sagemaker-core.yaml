@@ -1,19 +1,19 @@
 package: sagemaker-core
-repo: https://github.com/aws/sagemaker-python-sdk
+repo: https://github.com/aws/sagemaker-core
 pypi_url: https://pypi.org/project/sagemaker-core/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: null
-test_command: null
+install_command: ''
+test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
+skip: true
+skip_reason: Depends on pydantic (PyO3), numpy, scipy, torch — not buildable on 3.15.
 skip_versions:
-  '3.15': Depends on numpy/scipy C extensions
-notes: 'Re-enriched: Depends on numpy/scipy C extensions'
+  '3.15': Depends on pydantic-core (PyO3), numpy/scipy/torch C extensions
+notes: Repo is aws/sagemaker-core (monorepo at sagemaker-python-sdk). Depends on pydantic, numpy, scipy, torch.
 enriched: true
 clone_depth: null
 import_name: null

@@ -5,7 +5,7 @@ extension_type: pure
 python_versions: []
 install_method: pip
 install_command: pip install -e . && pip install pytest pytest-cov mock vcrpy freezegun
-test_command: python -m pytest tests/unit/
+test_command: python -m pytest tests/unit/ -p no:xdist
 test_framework: pytest
 uses_xdist: false
 timeout: 300

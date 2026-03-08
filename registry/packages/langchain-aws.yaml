@@ -1,5 +1,5 @@
 package: langchain-aws
-repo: https://github.com/langchain-ai/langchain-aws/tree/main/libs/aws
+repo: https://github.com/langchain-ai/langchain-aws
 pypi_url: https://pypi.org/project/langchain-aws/
 extension_type: pure
 python_versions: []
@@ -10,7 +10,7 @@ test_framework: pytest
 uses_xdist: false
 timeout: null
 skip: true
-skip_reason: "Monorepo subpackage (langchain-ai). Needs AWS credentials."
+skip_reason: Monorepo subpackage (langchain-ai/langchain-aws, libs/aws/ subdirectory). Needs AWS credentials.
 skip_versions: {}
 notes: "Auto-triaged: monorepo/clone-fail"
 enriched: true

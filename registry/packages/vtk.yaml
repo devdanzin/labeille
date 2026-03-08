@@ -1,0 +1,18 @@
+package: vtk
+repo: null
+pypi_url: https://pypi.org/project/vtk/
+extension_type: c_extension
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: "No source repository on PyPI (hosted on GitLab at kitware). Complex C++ build system."
+skip_versions: {}
+notes: "VTK 3D visualization toolkit. Hosted on gitlab.kitware.com, not GitHub."
+enriched: true
+clone_depth: null
+import_name: null

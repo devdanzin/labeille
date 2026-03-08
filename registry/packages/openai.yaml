@@ -4,9 +4,8 @@ pypi_url: https://pypi.org/project/openai/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest pytest-asyncio respx dirty-equals
-  inline-snapshot
-test_command: python -m pytest tests/
+install_command: pip install -e . && pip install pytest pytest-asyncio respx dirty-equals inline-snapshot
+test_command: python -m pytest tests/ -p no:xdist
 test_framework: pytest
 uses_xdist: false
 timeout: 300

@@ -4,7 +4,7 @@ pypi_url: https://pypi.org/project/twisted/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest
+install_command: pip install -e . && pip install pytest hypothesis PyHamcrest
 test_command: python -m pytest src/twisted/test -p no:xdist
 test_framework: pytest
 uses_xdist: false
@@ -12,7 +12,7 @@ timeout: null
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: Re-enriched with improved test detection. Tests in src/twisted/test/
+notes: Async networking framework. Pure Python. Tests in src/twisted/test/. Needs hypothesis and PyHamcrest for test suite.
 enriched: true
 clone_depth: null
 import_name: null

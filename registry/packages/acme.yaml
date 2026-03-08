@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/acme/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest
-test_command: python -m pytest tests
+install_command: pip install -e . && pip install pytest pytest-cov
+test_command: python -m pytest tests/
 test_framework: pytest
 uses_xdist: false
-timeout: null
+timeout: 600
 skip: true
-skip_reason: "Monorepo subpackage (certbot) - no pyproject.toml in cloned dir"
+skip_reason: Monorepo subpackage of certbot - acme lives in acme/ subdirectory; labeille clones the root which has no installable pyproject.toml
 skip_versions: {}
-notes: "Auto-enriched"
+notes: acme package is at certbot/certbot repo in the acme/ subdirectory (uses setuptools, src layout). Tests in acme/src with pytest-xdist. Cannot be tested without subdir support.
 enriched: true
 clone_depth: null
 import_name: null

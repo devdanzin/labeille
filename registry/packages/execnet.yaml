@@ -4,7 +4,7 @@ pypi_url: https://pypi.org/project/execnet/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest pytest-timeout
+install_command: git fetch --tags --depth 1 && pip install -e . && pip install pytest pytest-timeout
 test_command: python -m pytest testing -p no:xdist
 test_framework: pytest
 uses_xdist: false
@@ -12,7 +12,7 @@ timeout: null
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: Distributed Python deployment and communication.
+notes: Distributed Python deployment and communication. Uses hatch-vcs (needs git tags). Tests in testing/ directory.
 enriched: true
-clone_depth: null
+clone_depth: 50
 import_name: execnet

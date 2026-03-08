@@ -9,10 +9,10 @@ test_command: python -m pytest test -o "addopts="
 test_framework: pytest
 uses_xdist: false
 timeout: null
-skip: false
-skip_reason: null
+skip: true
+skip_reason: Tests require audio decoding backends (FFmpeg, GStreamer, or pymad) to be installed as system libraries; without them all tests fail
 skip_versions: {}
-notes: "addopts cleared (refs: pytest-cov)"
+notes: "Tests use committed MP3 files in test/data/ but need an external audio backend to decode them. addopts cleared (refs: pytest-cov)."
 enriched: true
 clone_depth: null
 import_name: null

@@ -1,0 +1,18 @@
+package: polars-lts-cpu
+repo: https://github.com/pola-rs/polars
+pypi_url: https://pypi.org/project/polars-lts-cpu/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install polars-lts-cpu pytest numpy hypothesis
+test_command: python -m pytest py-polars/tests/unit/operations/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: 'polars-lts-cpu ships pre-built Rust wheels (cp39-abi3); cannot pip install -e . without Rust/maturin. Install from PyPI instead. Tests are in the pola-rs/polars repo under py-polars/tests/unit/operations/ and require numpy and hypothesis.'
+enriched: true
+clone_depth: null
+import_name: null

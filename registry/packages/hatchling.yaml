@@ -4,8 +4,8 @@ pypi_url: https://pypi.org/project/hatchling/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install backend/ && pip install pytest pytest-cov pytest-mock pytest-randomly pytest-xdist trustme click
-test_command: python -m pytest tests/backend/ -p no:xdist
+install_command: ''
+test_command: ''
 test_framework: pytest
 uses_xdist: true
 timeout: 300

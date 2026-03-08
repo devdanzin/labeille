@@ -1,0 +1,18 @@
+package: pagefind-bin
+repo: https://github.com/pagefind/pagefind/
+pypi_url: https://pypi.org/project/pagefind-bin/
+extension_type: c_extension
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: true
+skip_reason: Binary distribution only, no Python code/tests
+skip_versions: {}
+notes: 'Auto-enriched (skipped: Binary distribution only, no Python code/tests)'
+enriched: true
+clone_depth: null
+import_name: null

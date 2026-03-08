@@ -1,0 +1,18 @@
+package: textual-speedups
+repo: null
+pypi_url: https://pypi.org/project/textual-speedups/
+extension_type: rust
+python_versions: []
+install_method: pip
+install_command: ''
+test_command: ''
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: true
+skip_reason: No source repository available, Rust extension (PyO3/maturin)
+skip_versions: {}
+notes: Rust extension for Textual. No repo URL on PyPI, not buildable from source.
+enriched: true
+clone_depth: null
+import_name: null

@@ -1,0 +1,18 @@
+package: sqlean-py
+repo: https://github.com/nalgeon/sqlean.py
+pypi_url: https://pypi.org/project/sqlean-py/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install sqlean-py && pip install pytest
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: true
+skip_reason: Repository archived Feb 2026 (read-only); wheels only available up to Python 3.12; no support for 3.13+
+skip_versions: {}
+notes: 'Auto-enriched. Backend: C extension (setup.py with custom builder). Tests in tests/. Repo archived, wheels top out at cp312.'
+enriched: true
+clone_depth: null
+import_name: null

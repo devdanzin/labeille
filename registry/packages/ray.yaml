@@ -1,7 +1,7 @@
 package: ray
 repo: https://github.com/ray-project/ray
 pypi_url: https://pypi.org/project/ray/
-extension_type: extensions
+extension_type: cpp_extension
 python_versions: []
 install_method: pip
 install_command: ''

@@ -4,14 +4,13 @@ pypi_url: https://pypi.org/project/google-auth-oauthlib/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest pytest-cov google-auth requests-oauthlib
-  click mock
-test_command: python -m pytest tests/ -p no:xdist
+install_command: ''
+test_command: ''
 test_framework: pytest
 uses_xdist: false
 timeout: 120
 skip: true
-skip_reason: "Monorepo subpackage - no pyproject.toml in cloned dir"
+skip_reason: Standalone repo archived, moved to googleapis/google-cloud-python monorepo. Cloned repo has no source code.
 notes: 'OAuthlib integration for google-auth. Unit tests cover OAuth2 flows without
   live services. Repo: googleapis/google-auth-library-python-oauthlib.'
 enriched: true

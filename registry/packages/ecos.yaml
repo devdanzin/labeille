@@ -1,0 +1,18 @@
+package: ecos
+repo: https://github.com/embotech/ecos-python
+pypi_url: https://pypi.org/project/ecos/
+extension_type: c_extension
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest numpy scipy
+test_command: python -m pytest src/ -p no:xdist
+test_framework: pytest
+uses_xdist: false
+timeout: null
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: Python wrapper for ECOS solver. Repo is embotech/ecos-python. C extension with numpy dependency. Tests in src/ directory.
+enriched: true
+clone_depth: null
+import_name: null

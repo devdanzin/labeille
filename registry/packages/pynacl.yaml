@@ -1,13 +1,13 @@
 package: pynacl
 repo: https://github.com/pyca/pynacl
 pypi_url: https://pypi.org/project/pynacl/
-extension_type: extensions
+extension_type: c_extension
 python_versions: []
 install_method: pip
 install_command: pip install -e . && pip install pytest hypothesis
-test_command: python -m pytest tests/
+test_command: python -m pytest tests/ -p no:xdist
 test_framework: pytest
-uses_xdist: false
+uses_xdist: true
 timeout: null
 skip: false
 skip_reason: null

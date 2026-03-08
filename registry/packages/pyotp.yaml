@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/pyotp/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: git fetch --tags --depth 1 && pip install -e . && pip install pytest
-test_command: python -m pytest . -p no:xdist
-test_framework: pytest
+install_command: git fetch --tags --depth 1 && pip install -e .
+test_command: python -m unittest test -v
+test_framework: unittest
 uses_xdist: false
-timeout: null
+timeout: 120
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: Re-enriched with improved test detection. Tests in ./
+notes: "Uses hatch-vcs (needs git tags). Tests use unittest, test.py at root."
 enriched: true
 clone_depth: 50
-import_name: null
+import_name: pyotp

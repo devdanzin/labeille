@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/trio/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install -r test-requirements.txt && pip install pytest
-test_command: python -m pytest tests
+install_command: pip install -e . && pip install attrs async_generator cryptography idna outcome pyOpenSSL pytest sniffio sortedcontainers trustme
+test_command: python -m pytest src/trio/_tests/
 test_framework: pytest
 uses_xdist: false
-timeout: null
+timeout: 600
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: "Auto-enriched"
+notes: 'Auto-enriched. Backend: setuptools. Tests are in src/trio/_tests/ (not tests/ which only has Cython helpers). Trio uses its own internal pytest plugin (-p trio._tests.pytest_plugin via pyproject.toml addopts). Added key test deps from test-requirements.in: attrs, async_generator, cryptography, idna, outcome, pyOpenSSL, sniffio, sortedcontainers, trustme.'
 enriched: true
 clone_depth: null
 import_name: null

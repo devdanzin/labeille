@@ -1,5 +1,5 @@
 package: workos
-repo: null
+repo: https://github.com/workos/workos-python
 pypi_url: https://pypi.org/project/workos/
 extension_type: pure
 python_versions: []
@@ -10,9 +10,9 @@ test_framework: pytest
 uses_xdist: false
 timeout: null
 skip: true
-skip_reason: No source repository URL available on PyPI.
+skip_reason: Depends on pydantic (pydantic-core uses PyO3, won't build on 3.15).
 skip_versions: {}
-notes: 'Confirmed: no repo available after improved URL detection'
+notes: WorkOS Python SDK. Repo found via GitHub search.
 enriched: true
 clone_depth: null
 import_name: null

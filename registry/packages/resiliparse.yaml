@@ -1,0 +1,18 @@
+package: resiliparse
+repo: https://github.com/chatnoir-eu/chatnoir-resiliparse
+pypi_url: https://pypi.org/project/resiliparse/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install resiliparse fastwarc && pip install apache-beam brotli lz4 pytest
+test_command: python -m pytest tests/resiliparse/ -p no:xdist
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: 'Tests in tests/resiliparse/. fastwarc needed for core tests; apache-beam needed for beam/ subdir tests. Install from PyPI (has binary wheels) not source (needs CMake/C++).'
+enriched: true
+clone_depth: null
+import_name: null

@@ -132,6 +132,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Renamed `Issues` URL key to `Bug Tracker` in project metadata for PyPI display consistency.
 
 ### Fixed
+- Manual review of all 1,798 enriched registry packages: corrected invalid `extension_type` values, added missing `-p no:xdist` flags, fixed inconsistent skip states, corrected repo URLs, collapsed multiline YAML, and fixed test commands.
 - `update_index_from_packages()` no longer crashes when `skip_versions` is `None`.
 - Bench runner `install_package` now receives a complete environment (starting from `os.environ`) instead of bare condition env vars, fixing install failures when build backends need `PATH` to find tools like `git`.
 - `run_meta.json` now stores actual CLI argument strings (`sys.argv[1:]`) instead of parameter names, making runs reproducible from metadata.

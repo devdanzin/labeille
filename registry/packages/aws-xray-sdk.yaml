@@ -5,7 +5,7 @@ extension_type: pure
 python_versions: []
 install_method: pip
 install_command: pip install -e . && pip install pytest pytest-asyncio setuptools wrapt
-test_command: python -m pytest tests --ignore=tests/ext
+test_command: python -m pytest tests --ignore=tests/ext -p no:xdist
 test_framework: pytest
 uses_xdist: false
 timeout: null

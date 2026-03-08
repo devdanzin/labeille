@@ -4,15 +4,15 @@ pypi_url: https://pypi.org/project/appdirs/
 extension_type: pure
 python_versions: []
 install_method: pip
-install_command: pip install -e .
-test_command: python -m unittest discover test -v
-test_framework: unittest
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest test/ -p no:xdist
+test_framework: pytest
 uses_xdist: false
 timeout: null
 skip: false
 skip_reason: null
 skip_versions: {}
-notes: "Auto-enriched"
+notes: Tests use unittest in test/test_api.py. No external deps needed.
 enriched: true
 clone_depth: null
 import_name: null

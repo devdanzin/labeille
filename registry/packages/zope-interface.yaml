@@ -1,10 +1,10 @@
 package: zope-interface
 repo: https://github.com/zopefoundation/zope.interface
 pypi_url: https://pypi.org/project/zope-interface/
-extension_type: extensions
+extension_type: c_extension
 python_versions: []
 install_method: pip
-install_command: pip install -e . && pip install pytest
+install_command: pip install -e . && pip install pytest zope.event zope.testing
 test_command: python -m pytest src/zope/interface/tests -p no:xdist
 test_framework: pytest
 uses_xdist: false

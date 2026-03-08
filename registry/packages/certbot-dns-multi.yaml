@@ -1,0 +1,18 @@
+package: certbot-dns-multi
+repo: https://github.com/alexzorin/certbot-dns-multi
+pypi_url: https://pypi.org/project/certbot-dns-multi/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: git fetch --tags --depth 1 && pip install -e ".[dev]"
+test_command: python -m pytest tests/
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: true
+skip_reason: No actual test files (tests/ only has empty __init__.py); requires Go toolchain for setuptools-golang extension build
+skip_versions: {}
+notes: 'Auto-enriched. Backend: setuptools. Uses setuptools-scm and setuptools-golang (Go extension). No tests exist in the repo.'
+enriched: true
+clone_depth: 50
+import_name: null

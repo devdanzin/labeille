@@ -1,0 +1,18 @@
+package: sgp4
+repo: https://github.com/brandon-rhodes/python-sgp4
+pypi_url: https://pypi.org/project/sgp4/
+extension_type: extensions
+python_versions: []
+install_method: pip
+install_command: pip install -e . && pip install pytest
+test_command: python -m pytest sgp4/tests.py
+test_framework: pytest
+uses_xdist: false
+timeout: 600
+skip: false
+skip_reason: null
+skip_versions: {}
+notes: 'Auto-enriched. Backend: unknown. No test directory found.'
+enriched: true
+clone_depth: null
+import_name: null
