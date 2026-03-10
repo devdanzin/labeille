@@ -8,7 +8,6 @@ to isolate free-threading-specific failures.
 
 from __future__ import annotations
 
-import os
 import re
 import subprocess
 import sys
@@ -30,7 +29,7 @@ from labeille.ft.results import (
     append_ft_result,
     save_ft_run,
 )
-from labeille.io_utils import utc_now_iso
+from labeille.io_utils import kill_process_group, utc_now_iso
 from labeille.logging import get_logger
 from labeille.resolve import fetch_pypi_metadata
 from labeille.runner import (
@@ -388,18 +387,12 @@ def run_single_iteration(
             elapsed = time.monotonic() - start_time
             if elapsed > timeout:
                 is_deadlocked = monitor.stalled
-                try:
-                    os.killpg(proc.pid, 9)
-                except OSError:
-                    proc.kill()
+                kill_process_group(proc.pid)
                 break
             time.sleep(0.5)
     except OSError as exc:
         log.debug("Process monitoring interrupted: %s", exc)
-        try:
-            os.killpg(proc.pid, 9)
-        except OSError:
-            proc.kill()
+        kill_process_group(proc.pid)
 
     reader_thread.join(timeout=5)
     stdout_thread.join(timeout=5)

@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from labeille.io_utils import kill_process_group
 from labeille.logging import get_logger
 
 log = get_logger("bench.timing")
@@ -117,7 +118,7 @@ def run_timed(
         exit_code = proc.returncode
     except subprocess.TimeoutExpired:
         timed_out = True
-        _kill_process_group(proc.pid)
+        kill_process_group(proc.pid)
         try:
             stdout, stderr = proc.communicate(timeout=5)
         except subprocess.TimeoutExpired:
@@ -146,16 +147,6 @@ def run_timed(
         stderr=stderr,
         timed_out=timed_out,
     )
-
-
-def _kill_process_group(pid: int) -> None:
-    """Attempt to kill the entire process group on timeout."""
-    import signal
-
-    try:
-        os.killpg(os.getpgid(pid), signal.SIGKILL)
-    except (ProcessLookupError, PermissionError, OSError):
-        pass
 
 
 def _extract_peak_rss(

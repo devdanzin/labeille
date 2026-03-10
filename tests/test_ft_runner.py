@@ -202,12 +202,9 @@ class TestRunSingleIteration(unittest.TestCase):
         proc.stderr = iter(stderr.splitlines(True))
         return proc
 
-    @patch("labeille.ft.runner.os.setpgrp")
     @patch("labeille.ft.runner.subprocess.Popen")
     @patch("labeille.ft.runner.time.sleep")
-    def test_iteration_pass(
-        self, mock_sleep: MagicMock, mock_popen: MagicMock, mock_setpgrp: MagicMock
-    ) -> None:
+    def test_iteration_pass(self, mock_sleep: MagicMock, mock_popen: MagicMock) -> None:
         proc = self._make_mock_proc(
             returncode=0,
             stdout="tests/test_foo.py::test_bar PASSED\n======= 1 passed in 0.5s =======\n",
@@ -227,12 +224,9 @@ class TestRunSingleIteration(unittest.TestCase):
         self.assertEqual(result.status, "pass")
         self.assertEqual(result.exit_code, 0)
 
-    @patch("labeille.ft.runner.os.setpgrp")
     @patch("labeille.ft.runner.subprocess.Popen")
     @patch("labeille.ft.runner.time.sleep")
-    def test_iteration_fail(
-        self, mock_sleep: MagicMock, mock_popen: MagicMock, mock_setpgrp: MagicMock
-    ) -> None:
+    def test_iteration_fail(self, mock_sleep: MagicMock, mock_popen: MagicMock) -> None:
         proc = self._make_mock_proc(returncode=1, stdout="1 failed\n")
         mock_popen.return_value = proc
 
@@ -250,12 +244,9 @@ class TestRunSingleIteration(unittest.TestCase):
         self.assertEqual(result.status, "fail")
         self.assertEqual(result.exit_code, 1)
 
-    @patch("labeille.ft.runner.os.setpgrp")
     @patch("labeille.ft.runner.subprocess.Popen")
     @patch("labeille.ft.runner.time.sleep")
-    def test_iteration_crash(
-        self, mock_sleep: MagicMock, mock_popen: MagicMock, mock_setpgrp: MagicMock
-    ) -> None:
+    def test_iteration_crash(self, mock_sleep: MagicMock, mock_popen: MagicMock) -> None:
         proc = self._make_mock_proc(returncode=-11, stderr="Segmentation fault\n")
         mock_popen.return_value = proc
 
@@ -272,9 +263,8 @@ class TestRunSingleIteration(unittest.TestCase):
         self.assertEqual(result.status, "crash")
         self.assertEqual(result.crash_signal, "SIGSEGV")
 
-    @patch("labeille.ft.runner.os.setpgrp")
     @patch("labeille.ft.runner.subprocess.Popen")
-    def test_iteration_tsan_warnings(self, mock_popen: MagicMock, mock_setpgrp: MagicMock) -> None:
+    def test_iteration_tsan_warnings(self, mock_popen: MagicMock) -> None:
         proc = self._make_mock_proc(
             returncode=0,
             stderr="WARNING: ThreadSanitizer: data race (pid=123)\n",
@@ -296,11 +286,8 @@ class TestRunSingleIteration(unittest.TestCase):
         self.assertEqual(result.status, "pass")
         self.assertEqual(result.tsan_warnings, ["data race"])
 
-    @patch("labeille.ft.runner.os.setpgrp")
     @patch("labeille.ft.runner.subprocess.Popen")
-    def test_iteration_tsan_not_parsed_when_disabled(
-        self, mock_popen: MagicMock, mock_setpgrp: MagicMock
-    ) -> None:
+    def test_iteration_tsan_not_parsed_when_disabled(self, mock_popen: MagicMock) -> None:
         proc = self._make_mock_proc(
             returncode=0,
             stderr="WARNING: ThreadSanitizer: data race (pid=123)\n",
@@ -321,11 +308,8 @@ class TestRunSingleIteration(unittest.TestCase):
 
         self.assertEqual(result.tsan_warnings, [])
 
-    @patch("labeille.ft.runner.os.setpgrp")
     @patch("labeille.ft.runner.subprocess.Popen")
-    def test_iteration_pytest_results_parsed(
-        self, mock_popen: MagicMock, mock_setpgrp: MagicMock
-    ) -> None:
+    def test_iteration_pytest_results_parsed(self, mock_popen: MagicMock) -> None:
         proc = self._make_mock_proc(
             returncode=0,
             stdout=(

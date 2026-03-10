@@ -222,8 +222,8 @@ class TestRunInProcessGroup(unittest.TestCase):
         _, kwargs = mock_popen.call_args
         self.assertTrue(kwargs["start_new_session"])
 
-    @patch("labeille.runner.os.killpg")
-    @patch("labeille.runner.os.getpgid")
+    @patch("labeille.io_utils.os.killpg")
+    @patch("labeille.io_utils.os.getpgid")
     @patch("labeille.runner.subprocess.Popen")
     def test_timeout_kills_process_group(
         self, mock_popen: Any, mock_getpgid: Any, mock_killpg: Any
@@ -246,8 +246,8 @@ class TestRunInProcessGroup(unittest.TestCase):
         self.assertEqual(exc.output, "partial out")
         self.assertEqual(exc.stderr, "partial err")
 
-    @patch("labeille.runner.os.killpg")
-    @patch("labeille.runner.os.getpgid")
+    @patch("labeille.io_utils.os.killpg")
+    @patch("labeille.io_utils.os.getpgid")
     @patch("labeille.runner.subprocess.Popen")
     def test_timeout_process_already_exited(
         self, mock_popen: Any, mock_getpgid: Any, mock_killpg: Any
@@ -266,8 +266,8 @@ class TestRunInProcessGroup(unittest.TestCase):
         with self.assertRaises(subprocess.TimeoutExpired):
             _run_in_process_group("cmd", cwd="/tmp", env={}, timeout=30)
 
-    @patch("labeille.runner.os.killpg")
-    @patch("labeille.runner.os.getpgid")
+    @patch("labeille.io_utils.os.killpg")
+    @patch("labeille.io_utils.os.getpgid")
     @patch("labeille.runner.subprocess.Popen")
     def test_timeout_partial_output_in_exception(
         self, mock_popen: Any, mock_getpgid: Any, mock_killpg: Any
@@ -288,8 +288,8 @@ class TestRunInProcessGroup(unittest.TestCase):
         self.assertEqual(cm.exception.output, "partial stdout")
         self.assertEqual(cm.exception.stderr, "partial stderr")
 
-    @patch("labeille.runner.os.killpg")
-    @patch("labeille.runner.os.getpgid")
+    @patch("labeille.io_utils.os.killpg")
+    @patch("labeille.io_utils.os.getpgid")
     @patch("labeille.runner.subprocess.Popen")
     def test_timeout_second_communicate_also_times_out(
         self, mock_popen: Any, mock_getpgid: Any, mock_killpg: Any
