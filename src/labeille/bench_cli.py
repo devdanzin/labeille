@@ -13,6 +13,7 @@ from __future__ import annotations
 import logging
 import sys
 from pathlib import Path
+from typing import Any
 
 import click
 
@@ -25,268 +26,15 @@ def bench() -> None:
 
 
 # ---------------------------------------------------------------------------
-# bench run
+# bench run — helpers
 # ---------------------------------------------------------------------------
 
 
-@bench.command()
-@click.option(
-    "--profile",
-    "profile_path",
-    type=click.Path(exists=True, path_type=Path),
-    help="YAML profile defining benchmark conditions.",
-)
-@click.option(
-    "--condition",
-    "inline_conditions",
-    type=str,
-    multiple=True,
-    help="Inline condition: 'name:key=value,...' (repeatable).",
-)
-@click.option(
-    "--target-python",
-    type=click.Path(exists=True, path_type=Path),
-    help="Default target Python interpreter.",
-)
-@click.option(
-    "--iterations",
-    type=int,
-    default=None,
-    help="Measured iterations (default: 5, min: 3).",
-)
-@click.option(
-    "--warmup",
-    type=int,
-    default=None,
-    help="Warm-up iterations (default: 1).",
-)
-@click.option(
-    "--timeout",
-    type=int,
-    default=None,
-    show_default=True,
-    help="Per-iteration timeout in seconds (default: 600).",
-)
-@click.option(
-    "--alternate/--no-alternate",
-    default=None,
-    help="Alternate conditions per package.",
-)
-@click.option(
-    "--interleave",
-    is_flag=True,
-    default=False,
-    help="Interleave packages across iterations.",
-)
-@click.option(
-    "--packages",
-    type=str,
-    default=None,
-    help="Comma-separated package filter.",
-)
-@click.option(
-    "--top",
-    "top_n",
-    type=int,
-    default=None,
-    help="Top N packages by download count.",
-)
-@click.option(
-    "--extra-deps",
-    type=str,
-    default=None,
-    help="Comma-separated extra deps for all conditions.",
-)
-@click.option(
-    "--test-command-suffix",
-    type=str,
-    default=None,
-    help="Append to all test commands.",
-)
-@click.option(
-    "--registry-dir",
-    type=click.Path(path_type=Path),
-    default=None,
-    help="Registry directory (default: ~/.local/share/labeille/registry/).",
-)
-@click.option(
-    "--repos-dir",
-    type=click.Path(path_type=Path),
-    default=None,
-    help="Persistent repos directory.",
-)
-@click.option(
-    "--venvs-dir",
-    type=click.Path(path_type=Path),
-    default=None,
-    help="Persistent venvs directory.",
-)
-@click.option(
-    "--work-dir",
-    type=click.Path(path_type=Path),
-    default=None,
-    help="Sets both repos and venvs dirs.",
-)
-@click.option(
-    "--results-dir",
-    type=click.Path(path_type=Path),
-    default="results",
-    help="Results output directory.",
-)
-@click.option(
-    "--name",
-    type=str,
-    default=None,
-    help="Human-readable benchmark name.",
-)
-@click.option(
-    "--check-stability",
-    is_flag=True,
-    default=False,
-    help="Check system stability before starting.",
-)
-@click.option(
-    "--wait-for-stability",
-    is_flag=True,
-    default=False,
-    help="Wait for system to stabilize.",
-)
-@click.option(
-    "--adaptive",
-    is_flag=True,
-    default=False,
-    help="Stop iterating early when measurements converge (RSE below threshold).",
-)
-@click.option(
-    "--adaptive-threshold",
-    type=float,
-    default=None,
-    help="RSE convergence threshold (default: 0.005 = 0.5%%).",
-)
-@click.option(
-    "--adaptive-min-iterations",
-    type=int,
-    default=None,
-    help="Minimum measured iterations before convergence check (default: 5).",
-)
-@click.option(
-    "--quick",
-    is_flag=True,
-    default=False,
-    help="Quick mode: 3 iterations, no warmup, top 20, adaptive.",
-)
-@click.option(
-    "--env",
-    "env_pairs",
-    type=str,
-    multiple=True,
-    help="KEY=VALUE env var for all conditions (repeatable).",
-)
-@click.option(
-    "--per-test-timing",
-    is_flag=True,
-    default=False,
-    help="Capture per-test timing via pytest --durations=0.",
-)
-@click.option(
-    "--memory-limit",
-    type=int,
-    default=None,
-    help="Memory limit in MB for all conditions (ulimit -v).",
-)
-@click.option(
-    "--cpu-affinity",
-    type=str,
-    default=None,
-    help="CPU core list (e.g. '0,1') for all conditions (taskset).",
-)
-@click.option(
-    "--cpu-time-limit",
-    type=int,
-    default=None,
-    help="CPU time limit in seconds for all conditions (ulimit -t).",
-)
-@click.option(
-    "--drop-caches",
-    is_flag=True,
-    default=False,
-    help="Drop filesystem caches between iterations (requires setup, see docs).",
-)
-@click.option(
-    "--warm-vs-cold",
-    is_flag=True,
-    default=False,
-    help="Run with and without cache dropping, compare results.",
-)
-@click.option(
-    "--run-dangerously-as-root",
-    is_flag=True,
-    default=False,
-    help="Allow running as root (for containers). Not recommended.",
-)
-@click.option(
-    "--installer",
-    type=click.Choice(["auto", "uv", "pip"], case_sensitive=False),
-    default="auto",
-    show_default=True,
-    help="Package installer backend. 'auto' uses uv if available.",
-)
-@click.option("-v", "--verbose", is_flag=True, default=False)
-def run(  # noqa: PLR0913
-    profile_path: Path | None,
-    inline_conditions: tuple[str, ...],
-    target_python: Path | None,
-    iterations: int | None,
-    warmup: int | None,
-    timeout: int | None,
-    alternate: bool | None,
-    interleave: bool,
-    packages: str | None,
-    top_n: int | None,
-    extra_deps: str | None,
-    test_command_suffix: str | None,
-    registry_dir: Path | None,
-    repos_dir: Path | None,
-    venvs_dir: Path | None,
-    work_dir: Path | None,
-    results_dir: Path,
-    name: str | None,
-    check_stability: bool,
-    wait_for_stability: bool,
-    adaptive: bool,
-    adaptive_threshold: float | None,
-    adaptive_min_iterations: int | None,
-    quick: bool,
-    per_test_timing: bool,
-    memory_limit: int | None,
-    cpu_affinity: str | None,
-    cpu_time_limit: int | None,
-    drop_caches: bool,
-    warm_vs_cold: bool,
-    run_dangerously_as_root: bool,
-    installer: str,
-    env_pairs: tuple[str, ...],
-    verbose: bool,
-) -> None:
-    """Run a benchmark across packages under specified conditions.
+def _build_bench_config(params: dict[str, Any]) -> Any:
+    """Build a BenchConfig from CLI parameters.
 
-    Use --profile for a YAML profile or --condition for inline
-    conditions.
-
-    \b
-    Examples:
-        # From a YAML profile
-        labeille bench run --profile bench-coverage.yaml \\
-            --target-python /usr/bin/python3
-
-        # Quick inline comparison
-        labeille bench run \\
-            --condition "baseline:" \\
-            --condition "coverage:extra_deps=coverage,test_prefix=coverage run -m" \\
-            --target-python /usr/bin/python3 --packages requests,click
-
-        # Quick mode for development
-        labeille bench run --profile bench-jit.yaml --quick
+    Accepts the full ``locals()`` dict from ``run()``.  Returns a fully
+    resolved ``BenchConfig`` ready for ``BenchRunner``.
     """
     from labeille.bench.config import (
         BenchConfig,
@@ -294,18 +42,48 @@ def run(  # noqa: PLR0913
         load_profile,
         parse_inline_condition,
     )
-    from labeille.bench.runner import BenchRunner, quick_config
+    from labeille.bench.runner import quick_config
     from labeille.registry import default_registry_dir
+
+    # Unpack parameters.
+    profile_path: Path | None = params["profile_path"]
+    inline_conditions: tuple[str, ...] = params["inline_conditions"]
+    target_python: Path | None = params["target_python"]
+    iterations: int | None = params["iterations"]
+    warmup: int | None = params["warmup"]
+    timeout: int | None = params["timeout"]
+    alternate: bool | None = params["alternate"]
+    interleave: bool = params["interleave"]
+    packages: str | None = params["packages"]
+    top_n: int | None = params["top_n"]
+    extra_deps: str | None = params["extra_deps"]
+    test_command_suffix: str | None = params["test_command_suffix"]
+    registry_dir: Path | None = params["registry_dir"]
+    repos_dir: Path | None = params["repos_dir"]
+    venvs_dir: Path | None = params["venvs_dir"]
+    work_dir: Path | None = params["work_dir"]
+    results_dir: Path = params["results_dir"]
+    name: str | None = params["name"]
+    check_stability: bool = params["check_stability"]
+    wait_for_stability: bool = params["wait_for_stability"]
+    adaptive: bool = params["adaptive"]
+    adaptive_threshold: float | None = params["adaptive_threshold"]
+    adaptive_min_iterations: int | None = params["adaptive_min_iterations"]
+    quick: bool = params["quick"]
+    per_test_timing: bool = params["per_test_timing"]
+    memory_limit: int | None = params["memory_limit"]
+    cpu_affinity: str | None = params["cpu_affinity"]
+    cpu_time_limit: int | None = params["cpu_time_limit"]
+    drop_caches: bool = params["drop_caches"]
+    warm_vs_cold: bool = params["warm_vs_cold"]
+    run_dangerously_as_root: bool = params["run_dangerously_as_root"]
+    installer: str = params["installer"]
+    env_pairs: tuple[str, ...] = params["env_pairs"]
 
     if registry_dir is None:
         registry_dir = default_registry_dir()
 
-    if verbose:
-        logging.basicConfig(level=logging.DEBUG)
-    else:
-        logging.basicConfig(level=logging.INFO, format="%(message)s")
-
-    # Build configuration.
+    # Build CLI overrides for profile merging.
     cli_overrides: dict[str, object] = {
         "target_python": str(target_python) if target_python else None,
         "iterations": iterations,
@@ -401,7 +179,300 @@ def run(  # noqa: PLR0913
     if quick:
         config = quick_config(config)
 
-    # Run.
+    return config
+
+
+# ---------------------------------------------------------------------------
+# bench run — command
+# ---------------------------------------------------------------------------
+
+
+# -- Profile and conditions
+@bench.command()
+@click.option(
+    "--profile",
+    "profile_path",
+    type=click.Path(exists=True, path_type=Path),
+    help="YAML profile defining benchmark conditions.",
+)
+@click.option(
+    "--condition",
+    "inline_conditions",
+    type=str,
+    multiple=True,
+    help="Inline condition: 'name:key=value,...' (repeatable).",
+)
+# -- Execution
+@click.option(
+    "--target-python",
+    type=click.Path(exists=True, path_type=Path),
+    help="Default target Python interpreter.",
+)
+@click.option(
+    "--iterations",
+    type=int,
+    default=None,
+    help="Measured iterations (default: 5, min: 3).",
+)
+@click.option(
+    "--warmup",
+    type=int,
+    default=None,
+    help="Warm-up iterations (default: 1).",
+)
+@click.option(
+    "--timeout",
+    type=int,
+    default=None,
+    show_default=True,
+    help="Per-iteration timeout in seconds (default: 600).",
+)
+@click.option(
+    "--alternate/--no-alternate",
+    default=None,
+    help="Alternate conditions per package.",
+)
+@click.option(
+    "--interleave",
+    is_flag=True,
+    default=False,
+    help="Interleave packages across iterations.",
+)
+# -- Package selection
+@click.option(
+    "--packages",
+    type=str,
+    default=None,
+    help="Comma-separated package filter.",
+)
+@click.option(
+    "--top",
+    "top_n",
+    type=int,
+    default=None,
+    help="Top N packages by download count.",
+)
+# -- Test overrides
+@click.option(
+    "--extra-deps",
+    type=str,
+    default=None,
+    help="Comma-separated extra deps for all conditions.",
+)
+@click.option(
+    "--test-command-suffix",
+    type=str,
+    default=None,
+    help="Append to all test commands.",
+)
+@click.option(
+    "--env",
+    "env_pairs",
+    type=str,
+    multiple=True,
+    help="KEY=VALUE env var for all conditions (repeatable).",
+)
+# -- Paths
+@click.option(
+    "--registry-dir",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Registry directory (default: ~/.local/share/labeille/registry/).",
+)
+@click.option(
+    "--repos-dir",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Persistent repos directory.",
+)
+@click.option(
+    "--venvs-dir",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Persistent venvs directory.",
+)
+@click.option(
+    "--work-dir",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Sets both repos and venvs dirs.",
+)
+@click.option(
+    "--results-dir",
+    type=click.Path(path_type=Path),
+    default="results",
+    help="Results output directory.",
+)
+# -- Run identity and modes
+@click.option(
+    "--name",
+    type=str,
+    default=None,
+    help="Human-readable benchmark name.",
+)
+@click.option(
+    "--quick",
+    is_flag=True,
+    default=False,
+    help="Quick mode: 3 iterations, no warmup, top 20, adaptive.",
+)
+# -- Stability
+@click.option(
+    "--check-stability",
+    is_flag=True,
+    default=False,
+    help="Check system stability before starting.",
+)
+@click.option(
+    "--wait-for-stability",
+    is_flag=True,
+    default=False,
+    help="Wait for system to stabilize.",
+)
+# -- Adaptive convergence
+@click.option(
+    "--adaptive",
+    is_flag=True,
+    default=False,
+    help="Stop iterating early when measurements converge (RSE below threshold).",
+)
+@click.option(
+    "--adaptive-threshold",
+    type=float,
+    default=None,
+    help="RSE convergence threshold (default: 0.005 = 0.5%%).",
+)
+@click.option(
+    "--adaptive-min-iterations",
+    type=int,
+    default=None,
+    help="Minimum measured iterations before convergence check (default: 5).",
+)
+# -- Advanced: timing, resources, caches
+@click.option(
+    "--per-test-timing",
+    is_flag=True,
+    default=False,
+    help="Capture per-test timing via pytest --durations=0.",
+)
+@click.option(
+    "--memory-limit",
+    type=int,
+    default=None,
+    help="Memory limit in MB for all conditions (ulimit -v).",
+)
+@click.option(
+    "--cpu-affinity",
+    type=str,
+    default=None,
+    help="CPU core list (e.g. '0,1') for all conditions (taskset).",
+)
+@click.option(
+    "--cpu-time-limit",
+    type=int,
+    default=None,
+    help="CPU time limit in seconds for all conditions (ulimit -t).",
+)
+@click.option(
+    "--drop-caches",
+    is_flag=True,
+    default=False,
+    help="Drop filesystem caches between iterations (requires setup, see docs).",
+)
+@click.option(
+    "--warm-vs-cold",
+    is_flag=True,
+    default=False,
+    help="Run with and without cache dropping, compare results.",
+)
+@click.option(
+    "--run-dangerously-as-root",
+    is_flag=True,
+    default=False,
+    help="Allow running as root (for containers). Not recommended.",
+)
+@click.option(
+    "--installer",
+    type=click.Choice(["auto", "uv", "pip"], case_sensitive=False),
+    default="auto",
+    show_default=True,
+    help="Package installer backend. 'auto' uses uv if available.",
+)
+@click.option("-v", "--verbose", is_flag=True, default=False)
+def run(  # noqa: PLR0913
+    # Profile and conditions
+    profile_path: Path | None,
+    inline_conditions: tuple[str, ...],
+    # Execution
+    target_python: Path | None,
+    iterations: int | None,
+    warmup: int | None,
+    timeout: int | None,
+    alternate: bool | None,
+    interleave: bool,
+    # Package selection
+    packages: str | None,
+    top_n: int | None,
+    # Test overrides
+    extra_deps: str | None,
+    test_command_suffix: str | None,
+    env_pairs: tuple[str, ...],
+    # Paths
+    registry_dir: Path | None,
+    repos_dir: Path | None,
+    venvs_dir: Path | None,
+    work_dir: Path | None,
+    results_dir: Path,
+    # Run identity and modes
+    name: str | None,
+    quick: bool,
+    # Stability
+    check_stability: bool,
+    wait_for_stability: bool,
+    # Adaptive convergence
+    adaptive: bool,
+    adaptive_threshold: float | None,
+    adaptive_min_iterations: int | None,
+    # Advanced: timing, resources, caches
+    per_test_timing: bool,
+    memory_limit: int | None,
+    cpu_affinity: str | None,
+    cpu_time_limit: int | None,
+    drop_caches: bool,
+    warm_vs_cold: bool,
+    run_dangerously_as_root: bool,
+    installer: str,
+    verbose: bool,
+) -> None:
+    """Run a benchmark across packages under specified conditions.
+
+    Use --profile for a YAML profile or --condition for inline
+    conditions.
+
+    \b
+    Examples:
+        # From a YAML profile
+        labeille bench run --profile bench-coverage.yaml \\
+            --target-python /usr/bin/python3
+
+        # Quick inline comparison
+        labeille bench run \\
+            --condition "baseline:" \\
+            --condition "coverage:extra_deps=coverage,test_prefix=coverage run -m" \\
+            --target-python /usr/bin/python3 --packages requests,click
+
+        # Quick mode for development
+        labeille bench run --profile bench-jit.yaml --quick
+    """
+    if verbose:
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.INFO, format="%(message)s")
+
+    config = _build_bench_config(locals())
+
+    from labeille.bench.runner import BenchRunner
+
     runner = BenchRunner(config)
     try:
         meta, results = runner.run()
@@ -411,7 +482,6 @@ def run(  # noqa: PLR0913
         click.echo("\nBenchmark interrupted.", err=True)
         raise SystemExit(130) from None
 
-    # Display results.
     from labeille.bench.display import format_bench_show
 
     click.echo()
