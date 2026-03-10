@@ -514,7 +514,7 @@ def _classify_install_complexity(cmd: str) -> str:
 def _classify_compat_blocker(reason: str) -> str | None:
     """Classify a skip reason into a compatibility blocker category.
 
-    Returns None if the reason doesn't match a known build technology.
+    Returns None if the reason doesn't match a known blocker category.
     """
     lower = reason.lower()
     if any(kw in lower for kw in ("pyo3", "rust", "maturin")):
@@ -609,7 +609,7 @@ def generate_registry_report(
 
     globally_skipped: set[str] = set()
 
-    # Single pass over packages.
+    # Main pass over packages.
     for pkg in packages:
         is_skipped = pkg.skip
         if is_skipped:
@@ -659,7 +659,11 @@ def generate_registry_report(
             current_val = getattr(report.install_complexity, complexity)
             setattr(report.install_complexity, complexity, current_val + 1)
             # Separately count git fetch --tags.
-            if "git fetch" in pkg.install_command and "--tags" in pkg.install_command:
+            if (
+                pkg.install_command
+                and "git fetch" in pkg.install_command
+                and "--tags" in pkg.install_command
+            ):
                 report.install_complexity.has_git_fetch_tags += 1
 
         # Test framework (active only).

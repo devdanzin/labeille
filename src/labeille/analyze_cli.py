@@ -15,7 +15,6 @@ from labeille.analyze import (
     HistoryAnalysis,
     PackageHistory,
     RegistryReport,
-    RegistryStats,
     ResultsStore,
     RunAnalysis,
     RunData,
@@ -121,7 +120,12 @@ def registry_cmd(
     if registry_dir is None:
         registry_dir = default_registry_dir()
 
-    # Backward compat: table format uses the old code path.
+    # Normalize legacy alias.
+    if fmt == "counts":
+        fmt = "summary"
+
+    # Table format uses the old per-row display that the report dataclass
+    # does not model, so it keeps the existing code path.
     if fmt == "table" and not detail and not export_markdown:
         packages = _load_all_packages(registry_dir, where_exprs)
         pv = python_versions[0] if python_versions else None
@@ -130,15 +134,30 @@ def registry_cmd(
 
     packages = _load_all_packages(registry_dir, where_exprs)
     if not packages:
-        click.echo("No packages found in registry.", err=True)
+        packages_dir = registry_dir / "packages"
+        if not packages_dir.is_dir():
+            click.echo(
+                f"No packages directory found at {packages_dir}.\n"
+                "Run 'labeille registry sync' to fetch the registry.",
+                err=True,
+            )
+        elif where_exprs:
+            click.echo("No packages match the --where filter.", err=True)
+        else:
+            click.echo("No packages found in registry.", err=True)
         return
 
     index: Index | None = None
     if not where_exprs:
         try:
             index = load_index(registry_dir)
-        except Exception:
+        except FileNotFoundError:
             pass
+        except Exception as exc:
+            click.echo(
+                f"Warning: could not load index ({exc}); download tier coverage will be omitted.",
+                err=True,
+            )
 
     target_versions = list(python_versions) if python_versions else None
 
@@ -193,49 +212,6 @@ def _load_all_packages(
         packages.append(pkg)
 
     return packages
-
-
-def _print_registry_counts(stats: RegistryStats) -> None:
-    """Print the counts format for registry analysis."""
-    click.echo(
-        f"Registry: {stats.total} packages ({stats.active} active, {stats.skipped} skipped)"
-    )
-    click.echo()
-
-    # By extension type.
-    click.echo("By extension type:")
-    for ext_type in sorted(stats.by_extension_type.keys()):
-        active, skipped = stats.by_extension_type[ext_type]
-        total = active + skipped
-        click.echo(f"  {ext_type:<15s} {total:3d}  ({active:3d} active, {skipped:3d} skipped)")
-    click.echo()
-
-    # By skip reason.
-    if stats.by_skip_category:
-        click.echo(f"By skip reason ({stats.skipped} skipped):")
-        for cat, count in sorted(stats.by_skip_category.items(), key=lambda x: -x[1]):
-            click.echo(f"  {cat:<30s} {count:3d}")
-        click.echo()
-
-    # By test framework.
-    if stats.by_test_framework:
-        click.echo(f"By test framework ({stats.active} active):")
-        for fw, count in sorted(stats.by_test_framework.items(), key=lambda x: -x[1]):
-            click.echo(f"  {fw:<15s} {count:3d}")
-        click.echo()
-
-    # Notable.
-    if stats.notable:
-        click.echo("Notable:")
-        for label, count in sorted(stats.notable.items()):
-            click.echo(f"  {label + ':':<20s} {count:3d} packages")
-        click.echo()
-
-    # Quality warnings.
-    if stats.quality_warnings:
-        click.echo(f"Quality warnings ({len(stats.quality_warnings)}):")
-        for pkg_name, warning in stats.quality_warnings[:20]:
-            click.echo(f"  {pkg_name}: {warning}")
 
 
 def _print_registry_table(packages: list[PackageEntry], python_version: str | None) -> None:

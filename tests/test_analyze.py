@@ -1352,6 +1352,12 @@ class TestGenerateRegistryReport(unittest.TestCase):
         report = generate_registry_report(packages)
         self.assertTrue(len(report.generated_at) > 0)
 
+    def test_report_empty_packages(self) -> None:
+        report = generate_registry_report([])
+        self.assertEqual(report.total, 0)
+        self.assertEqual(report.active, 0)
+        self.assertEqual(report.skipped, 0)
+
 
 class TestClassifyRepoHost(unittest.TestCase):
     def test_github(self) -> None:
@@ -1423,6 +1429,9 @@ class TestClassifyCompatBlocker(unittest.TestCase):
 
     def test_no_support(self) -> None:
         self.assertEqual(_classify_compat_blocker("No 3.15 support"), "no_python_support")
+
+    def test_other_build(self) -> None:
+        self.assertEqual(_classify_compat_blocker("c++ compilation error"), "other_build")
 
     def test_unrelated(self) -> None:
         self.assertIsNone(_classify_compat_blocker("Part of monorepo"))
