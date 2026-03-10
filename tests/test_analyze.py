@@ -18,7 +18,6 @@ from labeille.analyze import (
     _classify_repo_host,
     analyze_history,
     analyze_package,
-    analyze_registry,
     analyze_run,
     build_reproduce_command,
     categorize_install_errors,
@@ -288,47 +287,6 @@ class TestResultsStore(unittest.TestCase):
 # ---------------------------------------------------------------------------
 # Registry analysis tests
 # ---------------------------------------------------------------------------
-
-
-class TestAnalyzeRegistry(unittest.TestCase):
-    def test_counts(self) -> None:
-        packages = [
-            _make_pkg("a", skip=False),
-            _make_pkg("b", skip=True, skip_reason="PyO3"),
-            _make_pkg("c", skip=False),
-        ]
-        stats = analyze_registry(packages)
-        self.assertEqual(stats.total, 3)
-        self.assertEqual(stats.active, 2)
-        self.assertEqual(stats.skipped, 1)
-
-    def test_extension_types(self) -> None:
-        packages = [
-            _make_pkg("a", extension_type="pure"),
-            _make_pkg("b", extension_type="extensions", skip=True, skip_reason="reason"),
-            _make_pkg("c", extension_type="pure"),
-        ]
-        stats = analyze_registry(packages)
-        self.assertEqual(stats.by_extension_type["pure"], (2, 0))
-        self.assertEqual(stats.by_extension_type["extensions"], (0, 1))
-
-    def test_with_skip_versions(self) -> None:
-        packages = [
-            _make_pkg("a", skip_versions={"3.15": "PyO3 not supported"}),
-            _make_pkg("b"),
-        ]
-        stats = analyze_registry(packages, target_python_version="3.15")
-        self.assertEqual(stats.active, 1)
-        self.assertEqual(stats.skipped, 1)
-
-    def test_without_target_version(self) -> None:
-        packages = [
-            _make_pkg("a", skip_versions={"3.15": "PyO3 not supported"}),
-        ]
-        stats = analyze_registry(packages)
-        # Without target_python_version, skip_versions doesn't count as skipped.
-        self.assertEqual(stats.active, 1)
-        self.assertEqual(stats.skipped, 0)
 
 
 class TestCategorizeSkipReason(unittest.TestCase):

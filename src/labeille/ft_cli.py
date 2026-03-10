@@ -6,10 +6,6 @@ from pathlib import Path
 
 import click
 
-from labeille.logging import get_logger
-
-log = get_logger("ft_cli")
-
 
 @click.group()
 def ft() -> None:

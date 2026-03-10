@@ -19,9 +19,6 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from labeille.bench.results import BenchConditionResult, BenchPackageResult
-from labeille.logging import get_logger
-
-log = get_logger("bench.anomaly")
 
 
 # ---------------------------------------------------------------------------

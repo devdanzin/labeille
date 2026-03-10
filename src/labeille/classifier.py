@@ -12,9 +12,6 @@ from __future__ import annotations
 import re
 from typing import Any
 
-from labeille.logging import get_logger
-
-log = get_logger("classifier")
 
 # Patterns that indicate a platform-specific (native extension) wheel.
 _PLATFORM_INDICATORS = re.compile(

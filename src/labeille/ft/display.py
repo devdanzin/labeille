@@ -10,9 +10,6 @@ from __future__ import annotations
 from typing import Any
 
 from labeille.ft.results import FailureCategory
-from labeille.logging import get_logger
-
-log = get_logger("ft.display")
 
 
 def format_compatibility_summary(
@@ -270,59 +267,6 @@ def format_flakiness_profile(profile: Any) -> str:
     return "\n".join(lines)
 
 
-def format_gil_comparison(
-    comparisons: list[Any],
-) -> str:
-    """Format GIL-enabled vs GIL-disabled comparison table.
-
-    Output::
-
-        GIL Comparison (free-threaded vs GIL-enabled)
-        ──────────────────────────────────────────────
-        Package          GIL=0 Rate  GIL=1 Rate  Classification
-        ─────────────────────────────────────────────────────────
-        requests            100%        100%      ft_compatible
-        numpy                70%        100%      ft_intermittent  ← FT-specific
-        sqlalchemy           60%         80%      ft_exacerbated
-        celery               50%         50%      pre_existing
-        ...
-
-        Summary:
-          FT-specific failures: 12 packages
-          Pre-existing failures: 5 packages
-    """
-    lines = [
-        "GIL Comparison (free-threaded vs GIL-enabled)",
-        "──────────────────────────────────────────────",
-        f"{'Package':<20s} {'GIL=0 Rate':>11s} {'GIL=1 Rate':>11s}  {'Classification':<20s}",
-        "─" * 75,
-    ]
-
-    ft_specific = 0
-    pre_existing = 0
-
-    for c in comparisons:
-        ft_rate = f"{c.gil_disabled_pass_rate * 100:.0f}%"
-        gil_rate = f"{c.gil_enabled_pass_rate * 100:.0f}%"
-        marker = ""
-        if c.free_threading_specific:
-            marker = " ← FT-specific"
-            ft_specific += 1
-        if c.classification == "pre_existing":
-            pre_existing += 1
-
-        lines.append(
-            f"{c.package:<20s} {ft_rate:>11s} {gil_rate:>11s}  {c.classification:<20s}{marker}"
-        )
-
-    lines.append("")
-    lines.append("Summary:")
-    lines.append(f"  FT-specific failures: {ft_specific} packages")
-    lines.append(f"  Pre-existing failures: {pre_existing} packages")
-
-    return "\n".join(lines)
-
-
 def format_ft_comparison(
     comp: Any,
     *,
@@ -394,23 +338,3 @@ def format_ft_comparison(
     lines.append(f"  Crashes:    {comp.crash_count_a} → {comp.crash_count_b} ({crash_str})")
 
     return "\n".join(lines)
-
-
-def format_progress(
-    package: str,
-    iteration: int,
-    total_iterations: int,
-    status: str,
-    duration: float,
-    packages_done: int,
-    packages_total: int,
-) -> str:
-    """Format a single-line progress update.
-
-    Output: ``(15/350) requests iter 3/10: pass (12.3s)``
-    """
-    return (
-        f"({packages_done}/{packages_total}) {package} "
-        f"iter {iteration}/{total_iterations}: "
-        f"{status} ({duration:.1f}s)"
-    )

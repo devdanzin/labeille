@@ -532,14 +532,3 @@ def _try_neighbors(
                 if neighbor_step.status == "good":
                     return (candidate, hi)
     return None
-
-
-def _log2(n: int) -> int:
-    """Rough log base 2 for estimating bisect steps."""
-    if n <= 0:
-        return 0
-    count = 0
-    while n > 1:
-        n >>= 1
-        count += 1
-    return count

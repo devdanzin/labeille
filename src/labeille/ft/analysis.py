@@ -20,10 +20,6 @@ from labeille.ft.results import (
     FTRunSummary,
     IterationOutcome,
 )
-from labeille.logging import get_logger
-
-log = get_logger("ft.analysis")
-
 
 # ---------------------------------------------------------------------------
 # Flakiness profiling

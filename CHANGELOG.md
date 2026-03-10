@@ -182,6 +182,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Added Installation section to README with pipx, pip, and from-source instructions.
 - Added `Environment :: Console` and `Topic :: Software Development :: Quality Assurance` classifiers.
 - Renamed `Issues` URL key to `Bug Tracker` in project metadata for PyPI display consistency.
+- Replaced `raise SystemExit(130)  # noqa: B904` with `raise SystemExit(130) from None` in `bench_cli.py`, removing the suppression.
+- Narrowed `except Exception` in `bench/system.py` JIT detection to `except (AttributeError, TypeError)`.
+- Added explanatory comment for `except BaseException` in `io_utils.py` atomic write.
+
+### Removed
+- Dead code: `_log2()` from `bisect.py`, `RegistryStats`/`analyze_registry()` from `analyze.py` (superseded by `RegistryReport`/`generate_registry_report()`), `load_ft_summary()` from `ft/results.py`, `format_progress()`/`format_gil_comparison()` from `ft/display.py`, unused `_MOD_GIL_MENTION_PATTERN` regex from `ft/compat.py`.
+- Removed 12 unused `log = get_logger(...)` variables and their imports from modules that had logger scaffolding but no log calls.
 
 ### Fixed
 - `bench/timing.py` now sanitizes subprocess environment via `clean_env()`, preventing PYTHONHOME/PYTHONPATH pollution in benchmark runs.
