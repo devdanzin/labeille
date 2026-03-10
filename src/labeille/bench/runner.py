@@ -23,7 +23,11 @@ import subprocess
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
+
+if TYPE_CHECKING:
+    from labeille.bench.results import ConditionDef
+    from labeille.registry import PackageEntry
 
 from labeille.bench.config import (
     BenchConfig,
@@ -284,7 +288,7 @@ class BenchRunner:
         self._results = results
         return meta, results
 
-    def _load_packages(self) -> list[Any]:
+    def _load_packages(self) -> list[PackageEntry]:
         """Load package entries from the registry.
 
         Applies package filters and top_n selection.
@@ -458,7 +462,7 @@ class BenchRunner:
 
     def _benchmark_package(
         self,
-        pkg: Any,
+        pkg: PackageEntry,
         pkg_idx: int,
         pkg_total: int,
     ) -> BenchPackageResult:
@@ -584,7 +588,7 @@ class BenchRunner:
 
         return pkg_result
 
-    def _setup_package(self, pkg: Any) -> dict[str, Any] | None:
+    def _setup_package(self, pkg: PackageEntry) -> dict[str, Any] | None:
         """Clone repo and create venvs for all conditions.
 
         Returns a setup dict with repo_dir, venvs, and durations.
@@ -615,8 +619,10 @@ class BenchRunner:
                 from labeille.runner import pull_repo
 
                 pull_repo(repo_dir)
-            else:
+            elif pkg.repo:
                 clone_repo(pkg.repo, repo_dir)
+            else:
+                raise OSError(f"No repo URL for {pkg.package}")
         except (OSError, subprocess.SubprocessError) as exc:
             log.error("Failed to clone %s: %s", pkg.package, exc)
             return None
@@ -717,8 +723,8 @@ class BenchRunner:
     def _run_iteration(
         self,
         *,
-        pkg: Any,
-        cond: Any,
+        pkg: PackageEntry,
+        cond: ConditionDef,
         setup: dict[str, Any],
         iter_index: int,
         is_warmup: bool,

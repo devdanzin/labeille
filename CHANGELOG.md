@@ -9,6 +9,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ### Enhanced
 - `bench run` and `ft run` now use shared `setup_logging()` for consistent log formatting.
 
+### Fixed
+- Type `pkg: Any` parameters as `PackageEntry` in `bench/runner.py` and `ft/runner.py` for type safety.
+- Fix `IndexEntry.package` attribute access (should be `.name`) in `ft/runner.py:_select_packages`.
+
 ### Tests
 - Add 26 tests for `bench track` subcommands: init, add, show, pin, unpin, list, trend, alert.
 
