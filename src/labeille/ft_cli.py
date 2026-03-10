@@ -176,7 +176,10 @@ def run(
             --tsan --iterations 5
     """
     from labeille.ft.runner import FTRunConfig, run_ft
+    from labeille.logging import setup_logging
     from labeille.registry import default_registry_dir
+
+    setup_logging(verbose=verbose)
 
     if registry_dir is None:
         registry_dir = default_registry_dir()
