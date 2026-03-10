@@ -311,7 +311,8 @@ def fetch_pypi_metadata(
         return None
 
     try:
-        return resp.json()  # type: ignore[no-any-return]
+        data: dict[str, Any] = resp.json()
+        return data
     except (ValueError, requests.JSONDecodeError):
         log.error("Invalid JSON response for %s", package_name)
         return None

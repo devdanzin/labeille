@@ -341,10 +341,14 @@ def run(  # noqa: PLR0913
             default_target_python=str(target_python) if target_python else "",
             registry_dir=registry_dir,
         )
-        if repos_dir or work_dir:
-            config.repos_dir = repos_dir or (work_dir / "repos")  # type: ignore[operator]
-        if venvs_dir or work_dir:
-            config.venvs_dir = venvs_dir or (work_dir / "venvs")  # type: ignore[operator]
+        if repos_dir:
+            config.repos_dir = repos_dir
+        elif work_dir:
+            config.repos_dir = work_dir / "repos"
+        if venvs_dir:
+            config.venvs_dir = venvs_dir
+        elif work_dir:
+            config.venvs_dir = work_dir / "venvs"
         config.results_dir = results_dir
         if packages:
             config.packages_filter = [p.strip() for p in packages.split(",") if p.strip()]

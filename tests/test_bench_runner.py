@@ -244,7 +244,7 @@ class TestSetupPackage(unittest.TestCase):
             runner = self._make_runner(repos_dir=Path(tmpdir) / "repos")
             pkg = FakePackage(package="clonefail")
 
-            with patch("labeille.runner.clone_repo", side_effect=RuntimeError("clone failed")):
+            with patch("labeille.runner.clone_repo", side_effect=OSError("clone failed")):
                 result = runner._setup_package(pkg)
 
             self.assertIsNone(result)
@@ -300,7 +300,7 @@ class TestSetupPackage(unittest.TestCase):
             with (
                 patch("labeille.runner.clone_repo"),
                 patch("labeille.runner.create_venv"),
-                patch("labeille.runner.install_package", side_effect=RuntimeError("install boom")),
+                patch("labeille.runner.install_package", side_effect=OSError("install boom")),
             ):
                 result = runner._setup_package(pkg)
 
@@ -424,7 +424,7 @@ class TestSetupPackage(unittest.TestCase):
                 # Main install succeeds, extra deps install raises.
                 mock_install.side_effect = [
                     SimpleNamespace(returncode=0),
-                    RuntimeError("extra deps failed"),
+                    OSError("extra deps failed"),
                 ]
                 result = runner._setup_package(pkg)
 

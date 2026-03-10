@@ -1007,7 +1007,7 @@ def _select_packages(index: Any, config: FTRunConfig) -> list[Any]:
         try:
             pkg = load_package(entry.package, config.registry_dir)
             packages.append(pkg)
-        except Exception as exc:  # noqa: BLE001
+        except (OSError, ValueError, KeyError) as exc:
             log.warning("Could not load package %s, skipping: %s", entry.package, exc)
 
     if config.packages_filter:
