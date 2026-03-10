@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Tests
+- Add 26 tests for `bench track` subcommands: init, add, show, pin, unpin, list, trend, alert.
+
 ### Added
 - `labeille analyze registry` now generates a comprehensive three-tier report: summary (default), detailed (`--detail`), and verbose (`--detail --verbose`).
 - `--export-markdown` flag for `analyze registry` generates a Markdown document suitable for inclusion in a repository.
