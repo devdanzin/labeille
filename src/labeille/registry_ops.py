@@ -12,7 +12,6 @@ from typing import Any, get_type_hints
 
 import yaml
 
-from labeille.logging import get_logger
 from labeille.registry import (
     IndexEntry,
     PackageEntry,
@@ -31,8 +30,6 @@ from labeille.yaml_lines import (
     rename_field as rename_field_lines,
     set_field_value,
 )
-
-log = get_logger("registry_ops")
 
 # Fields that cannot be removed from package YAML files.
 PROTECTED_FIELDS = frozenset({"package", "repo", "pypi_url", "enriched"})

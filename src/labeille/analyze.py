@@ -247,20 +247,6 @@ class ResultsStore:
 # ---------------------------------------------------------------------------
 
 
-@dataclass
-class RegistryStats:
-    """Aggregate statistics about the registry."""
-
-    total: int = 0
-    active: int = 0
-    skipped: int = 0
-    by_extension_type: dict[str, tuple[int, int]] = field(default_factory=dict)
-    by_skip_category: dict[str, int] = field(default_factory=dict)
-    by_test_framework: dict[str, int] = field(default_factory=dict)
-    notable: dict[str, int] = field(default_factory=dict)
-    quality_warnings: list[tuple[str, str]] = field(default_factory=list)
-
-
 def categorize_skip_reason(reason: str) -> str:
     """Categorize a skip reason into a human-readable bucket."""
     lower = reason.lower()
@@ -296,77 +282,6 @@ def detect_quality_warnings(pkg: PackageEntry) -> list[str]:
     if pkg.skip and pkg.skip_versions:
         warnings.append("skip is true but skip_versions has entries (redundant)")
     return warnings
-
-
-def analyze_registry(
-    packages: list[PackageEntry],
-    *,
-    target_python_version: str | None = None,
-) -> RegistryStats:
-    """Analyze registry composition.
-
-    If *target_python_version* is given, ``skip_versions`` entries for that
-    version are counted as skipped.
-    """
-    stats = RegistryStats(total=len(packages))
-
-    for pkg in packages:
-        is_skipped = pkg.skip
-        if (
-            not is_skipped
-            and target_python_version
-            and pkg.skip_versions
-            and target_python_version in pkg.skip_versions
-        ):
-            is_skipped = True
-
-        if is_skipped:
-            stats.skipped += 1
-        else:
-            stats.active += 1
-
-        # Extension type breakdown.
-        ext = pkg.extension_type or "unknown"
-        active_count, skipped_count = stats.by_extension_type.get(ext, (0, 0))
-        if is_skipped:
-            stats.by_extension_type[ext] = (active_count, skipped_count + 1)
-        else:
-            stats.by_extension_type[ext] = (active_count + 1, skipped_count)
-
-        # Skip reason categorization.
-        if is_skipped:
-            reason = pkg.skip_reason or ""
-            if target_python_version and pkg.skip_versions:
-                ver_reason = pkg.skip_versions.get(target_python_version)
-                if ver_reason:
-                    reason = ver_reason
-            if reason:
-                cat = categorize_skip_reason(reason)
-            else:
-                cat = "Other"
-            stats.by_skip_category[cat] = stats.by_skip_category.get(cat, 0) + 1
-
-        # Test framework (active only).
-        if not is_skipped:
-            fw = pkg.test_framework or "unknown"
-            stats.by_test_framework[fw] = stats.by_test_framework.get(fw, 0) + 1
-
-        # Notable attributes (active only).
-        if not is_skipped:
-            if pkg.timeout is not None:
-                stats.notable["Custom timeout"] = stats.notable.get("Custom timeout", 0) + 1
-            if pkg.clone_depth is not None:
-                stats.notable["clone_depth set"] = stats.notable.get("clone_depth set", 0) + 1
-            if pkg.uses_xdist:
-                stats.notable["uses_xdist"] = stats.notable.get("uses_xdist", 0) + 1
-            if pkg.import_name is not None:
-                stats.notable["import_name set"] = stats.notable.get("import_name set", 0) + 1
-
-        # Quality warnings.
-        for warning in detect_quality_warnings(pkg):
-            stats.quality_warnings.append((pkg.package, warning))
-
-    return stats
 
 
 # ---------------------------------------------------------------------------

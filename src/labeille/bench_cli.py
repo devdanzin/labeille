@@ -17,9 +17,6 @@ from pathlib import Path
 import click
 
 from labeille.bench.results import BenchMeta, BenchPackageResult
-from labeille.logging import get_logger
-
-log = get_logger("bench_cli")
 
 
 @click.group()
@@ -408,7 +405,7 @@ def run(  # noqa: PLR0913
         raise click.ClickException(str(exc)) from exc
     except KeyboardInterrupt:
         click.echo("\nBenchmark interrupted.", err=True)
-        raise SystemExit(130)  # noqa: B904
+        raise SystemExit(130) from None
 
     # Display results.
     from labeille.bench.display import format_bench_show

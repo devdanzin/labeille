@@ -19,10 +19,6 @@ from labeille.bench.stats import (
 )
 from typing import Any
 
-from labeille.logging import get_logger
-
-log = get_logger("bench.compare")
-
 
 # ---------------------------------------------------------------------------
 # Per-package comparison result

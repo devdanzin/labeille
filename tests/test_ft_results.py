@@ -18,7 +18,6 @@ from labeille.ft.results import (
     append_ft_result,
     categorize_package,
     load_ft_run,
-    load_ft_summary,
     save_ft_run,
 )
 
@@ -605,33 +604,6 @@ class TestIO(unittest.TestCase):
             (d / "ft_results.jsonl").write_text("")
             _, loaded = load_ft_run(d)
             self.assertEqual(loaded, [])
-
-    def test_load_ft_summary_from_file(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            d = Path(tmpdir)
-            results = [make_package_result("a", ["pass"] * 5)]
-            meta = FTRunMeta(run_id="test", timestamp="t")
-            save_ft_run(d, meta, results)
-
-            summary = load_ft_summary(d)
-            self.assertEqual(summary.total_packages, 1)
-            self.assertEqual(summary.categories.get("compatible"), 1)
-
-    def test_load_ft_summary_recomputes_if_missing(self) -> None:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            d = Path(tmpdir)
-            results = [
-                make_package_result("a", ["pass"] * 5),
-                make_package_result("b", ["crash", "pass"]),
-            ]
-            meta = FTRunMeta(run_id="test", timestamp="t")
-            save_ft_run(d, meta, results)
-
-            # Delete summary file.
-            (d / "ft_summary.json").unlink()
-
-            summary = load_ft_summary(d)
-            self.assertEqual(summary.total_packages, 2)
 
 
 # ---------------------------------------------------------------------------

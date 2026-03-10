@@ -583,12 +583,3 @@ def load_ft_run(
     meta = FTRunMeta.from_dict(json.loads(meta_path.read_text(encoding="utf-8")))
     results = load_jsonl(results_path, FTPackageResult.from_dict)
     return meta, results
-
-
-def load_ft_summary(results_dir: Path) -> FTRunSummary:
-    """Load the summary file, or recompute from results."""
-    summary_path = results_dir / "ft_summary.json"
-    if summary_path.exists():
-        return FTRunSummary.from_dict(json.loads(summary_path.read_text(encoding="utf-8")))
-    _, results = load_ft_run(results_dir)
-    return FTRunSummary.compute(results)

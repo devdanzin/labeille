@@ -7,42 +7,18 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import click
+
 from labeille.bisect import (
     BisectConfig,
     BisectResult,
     BisectStep,
-    _log2,
     _try_neighbors,
     get_commit_range,
     run_bisect,
     test_revision,
 )
 from labeille.runner import InstallerBackend
-
-
-class TestLog2(unittest.TestCase):
-    """Tests for the _log2 helper."""
-
-    def test_zero(self) -> None:
-        self.assertEqual(_log2(0), 0)
-
-    def test_negative(self) -> None:
-        self.assertEqual(_log2(-5), 0)
-
-    def test_one(self) -> None:
-        self.assertEqual(_log2(1), 0)
-
-    def test_two(self) -> None:
-        self.assertEqual(_log2(2), 1)
-
-    def test_eight(self) -> None:
-        self.assertEqual(_log2(8), 3)
-
-    def test_non_power_of_two(self) -> None:
-        self.assertEqual(_log2(10), 3)
-
-    def test_large(self) -> None:
-        self.assertEqual(_log2(1024), 10)
 
 
 class TestBisectResult(unittest.TestCase):
@@ -890,10 +866,6 @@ class TestBisectCLI(unittest.TestCase):
         self.assertEqual(result.exit_code, 0)
         call_args = mock_bisect.call_args[0][0]
         self.assertEqual(call_args.extra_deps, ["pytest", "coverage"])
-
-
-# Need to import click for the CLI test class.
-import click  # noqa: E402
 
 
 if __name__ == "__main__":

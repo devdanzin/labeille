@@ -11,9 +11,6 @@ import re
 import signal as _signal
 from dataclasses import dataclass
 
-from labeille.logging import get_logger
-
-log = get_logger("crash")
 
 # Exit codes that map to well-known signals on systems that don't use negative
 # return codes.

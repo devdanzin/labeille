@@ -11,10 +11,6 @@ import io
 import json
 from typing import Any
 
-from labeille.logging import get_logger
-
-log = get_logger("ft.export")
-
 
 def export_csv(
     results: list[Any],

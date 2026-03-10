@@ -9,9 +9,7 @@ from labeille.ft.display import (
     format_compatibility_summary,
     format_flakiness_profile,
     format_ft_comparison,
-    format_gil_comparison,
     format_package_table,
-    format_progress,
     format_triage_list,
 )
 from labeille.ft.results import FailureCategory, FTPackageResult
@@ -300,55 +298,6 @@ class TestFormatFlakinessProfile(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# format_gil_comparison tests
-# ---------------------------------------------------------------------------
-
-
-class TestFormatGilComparison(unittest.TestCase):
-    def _make_comparison(
-        self,
-        package: str = "pkg",
-        disabled_rate: float = 0.7,
-        enabled_rate: float = 1.0,
-        classification: str = "ft_intermittent",
-        ft_specific: bool = True,
-    ) -> MagicMock:
-        c = MagicMock()
-        c.package = package
-        c.gil_disabled_pass_rate = disabled_rate
-        c.gil_enabled_pass_rate = enabled_rate
-        c.classification = classification
-        c.free_threading_specific = ft_specific
-        return c
-
-    def test_gil_comparison_basic(self) -> None:
-        comparisons = [
-            self._make_comparison("requests", 1.0, 1.0, "ft_compatible", False),
-            self._make_comparison("numpy", 0.7, 1.0, "ft_intermittent", True),
-            self._make_comparison("celery", 0.5, 0.5, "pre_existing", False),
-        ]
-        output = format_gil_comparison(comparisons)
-        self.assertIn("requests", output)
-        self.assertIn("numpy", output)
-        self.assertIn("celery", output)
-
-    def test_gil_comparison_ft_specific_marker(self) -> None:
-        comparisons = [self._make_comparison("numpy", 0.7, 1.0, "ft_intermittent", True)]
-        output = format_gil_comparison(comparisons)
-        self.assertIn("FT-specific", output)
-
-    def test_gil_comparison_summary_counts(self) -> None:
-        comparisons = [
-            self._make_comparison("a", 0.7, 1.0, "ft_intermittent", True),
-            self._make_comparison("b", 0.5, 1.0, "ft_incompatible", True),
-            self._make_comparison("c", 0.5, 0.5, "pre_existing", False),
-        ]
-        output = format_gil_comparison(comparisons)
-        self.assertIn("FT-specific failures: 2", output)
-        self.assertIn("Pre-existing failures: 1", output)
-
-
-# ---------------------------------------------------------------------------
 # format_ft_comparison tests
 # ---------------------------------------------------------------------------
 
@@ -415,25 +364,6 @@ class TestFormatFtComparison(unittest.TestCase):
         self.assertIn("Unchanged: 100 packages", output)
         self.assertNotIn("Improvements", output)
         self.assertNotIn("Regressions", output)
-
-
-# ---------------------------------------------------------------------------
-# format_progress tests
-# ---------------------------------------------------------------------------
-
-
-class TestFormatProgress(unittest.TestCase):
-    def test_progress_basic(self) -> None:
-        output = format_progress(
-            package="requests",
-            iteration=3,
-            total_iterations=10,
-            status="pass",
-            duration=12.3,
-            packages_done=15,
-            packages_total=350,
-        )
-        self.assertEqual(output, "(15/350) requests iter 3/10: pass (12.3s)")
 
 
 if __name__ == "__main__":

@@ -17,9 +17,6 @@ from typing import Any
 
 from labeille.bench.constraints import ResourceConstraints
 from labeille.bench.results import ConditionDef
-from labeille.logging import get_logger
-
-log = get_logger("bench.config")
 
 
 # ---------------------------------------------------------------------------

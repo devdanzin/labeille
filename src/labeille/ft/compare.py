@@ -15,10 +15,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-from labeille.logging import get_logger
-
-log = get_logger("ft.compare")
-
 
 @dataclass
 class PackageTransition:

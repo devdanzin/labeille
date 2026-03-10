@@ -27,7 +27,7 @@ def atomic_write_text(path: Path, content: str, *, encoding: str = "utf-8") -> N
         with os.fdopen(fd, "w", encoding=encoding) as f:
             f.write(content)
         os.replace(tmp_path, path)
-    except BaseException:
+    except BaseException:  # Cleanup temp file on any failure, including KeyboardInterrupt.
         try:
             os.unlink(tmp_path)
         except OSError:

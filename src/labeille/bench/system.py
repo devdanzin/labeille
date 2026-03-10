@@ -718,7 +718,7 @@ result["build_flags"] = [
 try:
     result["jit_available"] = hasattr(sys.flags, "jit")
     result["jit_enabled"] = bool(getattr(sys.flags, "jit", False))
-except Exception:
+except (AttributeError, TypeError):
     result["jit_available"] = False
     result["jit_enabled"] = False
 

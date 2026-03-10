@@ -416,8 +416,6 @@ _MOD_GIL_PATTERN = re.compile(
     re.VERBOSE,
 )
 
-_MOD_GIL_MENTION_PATTERN = re.compile(r"Py_MOD_GIL_NOT_USED|Py_MOD_GIL_USED|Py_mod_gil")
-
 
 def scan_source_for_mod_gil(
     repo_dir: Path,
