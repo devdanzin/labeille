@@ -394,7 +394,8 @@ def run_single_iteration(
                     proc.kill()
                 break
             time.sleep(0.5)
-    except Exception:
+    except OSError as exc:
+        log.debug("Process monitoring interrupted: %s", exc)
         try:
             os.killpg(proc.pid, 9)
         except OSError:
@@ -697,7 +698,7 @@ def run_package_ft(
                 env=env,
                 timeout=config.timeout,
             )
-        except Exception as exc:  # noqa: BLE001
+        except (subprocess.TimeoutExpired, subprocess.SubprocessError, OSError) as exc:
             log.warning(
                 "Extra deps install failed for %s: %s (continuing)",
                 pkg.package,

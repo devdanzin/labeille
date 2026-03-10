@@ -19,6 +19,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
+from labeille.io_utils import append_jsonl, load_jsonl, write_meta_json
 from labeille.logging import get_logger
 
 log = get_logger("ft.results")
@@ -528,10 +529,7 @@ def save_ft_run(
 
     meta.packages_completed = len(results)
     meta_path = results_dir / "ft_meta.json"
-    meta_path.write_text(
-        json.dumps(meta.to_dict(), indent=2) + "\n",
-        encoding="utf-8",
-    )
+    write_meta_json(meta_path, meta.to_dict())
 
     results_path = results_dir / "ft_results.jsonl"
     with results_path.open("w", encoding="utf-8") as f:
@@ -540,10 +538,7 @@ def save_ft_run(
 
     summary = FTRunSummary.compute(results)
     summary_path = results_dir / "ft_summary.json"
-    summary_path.write_text(
-        json.dumps(summary.to_dict(), indent=2) + "\n",
-        encoding="utf-8",
-    )
+    write_meta_json(summary_path, summary.to_dict())
 
     log.info(
         "Saved free-threading results: %d packages \u2192 %s",
@@ -562,8 +557,7 @@ def append_ft_result(
     survive interruption.
     """
     results_path = results_dir / "ft_results.jsonl"
-    with results_path.open("a", encoding="utf-8") as f:
-        f.write(json.dumps(result.to_dict()) + "\n")
+    append_jsonl(results_path, result.to_dict())
 
 
 def load_ft_run(
@@ -587,14 +581,7 @@ def load_ft_run(
         raise FileNotFoundError(f"No ft_results.jsonl in {results_dir}")
 
     meta = FTRunMeta.from_dict(json.loads(meta_path.read_text(encoding="utf-8")))
-
-    results: list[FTPackageResult] = []
-    with results_path.open("r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line:
-                results.append(FTPackageResult.from_dict(json.loads(line)))
-
+    results = load_jsonl(results_path, FTPackageResult.from_dict)
     return meta, results
 
 

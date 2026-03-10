@@ -32,7 +32,7 @@ from pathlib import Path
 from typing import Any, Iterator, Literal
 
 from labeille.crash import detect_crash
-from labeille.io_utils import utc_now_iso
+from labeille.io_utils import append_jsonl, utc_now_iso, write_meta_json
 from labeille.logging import get_logger
 from labeille.registry import Index, PackageEntry, load_index, load_package, package_exists
 from labeille.resolve import fetch_pypi_metadata
@@ -231,30 +231,22 @@ def write_run_meta(
         meta["packages_skipped"] = summary.skipped
         meta["crashes_found"] = summary.crashed
         meta["total_duration_seconds"] = 0.0  # filled by caller
-    (run_dir / "run_meta.json").write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
+    write_meta_json(run_dir / "run_meta.json", meta)
 
 
 def append_result(run_dir: Path, result: PackageResult) -> None:
     """Append a single result as a JSON line to results.jsonl."""
-    with open(run_dir / "results.jsonl", "a", encoding="utf-8") as f:
-        f.write(json.dumps(result.to_dict()) + "\n")
+    append_jsonl(run_dir / "results.jsonl", result.to_dict())
 
 
 def load_completed_packages(run_dir: Path) -> set[str]:
     """Load the set of package names already recorded in results.jsonl."""
+    from labeille.io_utils import iter_jsonl
+
     results_file = run_dir / "results.jsonl"
     if not results_file.exists():
         return set()
-    completed: set[str] = set()
-    for line in results_file.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if line:
-            try:
-                data = json.loads(line)
-                completed.add(data["package"])
-            except (json.JSONDecodeError, KeyError):
-                continue
-    return completed
+    return {r["package"] for r in iter_jsonl(results_file, lambda d: d)}
 
 
 def save_crash_stderr(run_dir: Path, package_name: str, stderr: str) -> None:
@@ -715,7 +707,7 @@ def get_installed_packages(
             packages = json.loads(proc.stdout)
             return {p["name"]: p["version"] for p in packages}
     except (subprocess.TimeoutExpired, json.JSONDecodeError, KeyError, OSError) as exc:
-        log.debug("Could not list installed packages: %s", exc)
+        log.info("Could not list installed packages: %s", exc)
     return {}
 
 
@@ -1180,6 +1172,172 @@ def run_package(
     return result
 
 
+# ---------------------------------------------------------------------------
+# _run_package_inner phase helpers
+# ---------------------------------------------------------------------------
+
+
+def _ensure_repo(
+    pkg: PackageEntry,
+    config: RunnerConfig,
+    result: PackageResult,
+    repo_dir: Path,
+) -> bool:
+    """Resolve repo URL, clone or pull, and checkout revision. Return True on success."""
+    # Apply repo URL override if specified.
+    repo_url = pkg.repo
+    if config.repo_overrides and pkg.package in config.repo_overrides:
+        repo_url = config.repo_overrides[pkg.package]
+        log.info("Using overridden repo for %s: %s", pkg.package, repo_url)
+        result.repo = repo_url
+
+    if not repo_url:
+        result.status = "clone_error"
+        result.error_message = "No repository URL"
+        log.warning("Skipping %s: no repo URL", pkg.package)
+        return False
+
+    repo_existed = repo_dir.exists() and (repo_dir / ".git").exists()
+    clone_start = time.monotonic()
+    if repo_existed:
+        log.info("Reusing repo for %s at %s (pulling)", pkg.package, repo_dir)
+        try:
+            result.git_revision = pull_repo(repo_dir)
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as exc:
+            log.warning("Pull failed for %s, re-cloning: %s", pkg.package, exc)
+            shutil.rmtree(repo_dir, ignore_errors=True)
+            repo_existed = False
+
+    if not repo_existed:
+        depth = config.clone_depth_override
+        if depth is None:
+            depth = pkg.clone_depth
+        if depth == 0:
+            depth = None
+        log.info("Cloning %s from %s to %s", pkg.package, repo_url, repo_dir)
+        try:
+            result.git_revision = clone_repo(repo_url, repo_dir, clone_depth=depth)
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as exc:
+            result.status = "clone_error"
+            result.error_message = f"Clone failed: {exc}"
+            log.error("Clone failed for %s: %s", pkg.package, exc)
+            return False
+
+    clone_dur = round(time.monotonic() - clone_start, 2)
+    log.debug("Git revision for %s: %s (%.2fs)", pkg.package, result.git_revision, clone_dur)
+
+    # Checkout specific revision if requested.
+    revision = config.revision_overrides.get(pkg.package)
+    if revision:
+        log.info("Checking out revision %s for %s", revision, pkg.package)
+        commit = checkout_revision(repo_dir, revision)
+        if commit is None:
+            result.status = "error"
+            result.error_message = f"Failed to checkout revision {revision}"
+            return False
+        result.git_revision = commit
+        result.requested_revision = revision
+
+    return True
+
+
+def _run_install(
+    pkg: PackageEntry,
+    config: RunnerConfig,
+    result: PackageResult,
+    venv_dir: Path,
+    repo_dir: Path,
+    env: dict[str, str],
+    per_pkg_timeout: int,
+    installer: InstallerBackend,
+    install_cmd: str,
+    *,
+    label: str = "",
+) -> tuple[Path, InstallerBackend] | None:
+    """Run install_with_fallback and handle errors. Return (venv_python, installer) or None."""
+    install_start = time.monotonic()
+    try:
+        install_proc, actual_backend = install_with_fallback(
+            config.target_python,
+            venv_dir,
+            install_cmd,
+            repo_dir,
+            env,
+            per_pkg_timeout,
+            installer,
+        )
+        venv_python = venv_dir / "bin" / "python"
+        if actual_backend is not installer:
+            result.installer_backend = actual_backend.value
+            log.info(
+                "Installer fell back from %s to %s for %s",
+                installer.value,
+                actual_backend.value,
+                pkg.package,
+            )
+        installer = actual_backend
+    except subprocess.TimeoutExpired:
+        result.status = "install_error"
+        result.error_message = f"Install timed out{label}"
+        result.install_duration_seconds = round(time.monotonic() - install_start, 2)
+        log.error("Install timed out for %s%s", pkg.package, label)
+        return None
+    except OSError as exc:
+        result.status = "install_error"
+        result.error_message = f"Install failed{label}: {exc}"
+        result.install_duration_seconds = round(time.monotonic() - install_start, 2)
+        log.error("Install failed for %s%s: %s", pkg.package, label, exc)
+        return None
+
+    result.install_duration_seconds = round(time.monotonic() - install_start, 2)
+
+    if install_proc.returncode != 0:
+        result.status = "install_error"
+        result.exit_code = install_proc.returncode
+        result.error_message = (
+            install_proc.stderr[-500:] if install_proc.stderr else f"non-zero{label}"
+        )
+        log.error(
+            "Install failed for %s%s (exit %d)", pkg.package, label, install_proc.returncode
+        )
+        return None
+
+    if install_proc.stdout:
+        log.debug("Install stdout:\n%s", install_proc.stdout[-3000:])
+    if install_proc.stderr:
+        log.debug("Install stderr:\n%s", install_proc.stderr[-3000:])
+
+    return venv_python, installer
+
+
+def _analyze_test_result(
+    test_proc: subprocess.CompletedProcess[str],
+    result: PackageResult,
+    run_dir: Path,
+    pkg_name: str,
+    test_dur: float,
+) -> None:
+    """Populate *result* with crash detection, pass/fail status."""
+    crash = detect_crash(test_proc.returncode, test_proc.stderr)
+    if crash is not None:
+        result.status = "crash"
+        result.signal = crash.signal_number
+        result.crash_signature = crash.signature
+        save_crash_stderr(run_dir, pkg_name, test_proc.stderr)
+        log.warning(
+            "CRASH in %s: %s (signal %d)",
+            pkg_name,
+            crash.signature,
+            crash.signal_number,
+        )
+    elif test_proc.returncode == 0:
+        result.status = "pass"
+        log.info("PASS: %s (%.2fs)", pkg_name, test_dur)
+    else:
+        result.status = "fail"
+        log.info("FAIL: %s (exit %d, %.2fs)", pkg_name, test_proc.returncode, test_dur)
+
+
 def _run_package_inner(
     pkg: PackageEntry,
     config: RunnerConfig,
@@ -1203,62 +1361,8 @@ def _run_package_inner(
         result.error_message = "Run stopped (crash limit reached)"
         return result
 
-    # Apply repo URL override if specified.
-    repo_url = pkg.repo
-    if config.repo_overrides and pkg.package in config.repo_overrides:
-        repo_url = config.repo_overrides[pkg.package]
-        log.info("Using overridden repo for %s: %s", pkg.package, repo_url)
-        result.repo = repo_url
-
-    if not repo_url:
-        result.status = "clone_error"
-        result.error_message = "No repository URL"
-        log.warning("Skipping %s: no repo URL", pkg.package)
+    if not _ensure_repo(pkg, config, result, repo_dir):
         return result
-
-    repo_existed = repo_dir.exists() and (repo_dir / ".git").exists()
-    clone_start = time.monotonic()
-    if repo_existed:
-        log.info("Reusing repo for %s at %s (pulling)", pkg.package, repo_dir)
-        try:
-            # Commit hash is captured from pull_repo return value.
-            result.git_revision = pull_repo(repo_dir)
-        except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as exc:
-            log.warning("Pull failed for %s, re-cloning: %s", pkg.package, exc)
-            shutil.rmtree(repo_dir, ignore_errors=True)
-            repo_existed = False
-
-    if not repo_existed:
-        # CLI override takes precedence over per-package YAML value.
-        depth = config.clone_depth_override
-        if depth is None:
-            depth = pkg.clone_depth  # from registry YAML
-        if depth == 0:
-            depth = None  # 0 means full clone (no --depth flag)
-        log.info("Cloning %s from %s to %s", pkg.package, repo_url, repo_dir)
-        try:
-            # Commit hash is captured from clone_repo return value.
-            result.git_revision = clone_repo(repo_url, repo_dir, clone_depth=depth)
-        except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as exc:
-            result.status = "clone_error"
-            result.error_message = f"Clone failed: {exc}"
-            log.error("Clone failed for %s: %s", pkg.package, exc)
-            return result
-
-    clone_dur = round(time.monotonic() - clone_start, 2)
-    log.debug("Git revision for %s: %s (%.2fs)", pkg.package, result.git_revision, clone_dur)
-
-    # --- Checkout specific revision if requested ---
-    revision = config.revision_overrides.get(pkg.package)
-    if revision:
-        log.info("Checking out revision %s for %s", revision, pkg.package)
-        commit = checkout_revision(repo_dir, revision)
-        if commit is None:
-            result.status = "error"
-            result.error_message = f"Failed to checkout revision {revision}"
-            return result
-        result.git_revision = commit
-        result.requested_revision = revision
 
     # --- Sdist version alignment ---
     sdist_version: str | None = None
@@ -1346,53 +1450,19 @@ def _run_package_inner(
             pkg.package, raw_install_cmd
         )
         log.info("Installing %s from sdist: %s", pkg.package, sdist_install_cmd)
-        install_start = time.monotonic()
 
-        # Step 1: Install the package from PyPI sdist.
-        try:
-            install_proc, actual_backend = install_with_fallback(
-                config.target_python,
-                venv_dir,
-                sdist_install_cmd,
-                repo_dir,
-                env,
-                per_pkg_timeout,
-                installer,
-            )
-            venv_python = venv_dir / "bin" / "python"
-            if actual_backend is not installer:
-                result.installer_backend = actual_backend.value
-                log.info(
-                    "Installer fell back from %s to %s for %s",
-                    installer.value,
-                    actual_backend.value,
-                    pkg.package,
-                )
-            installer = actual_backend
-        except subprocess.TimeoutExpired:
-            result.status = "install_error"
-            result.error_message = "Install timed out (sdist)"
-            result.install_duration_seconds = round(time.monotonic() - install_start, 2)
-            log.error("Sdist install timed out for %s", pkg.package)
+        install_result = _run_install(
+            pkg, config, result, venv_dir, repo_dir, env, per_pkg_timeout,
+            installer, sdist_install_cmd, label=" (sdist)",
+        )
+        if install_result is None:
             return result
-        except OSError as exc:
-            result.status = "install_error"
-            result.error_message = f"Sdist install failed: {exc}"
-            result.install_duration_seconds = round(time.monotonic() - install_start, 2)
-            log.error("Sdist install failed for %s: %s", pkg.package, exc)
-            return result
-
-        if install_proc.returncode != 0:
-            result.status = "install_error"
-            result.exit_code = install_proc.returncode
-            result.error_message = (
-                install_proc.stderr[-500:] if install_proc.stderr else "non-zero (sdist)"
-            )
-            result.install_duration_seconds = round(time.monotonic() - install_start, 2)
-            log.error(
-                "Sdist install failed for %s (exit %d)", pkg.package, install_proc.returncode
-            )
-            return result
+        venv_python, installer = install_result
+        log.debug(
+            "Sdist install for %s completed in %.2fs",
+            pkg.package,
+            result.install_duration_seconds,
+        )
 
         # Step 2: Install test dependencies from the repo.
         if deps_install_cmd:
@@ -1409,71 +1479,18 @@ def _run_package_inner(
                     )
             except (subprocess.TimeoutExpired, OSError) as exc:
                 log.warning("Test deps install failed for %s: %s (continuing)", pkg.package, exc)
-
-        result.install_duration_seconds = round(time.monotonic() - install_start, 2)
-        log.debug(
-            "Sdist install for %s completed in %.2fs",
-            pkg.package,
-            result.install_duration_seconds,
-        )
     else:
         # --- Source install mode (original behaviour) ---
         install_cmd = pkg.install_command or "pip install -e ."
         log.info("Installing %s: %s", pkg.package, install_cmd)
-        install_start = time.monotonic()
-        try:
-            install_proc, actual_backend = install_with_fallback(
-                config.target_python,
-                venv_dir,
-                install_cmd,
-                repo_dir,
-                env,
-                per_pkg_timeout,
-                installer,
-            )
-            venv_python = venv_dir / "bin" / "python"  # refresh after possible recreate
-            if actual_backend is not installer:
-                result.installer_backend = actual_backend.value
-                log.info(
-                    "Installer fell back from %s to %s for %s",
-                    installer.value,
-                    actual_backend.value,
-                    pkg.package,
-                )
-            installer = actual_backend
-        except subprocess.TimeoutExpired:
-            result.status = "install_error"
-            result.error_message = "Install timed out"
-            result.install_duration_seconds = round(time.monotonic() - install_start, 2)
-            log.error("Install timed out for %s", pkg.package)
-            return result
-        except OSError as exc:
-            result.status = "install_error"
-            result.error_message = f"Install failed: {exc}"
-            result.install_duration_seconds = round(time.monotonic() - install_start, 2)
-            log.error("Install failed for %s: %s", pkg.package, exc)
-            return result
 
-        result.install_duration_seconds = round(time.monotonic() - install_start, 2)
-        log.debug(
-            "Install for %s exited %d in %.2fs",
-            pkg.package,
-            install_proc.returncode,
-            result.install_duration_seconds,
+        install_result = _run_install(
+            pkg, config, result, venv_dir, repo_dir, env, per_pkg_timeout,
+            installer, install_cmd,
         )
-        if install_proc.stdout:
-            log.debug("Install stdout:\n%s", install_proc.stdout[-3000:])
-        if install_proc.stderr:
-            log.debug("Install stderr:\n%s", install_proc.stderr[-3000:])
-
-        if install_proc.returncode != 0:
-            result.status = "install_error"
-            result.exit_code = install_proc.returncode
-            result.error_message = (
-                install_proc.stderr[-500:] if install_proc.stderr else "non-zero"
-            )
-            log.error("Install failed for %s (exit %d)", pkg.package, install_proc.returncode)
+        if install_result is None:
             return result
+        venv_python, installer = install_result
 
     # --- Import check (skip if reusing venv) ---
     # Use shield_source_dir in sdist mode to prevent importing from local source.
@@ -1579,25 +1596,7 @@ def _run_package_inner(
         log.debug("Test stderr:\n%s", test_proc.stderr[-5000:])
 
     # --- Analyse result ---
-    crash = detect_crash(test_proc.returncode, test_proc.stderr)
-    if crash is not None:
-        result.status = "crash"
-        result.signal = crash.signal_number
-        result.crash_signature = crash.signature
-        save_crash_stderr(run_dir, pkg.package, test_proc.stderr)
-        log.warning(
-            "CRASH in %s: %s (signal %d)",
-            pkg.package,
-            crash.signature,
-            crash.signal_number,
-        )
-    elif test_proc.returncode == 0:
-        result.status = "pass"
-        log.info("PASS: %s (%.2fs)", pkg.package, test_dur)
-    else:
-        result.status = "fail"
-        log.info("FAIL: %s (exit %d, %.2fs)", pkg.package, test_proc.returncode, test_dur)
-
+    _analyze_test_result(test_proc, result, run_dir, pkg.package, test_dur)
     return result
 
 

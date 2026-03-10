@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from labeille.crash import detect_crash
-from labeille.io_utils import utc_now_iso
+from labeille.io_utils import append_jsonl, load_jsonl, utc_now_iso, write_meta_json
 from labeille.logging import get_logger
 from labeille.runner import (
     InstallerBackend,
@@ -924,8 +924,7 @@ def run_compat_survey(
             no_binary_all,
         )
         with jsonl_lock:
-            with open(jsonl_path, "a", encoding="utf-8") as f:
-                f.write(json.dumps(r.to_dict()) + "\n")
+            append_jsonl(jsonl_path, r.to_dict())
         if progress_callback:
             progress_callback(pkg.name, r.status)
         return r
@@ -940,9 +939,7 @@ def run_compat_survey(
                 results.append(future.result())
 
     meta.finished_at = utc_now_iso()
-    (survey_dir / "compat_meta.json").write_text(
-        json.dumps(meta.to_dict(), indent=2) + "\n", encoding="utf-8"
-    )
+    write_meta_json(survey_dir / "compat_meta.json", meta.to_dict())
 
     return CompatSurvey(meta=meta, results=results)
 
@@ -954,13 +951,10 @@ def load_compat_survey(survey_dir: Path) -> CompatSurvey:
         raise FileNotFoundError(f"compat_meta.json not found in {survey_dir}")
     meta = CompatMeta.from_dict(json.loads(meta_path.read_text(encoding="utf-8")))
 
-    results: list[CompatResult] = []
     jsonl_path = survey_dir / "compat_results.jsonl"
+    results: list[CompatResult] = []
     if jsonl_path.exists():
-        for line in jsonl_path.read_text(encoding="utf-8").splitlines():
-            line = line.strip()
-            if line:
-                results.append(CompatResult.from_dict(json.loads(line)))
+        results = load_jsonl(jsonl_path, CompatResult.from_dict)
 
     return CompatSurvey(meta=meta, results=results)
 

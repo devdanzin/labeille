@@ -19,7 +19,6 @@ Execution strategies:
 
 from __future__ import annotations
 
-import json
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -62,7 +61,7 @@ from labeille.bench.timing import (
     prepare_per_test_command,
     run_timed_in_venv,
 )
-from labeille.io_utils import utc_now_iso
+from labeille.io_utils import utc_now_iso, write_meta_json
 from labeille.logging import get_logger
 
 log = get_logger("bench.runner")
@@ -263,7 +262,7 @@ class BenchRunner:
 
         # Write initial metadata (will be updated at the end).
         meta_path = output_dir / "bench_meta.json"
-        meta_path.write_text(json.dumps(meta.to_dict(), indent=2) + "\n", encoding="utf-8")
+        write_meta_json(meta_path, meta.to_dict())
 
         # Phase 6: Execute benchmarks.
         if self.config.interleave:

@@ -551,7 +551,7 @@ def scan_deps_cmd(
             for yaml_file in sorted(packages_dir.glob("*.yaml")):
                 try:
                     registry_entries.append(load_package(yaml_file.stem, registry_dir))
-                except Exception as exc:  # noqa: BLE001
+                except (OSError, ValueError, KeyError, TypeError) as exc:
                     click.echo(
                         f"Warning: could not load registry entry {yaml_file.stem}: {exc}",
                         err=True,
