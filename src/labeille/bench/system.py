@@ -20,9 +20,16 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
+from labeille.io_utils import utc_now_iso
 from labeille.logging import get_logger
 
 log = get_logger("bench.system")
+
+# Exception types expected from best-effort system probing.  Using an explicit
+# tuple instead of bare ``except Exception`` avoids swallowing programming
+# errors (e.g. MemoryError, RecursionError) while covering file I/O, value
+# parsing, indexing, and subprocess failures.
+_PROBE_ERRORS = (OSError, ValueError, IndexError, subprocess.SubprocessError)
 
 
 # ---------------------------------------------------------------------------
@@ -156,7 +163,7 @@ class SystemSnapshot:
         snap = cls(timestamp=time.monotonic())
         try:
             snap.load_avg_1m = round(os.getloadavg()[0], 2)
-        except Exception:  # noqa: BLE001
+        except _PROBE_ERRORS:
             pass
 
         avail = _get_available_ram_gb()
@@ -182,7 +189,7 @@ def _sysctl(key: str) -> str | None:
         )
         if proc.returncode == 0 and proc.stdout.strip():
             return proc.stdout.strip()
-    except Exception:  # noqa: BLE001
+    except _PROBE_ERRORS:
         pass
     return None
 
@@ -253,7 +260,7 @@ def _parse_vm_stat() -> _DarwinMemInfo | None:
             elif line.startswith("Pages wired down:"):
                 info.pages_wired = _parse_vm_stat_value(line)
         return info
-    except Exception:  # noqa: BLE001
+    except _PROBE_ERRORS:
         return None
 
 
@@ -286,7 +293,7 @@ def _get_available_ram_gb_linux() -> float | None:
         for line in meminfo.splitlines():
             if line.startswith("MemAvailable:"):
                 return int(line.split()[1]) / (1024 * 1024)
-    except Exception:  # noqa: BLE001
+    except _PROBE_ERRORS:
         pass
     return None
 
@@ -312,7 +319,7 @@ def capture_system_profile() -> SystemProfile:
     default values rather than exceptions.
     """
     profile = SystemProfile(
-        timestamp=time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+        timestamp=utc_now_iso(),
         hostname=platform.node(),
         cpu_architecture=platform.machine(),
         os_name=platform.system(),
@@ -368,7 +375,7 @@ def _capture_load(profile: SystemProfile) -> None:
         profile.load_avg_1m = round(load[0], 2)
         profile.load_avg_5m = round(load[1], 2)
         profile.load_avg_15m = round(load[2], 2)
-    except Exception:  # noqa: BLE001
+    except _PROBE_ERRORS:
         pass
 
     # Process count is platform-specific.
@@ -397,7 +404,7 @@ def _capture_cpu_info_linux(profile: SystemProfile) -> None:
     """Populate CPU fields from /proc/cpuinfo and os.cpu_count."""
     try:
         profile.cpu_cores_logical = os.cpu_count() or 0
-    except Exception:  # noqa: BLE001
+    except _PROBE_ERRORS:
         pass
 
     # Physical cores from /proc/cpuinfo (count unique core ids).
@@ -424,7 +431,7 @@ def _capture_cpu_info_linux(profile: SystemProfile) -> None:
         else:
             # Fallback: assume no hyperthreading.
             profile.cpu_cores_physical = profile.cpu_cores_logical
-    except Exception:  # noqa: BLE001
+    except _PROBE_ERRORS:
         pass
 
     # CPU frequency from /sys or /proc/cpuinfo.
@@ -437,7 +444,7 @@ def _capture_cpu_info_linux(profile: SystemProfile) -> None:
         max_path = Path("/sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq")
         if max_path.exists():
             profile.cpu_freq_max_mhz = int(max_path.read_text().strip()) / 1000
-    except Exception:  # noqa: BLE001
+    except _PROBE_ERRORS:
         pass
 
     # Fallback: parse "cpu MHz" from /proc/cpuinfo.
@@ -448,7 +455,7 @@ def _capture_cpu_info_linux(profile: SystemProfile) -> None:
                 if line.startswith("cpu MHz"):
                     profile.cpu_freq_mhz = float(line.split(":", 1)[1].strip())
                     break
-        except Exception:  # noqa: BLE001
+        except _PROBE_ERRORS:
             pass
 
 
@@ -468,7 +475,7 @@ def _capture_memory_info_linux(profile: SystemProfile) -> None:
         profile.ram_total_gb = mem.get("MemTotal", 0) / (1024 * 1024)
         profile.ram_available_gb = mem.get("MemAvailable", 0) / (1024 * 1024)
         profile.swap_total_gb = mem.get("SwapTotal", 0) / (1024 * 1024)
-    except Exception:  # noqa: BLE001
+    except _PROBE_ERRORS:
         pass
 
 
@@ -480,11 +487,11 @@ def _capture_os_info_linux(profile: SystemProfile) -> None:
             if line.startswith("PRETTY_NAME="):
                 profile.os_distro = line.split("=", 1)[1].strip().strip('"')
                 break
-    except Exception:  # noqa: BLE001
+    except _PROBE_ERRORS:
         # Fallback.
         try:
             profile.os_distro = f"{platform.system()} {platform.release()}"
-        except Exception:  # noqa: BLE001
+        except _PROBE_ERRORS:
             pass
 
 
@@ -496,7 +503,7 @@ def _capture_process_count_linux(profile: SystemProfile) -> None:
             if line.startswith("procs_running"):
                 profile.running_processes = int(line.split()[1])
                 break
-    except Exception:  # noqa: BLE001
+    except _PROBE_ERRORS:
         pass
 
 
@@ -505,7 +512,7 @@ def _capture_disk_info_linux(profile: SystemProfile) -> None:
     try:
         stat = os.statvfs("/")
         profile.disk_available_gb = round((stat.f_bavail * stat.f_frsize) / (1024**3), 1)
-    except Exception:  # noqa: BLE001
+    except _PROBE_ERRORS:
         pass
 
     # Detect SSD vs HDD from /sys/block.
@@ -534,7 +541,7 @@ def _capture_disk_info_linux(profile: SystemProfile) -> None:
         if rotational.exists():
             is_rotational = rotational.read_text().strip() == "1"
             profile.disk_type = "hdd" if is_rotational else "ssd"
-    except Exception:  # noqa: BLE001
+    except _PROBE_ERRORS:
         pass
 
 
@@ -547,7 +554,7 @@ def _capture_cpu_info_darwin(profile: SystemProfile) -> None:
     """Populate CPU fields using sysctl on macOS."""
     try:
         profile.cpu_cores_logical = os.cpu_count() or 0
-    except Exception:  # noqa: BLE001
+    except _PROBE_ERRORS:
         pass
 
     # CPU model.
@@ -599,7 +606,7 @@ def _capture_memory_info_darwin(profile: SystemProfile) -> None:
                     profile.swap_total_gb = val
                 elif unit == "M":
                     profile.swap_total_gb = val / 1024
-        except Exception:  # noqa: BLE001
+        except _PROBE_ERRORS:
             pass
 
 
@@ -622,11 +629,11 @@ def _capture_os_info_darwin(profile: SystemProfile) -> None:
                     version = line.split(":", 1)[1].strip()
             if name and version:
                 profile.os_distro = f"{name} {version}"
-    except Exception:  # noqa: BLE001
+    except _PROBE_ERRORS:
         # Fallback.
         try:
             profile.os_distro = f"macOS {platform.mac_ver()[0]}"
-        except Exception:  # noqa: BLE001
+        except _PROBE_ERRORS:
             pass
 
 
@@ -643,7 +650,7 @@ def _capture_process_count_darwin(profile: SystemProfile) -> None:
             # Count processes in running state (R).
             running = sum(1 for line in proc.stdout.splitlines() if line.strip().startswith("R"))
             profile.running_processes = running
-    except Exception:  # noqa: BLE001
+    except _PROBE_ERRORS:
         pass
 
 
@@ -653,7 +660,7 @@ def _capture_disk_info_darwin(profile: SystemProfile) -> None:
     try:
         stat = os.statvfs("/")
         profile.disk_available_gb = round((stat.f_bavail * stat.f_frsize) / (1024**3), 1)
-    except Exception:  # noqa: BLE001
+    except _PROBE_ERRORS:
         pass
 
     # SSD vs HDD detection.
@@ -676,7 +683,7 @@ def _capture_disk_info_darwin(profile: SystemProfile) -> None:
                 # APFS on Apple Silicon is always SSD.
                 if "APFS" in proc.stdout:
                     profile.disk_type = "ssd"
-    except Exception:  # noqa: BLE001
+    except _PROBE_ERRORS:
         pass
 
 
@@ -817,7 +824,7 @@ def check_stability(
                 f"1-minute load average is {load[0]:.1f} "
                 f"(approaching threshold of {max_load:.1f})."
             )
-    except Exception:  # noqa: BLE001
+    except _PROBE_ERRORS:
         result.warnings.append("Could not read load average.")
 
     # Available RAM — platform-specific.

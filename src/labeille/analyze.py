@@ -8,11 +8,11 @@ analysis functions that operate on loaded data.
 from __future__ import annotations
 
 import json
-import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+from labeille.io_utils import utc_now_iso
 from labeille.registry import Index, PackageEntry
 
 
@@ -588,7 +588,7 @@ def generate_registry_report(
     """
     report = RegistryReport(
         total=len(packages),
-        generated_at=time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+        generated_at=utc_now_iso(),
     )
 
     # Auto-detect Python versions.

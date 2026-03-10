@@ -30,6 +30,7 @@ from labeille.ft.results import (
     append_ft_result,
     save_ft_run,
 )
+from labeille.io_utils import utc_now_iso
 from labeille.logging import get_logger
 from labeille.resolve import fetch_pypi_metadata
 from labeille.runner import (
@@ -552,8 +553,8 @@ def run_package_ft(
         )
         if proc.returncode == 0:
             result.commit = proc.stdout.strip()
-    except Exception:
-        pass
+    except (subprocess.TimeoutExpired, OSError) as exc:
+        log.debug("Could not capture git revision for %s: %s", pkg.package, exc)
 
     # Sdist version alignment.
     import_name = getattr(pkg, "import_name", None) or pkg.package.replace("-", "_")
@@ -696,8 +697,12 @@ def run_package_ft(
                 env=env,
                 timeout=config.timeout,
             )
-        except Exception:
-            pass
+        except Exception as exc:  # noqa: BLE001
+            log.warning(
+                "Extra deps install failed for %s: %s (continuing)",
+                pkg.package,
+                exc,
+            )
 
     result.install_duration_s = time.monotonic() - install_start
 
@@ -905,7 +910,7 @@ def run_ft(config: FTRunConfig) -> list[FTPackageResult]:
 
     meta = FTRunMeta(
         run_id=run_id,
-        timestamp=time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+        timestamp=utc_now_iso(),
         system_profile=sys_profile.to_dict(),
         python_profile=py_profile.to_dict(),
         config={
@@ -1001,8 +1006,8 @@ def _select_packages(index: Any, config: FTRunConfig) -> list[Any]:
         try:
             pkg = load_package(entry.package, config.registry_dir)
             packages.append(pkg)
-        except Exception:
-            log.debug("Could not load package %s, skipping", entry.package)
+        except Exception as exc:  # noqa: BLE001
+            log.warning("Could not load package %s, skipping: %s", entry.package, exc)
 
     if config.packages_filter:
         names = set(config.packages_filter)

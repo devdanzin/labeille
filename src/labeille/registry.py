@@ -12,12 +12,12 @@ from __future__ import annotations
 
 import os
 from dataclasses import asdict, dataclass, field, fields
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 import yaml
 
+from labeille.io_utils import atomic_write_text, utc_now_iso
 from labeille.logging import get_logger
 
 log = get_logger("registry")
@@ -260,7 +260,7 @@ def save_index(index: Index, registry_path: Path) -> None:
         index: The index to save.
         registry_path: Path to the registry directory.
     """
-    index.last_updated = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
+    index.last_updated = utc_now_iso()
     sort_index(index)
 
     data: dict[str, Any] = {
@@ -269,9 +269,9 @@ def save_index(index: Index, registry_path: Path) -> None:
     }
     index_file = registry_path / "index.yaml"
     registry_path.mkdir(parents=True, exist_ok=True)
-    index_file.write_text(
+    atomic_write_text(
+        index_file,
         yaml.dump(data, default_flow_style=False, sort_keys=False, allow_unicode=True),
-        encoding="utf-8",
     )
     log.debug("Saved index with %d packages to %s", len(index.packages), index_file)
 
@@ -332,9 +332,9 @@ def save_package(entry: PackageEntry, registry_path: Path) -> None:
     p = package_path(entry.package, registry_path)
     p.parent.mkdir(parents=True, exist_ok=True)
     data = _package_to_dict(entry)
-    p.write_text(
+    atomic_write_text(
+        p,
         yaml.dump(data, default_flow_style=False, sort_keys=False, allow_unicode=True),
-        encoding="utf-8",
     )
     log.debug("Saved package %s to %s", entry.package, p)
 

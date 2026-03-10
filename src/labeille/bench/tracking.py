@@ -19,12 +19,12 @@ from __future__ import annotations
 
 import hashlib
 import json
-import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 from labeille.bench.results import BenchMeta, BenchPackageResult, load_bench_run
+from labeille.io_utils import utc_now_iso
 from labeille.logging import get_logger
 
 log = get_logger("bench.tracking")
@@ -296,7 +296,7 @@ def init_series(
     series = TrackingSeries(
         series_id=series_id,
         description=description,
-        created=time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+        created=utc_now_iso(),
     )
 
     save_series(series, series_dir)

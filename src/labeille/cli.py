@@ -1,14 +1,20 @@
 """Command-line interface for labeille.
 
-Provides the main CLI entry point with ``resolve``, ``run``, and ``scan-deps`` subcommands.
+Provides the main CLI entry point and registers all subcommand groups
+(``resolve``, ``run``, ``scan-deps``, ``registry``, ``analyze``, ``bench``,
+``ft``, ``compat``, ``bisect``).
 """
 
 from __future__ import annotations
 
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import click
+
+if TYPE_CHECKING:
+    from labeille.scan_deps import ScanResult
 
 from labeille import __version__
 from labeille.logging import setup_logging
@@ -545,8 +551,11 @@ def scan_deps_cmd(
             for yaml_file in sorted(packages_dir.glob("*.yaml")):
                 try:
                     registry_entries.append(load_package(yaml_file.stem, registry_dir))
-                except Exception:  # noqa: BLE001
-                    pass
+                except Exception as exc:  # noqa: BLE001
+                    click.echo(
+                        f"Warning: could not load registry entry {yaml_file.stem}: {exc}",
+                        err=True,
+                    )
 
     result = scan_package_deps(
         repo_path.resolve(),
@@ -566,11 +575,8 @@ def scan_deps_cmd(
         _print_human_format(result, install_command)
 
 
-def _print_pip_format(result: "ScanResult") -> None:  # type: ignore[name-defined]  # noqa: F821
+def _print_pip_format(result: ScanResult) -> None:
     """Print just the pip install command for missing deps."""
-    from labeille.scan_deps import ScanResult
-
-    assert isinstance(result, ScanResult)
     if result.missing:
         line = "pip install " + " ".join(sorted(result.missing))
         click.echo(line)
@@ -579,11 +585,8 @@ def _print_pip_format(result: "ScanResult") -> None:  # type: ignore[name-define
         click.echo(f"# Unresolved: {names}")
 
 
-def _print_human_format(result: "ScanResult", install_command: str | None) -> None:  # type: ignore[name-defined]  # noqa: F821, E501
+def _print_human_format(result: ScanResult, install_command: str | None) -> None:
     """Print human-readable scan results."""
-    from labeille.scan_deps import ScanResult
-
-    assert isinstance(result, ScanResult)
     click.echo(f"Scanning: {result.package_name}")
     click.echo(f"  Test directories: {', '.join(result.scan_dirs)}")
     click.echo(f"  Files scanned: {result.total_files_scanned}")

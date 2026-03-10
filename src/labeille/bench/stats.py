@@ -24,7 +24,7 @@ import math
 import random
 import statistics
 from dataclasses import dataclass
-from typing import Sequence
+from typing import Literal, Sequence
 
 
 # ---------------------------------------------------------------------------
@@ -32,7 +32,7 @@ from typing import Sequence
 # ---------------------------------------------------------------------------
 
 
-@dataclass
+@dataclass(frozen=True)
 class DescriptiveStats:
     """Summary statistics for a sample."""
 
@@ -169,7 +169,7 @@ def _percentile(sorted_values: list[float], p: float) -> float:
 # ---------------------------------------------------------------------------
 
 
-@dataclass
+@dataclass(frozen=True)
 class TTestResult:
     """Result of Welch's t-test comparing two independent samples."""
 
@@ -378,15 +378,15 @@ def _regularized_incomplete_beta(x: float, a: float, b: float) -> float:
 # ---------------------------------------------------------------------------
 
 
-@dataclass
+@dataclass(frozen=True)
 class EffectSize:
     """Cohen's d effect size with classification."""
 
     d: float
-    classification: str  # negligible, small, medium, large
+    classification: Literal["negligible", "small", "medium", "large", "unknown"]
 
     @staticmethod
-    def classify(d: float) -> str:
+    def classify(d: float) -> Literal["negligible", "small", "medium", "large"]:
         """Classify effect size per Cohen's conventions.
 
         |d| < 0.2: negligible
@@ -447,7 +447,7 @@ def cohens_d(
 # ---------------------------------------------------------------------------
 
 
-@dataclass
+@dataclass(frozen=True)
 class BootstrapCI:
     """Bootstrap confidence interval for the difference in means."""
 
@@ -570,7 +570,7 @@ def detect_outliers(
 # ---------------------------------------------------------------------------
 
 
-@dataclass
+@dataclass(frozen=True)
 class OverheadResult:
     """Result of comparing two conditions (overhead analysis)."""
 

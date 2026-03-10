@@ -23,7 +23,7 @@ import json
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from labeille.bench.config import (
     BenchConfig,
@@ -62,6 +62,7 @@ from labeille.bench.timing import (
     prepare_per_test_command,
     run_timed_in_venv,
 )
+from labeille.io_utils import utc_now_iso
 from labeille.logging import get_logger
 
 log = get_logger("bench.runner")
@@ -251,7 +252,7 @@ class BenchRunner:
                 "adaptive_min_iterations": self.config.adaptive_min_iterations,
             },
             cli_args=self.config.cli_args,
-            start_time=time.strftime("%Y-%m-%dT%H:%M:%S%z"),
+            start_time=utc_now_iso(),
         )
         self._meta = meta
 
@@ -262,7 +263,7 @@ class BenchRunner:
 
         # Write initial metadata (will be updated at the end).
         meta_path = output_dir / "bench_meta.json"
-        meta_path.write_text(json.dumps(meta.to_dict(), indent=2) + "\n")
+        meta_path.write_text(json.dumps(meta.to_dict(), indent=2) + "\n", encoding="utf-8")
 
         # Phase 6: Execute benchmarks.
         if self.config.interleave:
@@ -271,7 +272,7 @@ class BenchRunner:
             results = self._run_sequential(packages, results_path)
 
         # Phase 7: Finalize.
-        meta.end_time = time.strftime("%Y-%m-%dT%H:%M:%S%z")
+        meta.end_time = utc_now_iso()
         meta.packages_completed = sum(1 for r in results if not r.skipped)
         meta.packages_skipped = sum(1 for r in results if r.skipped)
 
@@ -777,6 +778,7 @@ class BenchRunner:
         snap_after = SystemSnapshot.capture()
 
         # Classify the result.
+        status: Literal["ok", "fail", "timeout", "error", "oom"]
         if timed.timed_out:
             status = "timeout"
         elif timed.exit_code == 0:

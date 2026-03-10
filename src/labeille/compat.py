@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Any, Callable
 
 from labeille.crash import detect_crash
+from labeille.io_utils import utc_now_iso
 from labeille.logging import get_logger
 from labeille.runner import (
     InstallerBackend,
@@ -177,6 +178,7 @@ class CompatMeta:
     extra_patterns_file: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize to a dict suitable for JSON persistence."""
         d: dict[str, Any] = {
             "survey_id": self.survey_id,
             "target_python": self.target_python,
@@ -194,6 +196,7 @@ class CompatMeta:
 
     @classmethod
     def from_dict(cls, d: dict[str, Any]) -> CompatMeta:
+        """Deserialize from a dict loaded from JSON."""
         return cls(
             survey_id=d["survey_id"],
             target_python=d["target_python"],
@@ -897,7 +900,7 @@ def run_compat_survey(
         python_version=python_version,
         from_mode=from_mode,
         no_binary_all=no_binary_all,
-        started_at=datetime.now(timezone.utc).isoformat(),
+        started_at=utc_now_iso(),
         finished_at="",
         total_packages=len(packages),
         installer_preference=installer_preference,
@@ -936,7 +939,7 @@ def run_compat_survey(
             for future in as_completed(futures):
                 results.append(future.result())
 
-    meta.finished_at = datetime.now(timezone.utc).isoformat()
+    meta.finished_at = utc_now_iso()
     (survey_dir / "compat_meta.json").write_text(
         json.dumps(meta.to_dict(), indent=2) + "\n", encoding="utf-8"
     )
@@ -981,10 +984,12 @@ class CompatDiffEntry:
 
     @property
     def is_regression(self) -> bool:
+        """True if the package built successfully in survey A but failed in B."""
         return self.status_a == "build_ok" and self.status_b != "build_ok"
 
     @property
     def is_fix(self) -> bool:
+        """True if the package failed in survey A but built successfully in B."""
         return self.status_a != "build_ok" and self.status_b == "build_ok"
 
 
@@ -1000,14 +1005,17 @@ class CompatDiff:
 
     @property
     def regressions(self) -> list[CompatDiffEntry]:
+        """Packages that built in survey A but failed in survey B."""
         return [e for e in self.entries if e.is_regression]
 
     @property
     def fixes(self) -> list[CompatDiffEntry]:
+        """Packages that failed in survey A but built in survey B."""
         return [e for e in self.entries if e.is_fix]
 
     @property
     def category_changes(self) -> list[CompatDiffEntry]:
+        """Packages that changed category without regressing or being fixed."""
         return [
             e
             for e in self.entries
