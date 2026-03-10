@@ -21,26 +21,26 @@ from labeille.runner import (
 
 
 class TestFetchLatestPypiVersion(unittest.TestCase):
-    @patch("labeille.runner.fetch_pypi_metadata")
+    @patch("labeille.repo_ops.fetch_pypi_metadata")
     def test_returns_version(self, mock_fetch: MagicMock) -> None:
         mock_fetch.return_value = {"info": {"version": "2.31.0"}}
         result = fetch_latest_pypi_version("requests")
         self.assertEqual(result, "2.31.0")
         mock_fetch.assert_called_once_with("requests", timeout=10.0)
 
-    @patch("labeille.runner.fetch_pypi_metadata")
+    @patch("labeille.repo_ops.fetch_pypi_metadata")
     def test_returns_none_on_fetch_failure(self, mock_fetch: MagicMock) -> None:
         mock_fetch.return_value = None
         result = fetch_latest_pypi_version("nonexistent")
         self.assertIsNone(result)
 
-    @patch("labeille.runner.fetch_pypi_metadata")
+    @patch("labeille.repo_ops.fetch_pypi_metadata")
     def test_returns_none_on_missing_key(self, mock_fetch: MagicMock) -> None:
         mock_fetch.return_value = {"info": {}}
         result = fetch_latest_pypi_version("bad-response")
         self.assertIsNone(result)
 
-    @patch("labeille.runner.fetch_pypi_metadata")
+    @patch("labeille.repo_ops.fetch_pypi_metadata")
     def test_custom_timeout(self, mock_fetch: MagicMock) -> None:
         mock_fetch.return_value = {"info": {"version": "1.0"}}
         fetch_latest_pypi_version("pkg", timeout=5.0)
