@@ -1,9 +1,10 @@
-"""Shared file I/O utilities."""
+"""Shared file I/O and process utilities."""
 
 from __future__ import annotations
 
 import json
 import os
+import signal
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
@@ -87,3 +88,19 @@ def append_jsonl(path: Path, obj: dict[str, Any]) -> None:
     """Append a single JSON object as a line to a JSONL file."""
     with path.open("a", encoding="utf-8") as f:
         f.write(json.dumps(obj) + "\n")
+
+
+def kill_process_group(pid: int) -> None:
+    """Kill an entire process group by PID.
+
+    Resolves the process group ID via ``os.getpgid`` and sends SIGKILL to
+    the entire group.  Silently ignores errors if the process has already
+    exited or cannot be killed (e.g. permission denied).
+
+    Use with subprocesses started via ``start_new_session=True``.
+    """
+    try:
+        pgid = os.getpgid(pid)
+        os.killpg(pgid, signal.SIGKILL)
+    except (ProcessLookupError, PermissionError, OSError):
+        pass

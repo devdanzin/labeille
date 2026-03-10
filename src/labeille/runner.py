@@ -29,7 +29,7 @@ from pathlib import Path
 from typing import Any
 
 from labeille.crash import detect_crash
-from labeille.io_utils import append_jsonl, utc_now_iso, write_meta_json
+from labeille.io_utils import append_jsonl, kill_process_group, utc_now_iso, write_meta_json
 from labeille.logging import get_logger
 from labeille.registry import Index, PackageEntry, load_index, load_package, package_exists
 
@@ -343,8 +343,6 @@ def _run_in_process_group(
             The exception's ``stdout`` and ``stderr`` attributes contain any
             partial output captured before the timeout.
     """
-    import signal as signal_module
-
     proc = subprocess.Popen(
         cmd,
         shell=True,
@@ -359,13 +357,7 @@ def _run_in_process_group(
         stdout, stderr = proc.communicate(timeout=timeout)
         return subprocess.CompletedProcess(proc.args, proc.returncode, stdout, stderr)
     except subprocess.TimeoutExpired:
-        # Kill the entire process group.
-        try:
-            pgid = os.getpgid(proc.pid)
-            os.killpg(pgid, signal_module.SIGKILL)
-        except (ProcessLookupError, PermissionError, OSError):
-            # Process already exited or we can't kill it.
-            pass
+        kill_process_group(proc.pid)
         # Wait for the process to actually terminate and collect output.
         try:
             stdout, stderr = proc.communicate(timeout=5)
