@@ -13,7 +13,7 @@ from __future__ import annotations
 import os
 from dataclasses import asdict, dataclass, field, fields
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import yaml
 
@@ -110,12 +110,12 @@ class PackageEntry:
     package: str
     repo: str | None = None
     pypi_url: str = ""
-    extension_type: str = "unknown"  # pure | extensions | unknown
+    extension_type: Literal["pure", "extensions", "unknown"] = "unknown"
     python_versions: list[str] = field(default_factory=list)
-    install_method: str = "pip"  # pip | pip-extras | custom
+    install_method: Literal["pip", "pip-extras", "custom"] = "pip"
     install_command: str = ""
     test_command: str = ""
-    test_framework: str = "pytest"  # pytest | unittest | custom
+    test_framework: Literal["pytest", "unittest", "custom"] = "pytest"
     uses_xdist: bool = False
     timeout: int | None = None
     skip: bool = False

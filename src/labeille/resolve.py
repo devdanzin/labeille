@@ -163,7 +163,7 @@ class ResolveResult:
 
     name: str
     repo_url: str | None = None
-    extension_type: str = "unknown"
+    extension_type: Literal["pure", "extensions", "unknown"] = "unknown"
     action: Literal["created", "updated", "skipped", "skipped_enriched", "failed"] = "skipped"
     error: str | None = None
 

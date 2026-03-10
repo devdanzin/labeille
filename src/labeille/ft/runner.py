@@ -16,7 +16,7 @@ import time
 from contextlib import nullcontext
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from labeille.classifier import has_ft_wheel
 from labeille.crash import detect_crash
@@ -418,6 +418,7 @@ def run_single_iteration(
             stderr_tail=monitor.stderr_tail,
         )
 
+    status: Literal["pass", "fail", "crash", "timeout", "deadlock"]
     if exit_code is None or (duration >= timeout and exit_code in (None, -9, 137)):
         status = "deadlock" if is_deadlocked else "timeout"
         return IterationOutcome(

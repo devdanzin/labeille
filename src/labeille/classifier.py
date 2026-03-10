@@ -10,7 +10,7 @@ native code interactions.
 from __future__ import annotations
 
 import re
-from typing import Any
+from typing import Any, Literal
 
 
 # Patterns that indicate a platform-specific (native extension) wheel.
@@ -19,7 +19,7 @@ _PLATFORM_INDICATORS = re.compile(
 )
 
 
-def classify_from_urls(urls: list[dict[str, Any]]) -> str:
+def classify_from_urls(urls: list[dict[str, Any]]) -> Literal["pure", "extensions", "unknown"]:
     """Classify a package from its PyPI ``urls`` array.
 
     Examines the distribution files for the *latest* version to determine

@@ -17,7 +17,7 @@ import enum
 import json
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from labeille.io_utils import append_jsonl, load_jsonl, write_meta_json
 from labeille.logging import get_logger
@@ -100,7 +100,7 @@ class IterationOutcome:
     """
 
     index: int
-    status: str  # pass, fail, crash, timeout, deadlock
+    status: Literal["pass", "fail", "crash", "timeout", "deadlock"]
     exit_code: int | None = None
     duration_s: float = 0.0
     crash_signal: str | None = None
