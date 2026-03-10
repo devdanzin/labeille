@@ -791,7 +791,7 @@ def export(result_dir: Path, fmt: str, output: Path | None) -> None:
         text = export_markdown(meta, results, anomaly_report=anomaly_report)
 
     if output:
-        output.write_text(text)
+        output.write_text(text, encoding="utf-8")
         click.echo(f"Exported to {output}")
     else:
         click.echo(text)
