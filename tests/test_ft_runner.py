@@ -406,7 +406,7 @@ class TestRunPackageFt(unittest.TestCase):
 
     @patch("labeille.ft.runner.clone_repo")
     def test_run_package_clone_failure(self, mock_clone: MagicMock) -> None:
-        mock_clone.side_effect = Exception("clone error")
+        mock_clone.side_effect = OSError("clone error")
         pkg = self._make_pkg()
         config = self._make_config()
 
