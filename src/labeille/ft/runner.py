@@ -465,83 +465,84 @@ def run_single_iteration(
 
 
 # ---------------------------------------------------------------------------
-# Per-package execution
+# Per-package execution — helpers
 # ---------------------------------------------------------------------------
 
 
-def run_package_ft(
+def _check_ft_wheel_trust(
     pkg: Any,
     config: FTRunConfig,
-) -> FTPackageResult:
-    """Run free-threading tests for a single package.
+    result: FTPackageResult,
+) -> tuple[bool, dict[str, Any] | None]:
+    """Check if the package has a free-threaded wheel and can be skipped.
 
-    1. Clone/pull the repo.
-    2. Create venv and install the package.
-    3. Probe extension GIL compatibility.
-    4. Run N test iterations, capturing outcomes.
-    5. Optionally run N iterations with GIL enabled for comparison.
-    6. Compute aggregates and categorize.
-
-    Args:
-        pkg: PackageEntry from the registry.
-        config: Run configuration.
-
-    Returns:
-        FTPackageResult with all iterations and classification.
+    Returns ``(should_skip, cached_metadata)``.  When *should_skip* is True,
+    ``result`` has already been populated with the wheel trust classification.
     """
-    result = FTPackageResult(package=pkg.package)
+    cached_metadata: dict[str, Any] | None = None
+    if not config.trust_ft_wheels:
+        return False, None
 
-    # --- FT wheel trust check (before clone). ---
-    _cached_metadata: dict[str, Any] | None = None
+    ft_check_version: tuple[int, int] | None = (
+        None if config.trust_ft_wheels_any_version else config._target_python_version
+    )
+    cached_metadata = fetch_pypi_metadata(pkg.package, timeout=10.0)
+    if cached_metadata is None:
+        return False, None
 
-    if config.trust_ft_wheels:
-        ft_check_version: tuple[int, int] | None = (
-            None if config.trust_ft_wheels_any_version else config._target_python_version
+    urls = cached_metadata.get("urls", [])
+    pypi_version: str | None = None
+    try:
+        pypi_version = cached_metadata["info"]["version"]
+    except (KeyError, TypeError):
+        pass
+
+    if has_ft_wheel(urls, target_version=ft_check_version):
+        version_desc = (
+            f" (Python {ft_check_version[0]}.{ft_check_version[1]})"
+            if ft_check_version
+            else " (any version)"
         )
-        _cached_metadata = fetch_pypi_metadata(pkg.package, timeout=10.0)
-        if _cached_metadata is not None:
-            urls = _cached_metadata.get("urls", [])
-            pypi_version: str | None = None
-            try:
-                pypi_version = _cached_metadata["info"]["version"]
-            except (KeyError, TypeError):
-                pass
+        log.info(
+            "Skipping %s: free-threaded wheel found for %s%s",
+            pkg.package,
+            pypi_version or "latest",
+            version_desc,
+        )
+        result.category = FailureCategory.COMPATIBLE_BY_WHEEL
+        result.ft_wheel_found = True
+        result.ft_wheel_version = pypi_version
+        result.install_from = "skipped"
+        return True, cached_metadata
 
-            if has_ft_wheel(urls, target_version=ft_check_version):
-                version_desc = (
-                    f" (Python {ft_check_version[0]}.{ft_check_version[1]})"
-                    if ft_check_version
-                    else " (any version)"
-                )
-                log.info(
-                    "Skipping %s: free-threaded wheel found for %s%s",
-                    pkg.package,
-                    pypi_version or "latest",
-                    version_desc,
-                )
-                result.category = FailureCategory.COMPATIBLE_BY_WHEEL
-                result.ft_wheel_found = True
-                result.ft_wheel_version = pypi_version
-                result.install_from = "skipped"
-                return result
-            else:
-                result.ft_wheel_found = False
+    result.ft_wheel_found = False
+    return False, cached_metadata
 
-    repo_dir = config.repos_dir / pkg.package
-    venv_dir = config.venvs_dir / f"{pkg.package}-ft"
 
-    # Step 1: Clone or pull repo.
+def _clone_and_align_ft(
+    pkg: Any,
+    config: FTRunConfig,
+    result: FTPackageResult,
+    repo_dir: Path,
+    cached_metadata: dict[str, Any] | None,
+) -> tuple[str, str] | None:
+    """Clone/pull the repo and align to sdist version if needed.
+
+    Returns ``(import_name, source_layout)`` on success, or ``None`` if
+    cloning failed (``result`` is populated with the error).
+    """
+    # Clone or pull.
     try:
         if repo_dir.exists():
             pull_repo(repo_dir)
         else:
             clone_repo(pkg.repo, repo_dir)
-    except Exception as exc:
+    except (OSError, subprocess.SubprocessError) as exc:
         log.error("Failed to clone/pull %s: %s", pkg.package, exc)
         result.install_ok = False
         result.install_error = f"Clone failed: {exc}"
         result.categorize()
-        return result
+        return None
 
     # Record current commit.
     try:
@@ -557,16 +558,14 @@ def run_package_ft(
     except (subprocess.TimeoutExpired, OSError) as exc:
         log.debug("Could not capture git revision for %s: %s", pkg.package, exc)
 
-    # Sdist version alignment.
     import_name = getattr(pkg, "import_name", None) or pkg.package.replace("-", "_")
     source_layout = "unknown"
 
     if config.install_from == "sdist":
         result.install_from = "sdist"
-        # Reuse cached metadata from FT wheel check if available.
-        if _cached_metadata is not None:
+        if cached_metadata is not None:
             try:
-                sdist_version: str | None = _cached_metadata["info"]["version"]
+                sdist_version: str | None = cached_metadata["info"]["version"]
             except (KeyError, TypeError):
                 sdist_version = None
         else:
@@ -599,18 +598,268 @@ def run_package_ft(
     else:
         result.install_from = "source"
 
-    # Step 2: Create venv and install.
+    return import_name, source_layout
+
+
+def _create_venv_and_install_ft(
+    pkg: Any,
+    config: FTRunConfig,
+    result: FTPackageResult,
+    repo_dir: Path,
+    venv_dir: Path,
+    env: dict[str, str],
+) -> Path | None:
+    """Create venv, install the package, and install extra deps.
+
+    Returns the venv python path on success, or ``None`` if installation
+    failed (``result`` is populated with the error).
+    """
     try:
         create_venv(config.target_python, venv_dir)
-    except Exception as exc:
+    except (OSError, subprocess.SubprocessError) as exc:
         log.error("Venv creation failed for %s: %s", pkg.package, exc)
         result.install_ok = False
         result.install_error = f"Venv creation failed: {exc}"
         result.categorize()
-        return result
+        return None
 
     venv_python = venv_dir / "bin" / "python"
+    install_start = time.monotonic()
+    raw_install_cmd = pkg.install_command or "pip install -e ."
 
+    if config.install_from == "sdist":
+        if not _install_sdist_mode(
+            pkg, config, result, repo_dir, venv_python, env, raw_install_cmd, install_start
+        ):
+            return None
+    else:
+        if not _install_source_mode(
+            pkg, config, result, repo_dir, venv_python, env, raw_install_cmd, install_start
+        ):
+            return None
+
+    # Install extra deps.
+    if config.extra_deps:
+        try:
+            extra_cmd = f"pip install {' '.join(config.extra_deps)}"
+            install_package(venv_python, extra_cmd, cwd=repo_dir, env=env, timeout=config.timeout)
+        except (subprocess.TimeoutExpired, subprocess.SubprocessError, OSError) as exc:
+            log.warning("Extra deps install failed for %s: %s (continuing)", pkg.package, exc)
+
+    result.install_duration_s = time.monotonic() - install_start
+    return venv_python
+
+
+def _install_sdist_mode(
+    pkg: Any,
+    config: FTRunConfig,
+    result: FTPackageResult,
+    repo_dir: Path,
+    venv_python: Path,
+    env: dict[str, str],
+    raw_install_cmd: str,
+    install_start: float,
+) -> bool:
+    """Install from sdist. Returns True on success, False on failure."""
+    sdist_cmd, deps_cmd = build_sdist_install_commands(pkg.package, raw_install_cmd)
+    log.info("Installing %s from sdist: %s", pkg.package, sdist_cmd)
+    try:
+        install_result = install_package(
+            venv_python, sdist_cmd, cwd=repo_dir, env=env, timeout=config.timeout
+        )
+        if install_result.returncode != 0:
+            result.install_ok = False
+            result.install_error = (
+                f"Sdist install failed (exit {install_result.returncode}): "
+                f"{install_result.stderr.strip()[-500:]}"
+            )
+            result.install_duration_s = time.monotonic() - install_start
+            result.categorize()
+            return False
+    except subprocess.TimeoutExpired:
+        result.install_ok = False
+        result.install_error = "Sdist install timed out"
+        result.install_duration_s = time.monotonic() - install_start
+        result.categorize()
+        return False
+
+    if deps_cmd:
+        log.info("Installing test deps for %s: %s", pkg.package, deps_cmd)
+        try:
+            install_package(venv_python, deps_cmd, cwd=repo_dir, env=env, timeout=config.timeout)
+        except (subprocess.TimeoutExpired, subprocess.SubprocessError, OSError) as exc:
+            log.warning("Test deps install failed for %s: %s (continuing)", pkg.package, exc)
+    return True
+
+
+def _install_source_mode(
+    pkg: Any,
+    config: FTRunConfig,
+    result: FTPackageResult,
+    repo_dir: Path,
+    venv_python: Path,
+    env: dict[str, str],
+    raw_install_cmd: str,
+    install_start: float,
+) -> bool:
+    """Install from source. Returns True on success, False on failure."""
+    try:
+        install_result = install_package(
+            venv_python, raw_install_cmd, cwd=repo_dir, env=env, timeout=config.timeout
+        )
+        if install_result.returncode != 0:
+            result.install_ok = False
+            result.install_error = (
+                f"Install failed (exit {install_result.returncode}): "
+                f"{install_result.stderr.strip()[-500:]}"
+            )
+            result.install_duration_s = time.monotonic() - install_start
+            result.categorize()
+            return False
+    except subprocess.TimeoutExpired:
+        result.install_ok = False
+        result.install_error = "Install timed out"
+        result.install_duration_s = time.monotonic() - install_start
+        result.categorize()
+        return False
+    return True
+
+
+def _run_ft_iterations(
+    pkg: Any,
+    config: FTRunConfig,
+    result: FTPackageResult,
+    venv_python: Path,
+    test_cmd: str,
+    repo_dir: Path,
+    env: dict[str, str],
+) -> None:
+    """Run N test iterations with GIL disabled."""
+    log.info(
+        "Running %d iterations of %s (free-threaded)...",
+        config.iterations,
+        pkg.package,
+    )
+    for i in range(1, config.iterations + 1):
+        iteration_env = dict(env)
+        iteration_env["PYTHON_GIL"] = "0"
+
+        outcome = run_single_iteration(
+            venv_python=venv_python,
+            test_command=test_cmd,
+            cwd=repo_dir,
+            env=iteration_env,
+            timeout=config.timeout,
+            stall_threshold=config.stall_threshold,
+            iteration_index=i,
+            tsan_build=config.tsan_build,
+            stderr_tail_bytes=config.stderr_tail_bytes,
+        )
+        result.iterations.append(outcome)
+
+        log.info(
+            "  %s iteration %d/%d: %s (%.1fs)",
+            pkg.package,
+            i,
+            config.iterations,
+            outcome.status,
+            outcome.duration_s,
+        )
+
+        if config.stop_on_first_pass and outcome.is_pass:
+            log.info("  %s passed on iteration %d, stopping early.", pkg.package, i)
+            break
+
+
+def _run_gil_comparison(
+    pkg: Any,
+    config: FTRunConfig,
+    result: FTPackageResult,
+    venv_python: Path,
+    test_cmd: str,
+    repo_dir: Path,
+    env: dict[str, str],
+) -> None:
+    """Run N test iterations with GIL enabled for comparison."""
+    log.info(
+        "Running %d iterations of %s (GIL enabled for comparison)...",
+        config.iterations,
+        pkg.package,
+    )
+    gil_iterations: list[IterationOutcome] = []
+
+    for i in range(1, config.iterations + 1):
+        iteration_env = dict(env)
+        iteration_env["PYTHON_GIL"] = "1"
+
+        outcome = run_single_iteration(
+            venv_python=venv_python,
+            test_command=test_cmd,
+            cwd=repo_dir,
+            env=iteration_env,
+            timeout=config.timeout,
+            stall_threshold=config.stall_threshold,
+            iteration_index=i,
+            tsan_build=False,
+            stderr_tail_bytes=config.stderr_tail_bytes,
+        )
+        gil_iterations.append(outcome)
+
+        log.info(
+            "  %s (GIL) iteration %d/%d: %s (%.1fs)",
+            pkg.package,
+            i,
+            config.iterations,
+            outcome.status,
+            outcome.duration_s,
+        )
+
+    result.gil_enabled_iterations = gil_iterations
+
+
+# ---------------------------------------------------------------------------
+# Per-package execution
+# ---------------------------------------------------------------------------
+
+
+def run_package_ft(
+    pkg: Any,
+    config: FTRunConfig,
+) -> FTPackageResult:
+    """Run free-threading tests for a single package.
+
+    1. Check for free-threaded wheel (early skip).
+    2. Clone/pull the repo and align to sdist version.
+    3. Create venv and install the package.
+    4. Probe extension GIL compatibility.
+    5. Run N test iterations with GIL disabled.
+    6. Optionally run N iterations with GIL enabled for comparison.
+    7. Compute aggregates and categorize.
+
+    Args:
+        pkg: PackageEntry from the registry.
+        config: Run configuration.
+
+    Returns:
+        FTPackageResult with all iterations and classification.
+    """
+    result = FTPackageResult(package=pkg.package)
+
+    # Phase 1: FT wheel trust check (before clone).
+    should_skip, cached_metadata = _check_ft_wheel_trust(pkg, config, result)
+    if should_skip:
+        return result
+
+    repo_dir = config.repos_dir / pkg.package
+    venv_dir = config.venvs_dir / f"{pkg.package}-ft"
+
+    # Phase 2: Clone/pull and sdist version alignment.
+    clone_result = _clone_and_align_ft(pkg, config, result, repo_dir, cached_metadata)
+    if clone_result is None:
+        return result
+    import_name, source_layout = clone_result
+
+    # Phase 3: Create venv and install.
     env = clean_env(
         PYTHON_GIL="0",
         PYTHONFAULTHANDLER="1",
@@ -621,91 +870,9 @@ def run_package_ft(
         env["TSAN_OPTIONS"] = "exitcode=0"
     env.update(config.env_overrides)
 
-    install_start = time.monotonic()
-    raw_install_cmd = pkg.install_command or "pip install -e ."
-
-    if config.install_from == "sdist":
-        # Sdist mode: install from PyPI + deps from repo.
-        sdist_cmd, deps_cmd = build_sdist_install_commands(pkg.package, raw_install_cmd)
-        log.info("Installing %s from sdist: %s", pkg.package, sdist_cmd)
-        try:
-            install_result = install_package(
-                venv_python,
-                sdist_cmd,
-                cwd=repo_dir,
-                env=env,
-                timeout=config.timeout,
-            )
-            if install_result.returncode != 0:
-                result.install_ok = False
-                result.install_error = (
-                    f"Sdist install failed (exit {install_result.returncode}): "
-                    f"{install_result.stderr.strip()[-500:]}"
-                )
-                result.install_duration_s = time.monotonic() - install_start
-                result.categorize()
-                return result
-        except subprocess.TimeoutExpired:
-            result.install_ok = False
-            result.install_error = "Sdist install timed out"
-            result.install_duration_s = time.monotonic() - install_start
-            result.categorize()
-            return result
-
-        if deps_cmd:
-            log.info("Installing test deps for %s: %s", pkg.package, deps_cmd)
-            try:
-                install_package(
-                    venv_python, deps_cmd, cwd=repo_dir, env=env, timeout=config.timeout
-                )
-            except Exception as exc:
-                log.warning("Test deps install failed for %s: %s (continuing)", pkg.package, exc)
-    else:
-        # Source mode: original behavior.
-        install_cmd = raw_install_cmd
-        try:
-            install_result = install_package(
-                venv_python,
-                install_cmd,
-                cwd=repo_dir,
-                env=env,
-                timeout=config.timeout,
-            )
-            if install_result.returncode != 0:
-                result.install_ok = False
-                result.install_error = (
-                    f"Install failed (exit {install_result.returncode}): "
-                    f"{install_result.stderr.strip()[-500:]}"
-                )
-                result.install_duration_s = time.monotonic() - install_start
-                result.categorize()
-                return result
-        except subprocess.TimeoutExpired:
-            result.install_ok = False
-            result.install_error = "Install timed out"
-            result.install_duration_s = time.monotonic() - install_start
-            result.categorize()
-            return result
-
-    # Install extra deps.
-    if config.extra_deps:
-        try:
-            extra_cmd = f"pip install {' '.join(config.extra_deps)}"
-            install_package(
-                venv_python,
-                extra_cmd,
-                cwd=repo_dir,
-                env=env,
-                timeout=config.timeout,
-            )
-        except (subprocess.TimeoutExpired, subprocess.SubprocessError, OSError) as exc:
-            log.warning(
-                "Extra deps install failed for %s: %s (continuing)",
-                pkg.package,
-                exc,
-            )
-
-    result.install_duration_s = time.monotonic() - install_start
+    venv_python = _create_venv_and_install_ft(pkg, config, result, repo_dir, venv_dir, env)
+    if venv_python is None:
+        return result
 
     # Shield source directory in sdist mode for import/compat checks and tests.
     _shield = (
@@ -714,7 +881,7 @@ def run_package_ft(
         else nullcontext()
     )
     with _shield:
-        # Step 3: Extension compatibility check.
+        # Phase 4: Extension compatibility check.
         if config.detect_extensions:
             try:
                 compat = assess_extension_compat(
@@ -727,18 +894,14 @@ def run_package_ft(
                 result.extension_compat = compat.to_dict()
                 result.import_ok = compat.import_ok
                 result.import_error = compat.import_error
-            except Exception as exc:
-                log.warning(
-                    "Extension compat check failed for %s: %s",
-                    pkg.package,
-                    exc,
-                )
+            except (OSError, subprocess.SubprocessError, ValueError) as exc:
+                log.warning("Extension compat check failed for %s: %s", pkg.package, exc)
 
             if not result.import_ok:
                 result.categorize()
                 return result
 
-        # Step 4: Resolve test command.
+        # Resolve test command.
         test_cmd = pkg.test_command or "python -m pytest"
         if config.test_command_override:
             test_cmd = config.test_command_override
@@ -747,85 +910,14 @@ def run_package_ft(
             base_suffix = f"{base_suffix} {config.test_command_suffix}"
         test_cmd = f"{test_cmd} {base_suffix}"
 
-        # Step 5: Run iterations with GIL disabled.
-        log.info(
-            "Running %d iterations of %s (free-threaded)...",
-            config.iterations,
-            pkg.package,
-        )
+        # Phase 5: Run iterations with GIL disabled.
+        _run_ft_iterations(pkg, config, result, venv_python, test_cmd, repo_dir, env)
 
-        for i in range(1, config.iterations + 1):
-            iteration_env = dict(env)
-            iteration_env["PYTHON_GIL"] = "0"
-
-            outcome = run_single_iteration(
-                venv_python=venv_python,
-                test_command=test_cmd,
-                cwd=repo_dir,
-                env=iteration_env,
-                timeout=config.timeout,
-                stall_threshold=config.stall_threshold,
-                iteration_index=i,
-                tsan_build=config.tsan_build,
-                stderr_tail_bytes=config.stderr_tail_bytes,
-            )
-            result.iterations.append(outcome)
-
-            log.info(
-                "  %s iteration %d/%d: %s (%.1fs)",
-                pkg.package,
-                i,
-                config.iterations,
-                outcome.status,
-                outcome.duration_s,
-            )
-
-            if config.stop_on_first_pass and outcome.is_pass:
-                log.info(
-                    "  %s passed on iteration %d, stopping early.",
-                    pkg.package,
-                    i,
-                )
-                break
-
-    # Step 6: GIL comparison (if enabled).
+    # Phase 6: GIL comparison (if enabled).
     if config.compare_with_gil:
-        log.info(
-            "Running %d iterations of %s (GIL enabled for comparison)...",
-            config.iterations,
-            pkg.package,
-        )
-        gil_iterations: list[IterationOutcome] = []
+        _run_gil_comparison(pkg, config, result, venv_python, test_cmd, repo_dir, env)
 
-        for i in range(1, config.iterations + 1):
-            iteration_env = dict(env)
-            iteration_env["PYTHON_GIL"] = "1"
-
-            outcome = run_single_iteration(
-                venv_python=venv_python,
-                test_command=test_cmd,
-                cwd=repo_dir,
-                env=iteration_env,
-                timeout=config.timeout,
-                stall_threshold=config.stall_threshold,
-                iteration_index=i,
-                tsan_build=False,
-                stderr_tail_bytes=config.stderr_tail_bytes,
-            )
-            gil_iterations.append(outcome)
-
-            log.info(
-                "  %s (GIL) iteration %d/%d: %s (%.1fs)",
-                pkg.package,
-                i,
-                config.iterations,
-                outcome.status,
-                outcome.duration_s,
-            )
-
-        result.gil_enabled_iterations = gil_iterations
-
-    # Step 7: Compute aggregates and categorize.
+    # Phase 7: Compute aggregates and categorize.
     result.compute_aggregates()
     result.categorize()
 
