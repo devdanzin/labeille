@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Type `pkg: Any` parameters as `PackageEntry` in `bench/runner.py` and `ft/runner.py` for type safety.
 - Fix `IndexEntry.package` attribute access (should be `.name`) in `ft/runner.py:_select_packages`.
 - Add missing `encoding="utf-8"` to `bench_cli.py` export `write_text()` call.
+- Import check `OSError` now sets `install_error` status instead of silently continuing.
 
 ### Tests
 - Add 26 tests for `bench track` subcommands: init, add, show, pin, unpin, list, trend, alert.
