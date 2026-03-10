@@ -6,8 +6,6 @@ with file I/O, filtering, error handling, and reporting.
 
 from __future__ import annotations
 
-import os
-import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -173,19 +171,9 @@ def _read_lines(path: Path) -> list[str]:
 
 def _atomic_write(path: Path, lines: list[str]) -> None:
     """Write lines to a file atomically using a temp file and os.replace."""
-    content = "".join(lines)
-    fd, tmp_path = tempfile.mkstemp(dir=path.parent, suffix=".tmp")
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            f.write(content)
-        os.replace(tmp_path, path)
-    except BaseException:
-        # Clean up the temp file on failure
-        try:
-            os.unlink(tmp_path)
-        except OSError:
-            pass
-        raise
+    from labeille.io_utils import atomic_write_text
+
+    atomic_write_text(path, "".join(lines))
 
 
 def _filter_files(

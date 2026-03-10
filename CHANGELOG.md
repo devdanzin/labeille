@@ -134,6 +134,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - All documentation updated to reflect the split. Enrichment docs now live in laruche.
 
 ### Enhanced
+- Extracted shared `atomic_write_text()` utility in `io_utils.py`, replacing duplicate implementations in `registry_ops.py`, `migrations.py`, and `bench/tracking.py`.
+- Promoted `_clean_env()` to public API as `clean_env()`, replacing inline env sanitization in `ft/compat.py` and `bench/runner.py`.
+- Unified logger acquisition: all 20 bench/ and ft/ modules now use `get_logger()` with per-module names (e.g., `bench.runner`, `ft.runner`) for filterable log output.
+- Added `encoding="utf-8"` to all bench/ file I/O calls for cross-platform consistency.
+- Added `show_default=True` to `--timeout` options in `bench_cli.py` and `ft_cli.py`.
+- Standardized `click.Path(path_type=Path)` across `bench_cli.py` and `ft_cli.py`, removing manual `Path()` wrapping.
+- Added `from __future__ import annotations` to all test files for consistency with source modules.
 - `labeille analyze registry` shows percentages alongside all counts.
 - Download tier coverage (top 100, 500, 1000, 2000) shows what fraction of the most-downloaded packages are testable.
 - Version readiness section shows per-Python-version active/skipped counts with top skip reasons.
@@ -153,6 +160,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Renamed `Issues` URL key to `Bug Tracker` in project metadata for PyPI display consistency.
 
 ### Fixed
+- `bench/timing.py` now sanitizes subprocess environment via `clean_env()`, preventing PYTHONHOME/PYTHONPATH pollution in benchmark runs.
+- `ft/runner.py` now uses `start_new_session=True` instead of deprecated `preexec_fn=os.setpgrp`, fixing a thread-safety hazard with `ThreadPoolExecutor`.
+- Top-level error handlers in `runner.py`, `ft/runner.py`, and `resolve.py` now preserve tracebacks via `exc_info=True`.
+- Replaced `SystemExit(1)` with `click.ClickException` in `bench_cli.py` for consistent error formatting.
 - Manual review of all 1,798 enriched registry packages: corrected invalid `extension_type` values, added missing `-p no:xdist` flags, fixed inconsistent skip states, corrected repo URLs, collapsed multiline YAML, and fixed test commands.
 - `update_index_from_packages()` no longer crashes when `skip_versions` is `None`.
 - Bench runner `install_package` now receives a complete environment (starting from `os.environ`) instead of bare condition env vars, fixing install failures when build backends need `PATH` to find tools like `git`.

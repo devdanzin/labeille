@@ -17,7 +17,6 @@ Regression alerts compare the latest run against:
 
 from __future__ import annotations
 
-import logging
 import statistics
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -29,8 +28,9 @@ from labeille.bench.tracking import (
     TrackingSeries,
     load_series_run,
 )
+from labeille.logging import get_logger
 
-log = logging.getLogger("labeille")
+log = get_logger("bench.trends")
 
 
 # ---------------------------------------------------------------------------

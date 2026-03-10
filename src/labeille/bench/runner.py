@@ -20,8 +20,6 @@ Execution strategies:
 from __future__ import annotations
 
 import json
-import logging
-import os
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -64,8 +62,9 @@ from labeille.bench.timing import (
     prepare_per_test_command,
     run_timed_in_venv,
 )
+from labeille.logging import get_logger
 
-log = logging.getLogger("labeille")
+log = get_logger("bench.runner")
 
 
 # ---------------------------------------------------------------------------
@@ -84,9 +83,9 @@ def _build_install_env(
     the venv ``bin/`` to ``PATH``, and layers condition-specific
     variables on top.
     """
-    env = dict(os.environ)
-    env.pop("PYTHONHOME", None)
-    env.pop("PYTHONPATH", None)
+    from labeille.runner import clean_env
+
+    env = clean_env()
 
     venv_bin = str(venv_dir / "bin")
     env["PATH"] = f"{venv_bin}:{env.get('PATH', '')}"

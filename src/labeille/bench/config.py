@@ -10,7 +10,6 @@ Handles:
 
 from __future__ import annotations
 
-import logging
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -18,8 +17,9 @@ from typing import Any
 
 from labeille.bench.constraints import ResourceConstraints
 from labeille.bench.results import ConditionDef
+from labeille.logging import get_logger
 
-log = logging.getLogger("labeille")
+log = get_logger("bench.config")
 
 
 # ---------------------------------------------------------------------------
@@ -323,7 +323,7 @@ def load_profile(profile_path: Path) -> dict[str, Any]:
     if not profile_path.exists():
         raise FileNotFoundError(f"Profile not found: {profile_path}")
 
-    text = profile_path.read_text()
+    text = profile_path.read_text(encoding="utf-8")
     data = yaml.safe_load(text)
 
     if not isinstance(data, dict):

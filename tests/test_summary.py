@@ -1,5 +1,7 @@
 """Tests for labeille.summary."""
 
+from __future__ import annotations
+
 import signal
 import unittest
 from pathlib import Path

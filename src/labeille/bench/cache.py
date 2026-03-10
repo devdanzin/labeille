@@ -23,14 +23,15 @@ See ``generate_drop_caches_script()`` to auto-create the script.
 
 from __future__ import annotations
 
-import logging
 import os
 import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-log = logging.getLogger("labeille")
+from labeille.logging import get_logger
+
+log = get_logger("bench.cache")
 
 
 # Path to the cache-drop helper script.

@@ -6,7 +6,6 @@ with statistical tests, overhead calculations, and anomaly flags.
 
 from __future__ import annotations
 
-import logging
 import statistics as _stats
 from dataclasses import dataclass, field
 
@@ -20,7 +19,9 @@ from labeille.bench.stats import (
 )
 from typing import Any
 
-log = logging.getLogger("labeille")
+from labeille.logging import get_logger
+
+log = get_logger("bench.compare")
 
 
 # ---------------------------------------------------------------------------

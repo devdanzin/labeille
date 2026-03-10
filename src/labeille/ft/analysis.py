@@ -10,7 +10,6 @@ Provides:
 
 from __future__ import annotations
 
-import logging
 from collections import Counter
 from dataclasses import dataclass, field
 from typing import Any, Callable
@@ -21,8 +20,9 @@ from labeille.ft.results import (
     FTRunSummary,
     IterationOutcome,
 )
+from labeille.logging import get_logger
 
-log = logging.getLogger("labeille")
+log = get_logger("ft.analysis")
 
 
 # ---------------------------------------------------------------------------

@@ -12,11 +12,12 @@ releases (e.g., 3.14a1 -> 3.14b2) or over time on the same build.
 
 from __future__ import annotations
 
-import logging
 from dataclasses import dataclass, field
 from typing import Any
 
-log = logging.getLogger("labeille")
+from labeille.logging import get_logger
+
+log = get_logger("ft.compare")
 
 
 @dataclass

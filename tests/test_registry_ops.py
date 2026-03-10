@@ -275,7 +275,7 @@ class TestBatchAddField(unittest.TestCase):
         import os
 
         real_replace = os.replace
-        with patch("labeille.registry_ops.os.replace") as mock_replace:
+        with patch("labeille.io_utils.os.replace") as mock_replace:
             mock_replace.side_effect = real_replace
             batch_add_field(
                 self.registry,

@@ -7,12 +7,12 @@ for terminal display.
 
 from __future__ import annotations
 
-import logging
 from typing import Any
 
 from labeille.ft.results import FailureCategory
+from labeille.logging import get_logger
 
-log = logging.getLogger("labeille")
+log = get_logger("ft.display")
 
 
 def format_compatibility_summary(

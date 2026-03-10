@@ -1,5 +1,7 @@
 """Tests for labeille.classifier."""
 
+from __future__ import annotations
+
 import unittest
 
 from labeille.classifier import classify_from_urls, has_ft_wheel, has_platform_wheel, is_pure_wheel

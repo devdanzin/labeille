@@ -14,7 +14,6 @@ tells you what the developer intended.
 from __future__ import annotations
 
 import json
-import logging
 import os
 import re
 import subprocess
@@ -22,7 +21,9 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Iterator
 
-log = logging.getLogger("labeille")
+from labeille.logging import get_logger
+
+log = get_logger("ft.compat")
 
 
 @dataclass
@@ -277,11 +278,9 @@ def probe_gil_fallback(
     """
     compat = ExtensionCompat(package=package_name)
 
-    run_env = dict(os.environ)
-    run_env["PYTHON_GIL"] = "0"
-    run_env.pop("PYTHONHOME", None)
-    run_env.pop("PYTHONPATH", None)
-    run_env["ASAN_OPTIONS"] = "detect_leaks=0"
+    from labeille.runner import clean_env
+
+    run_env = clean_env(PYTHON_GIL="0", ASAN_OPTIONS="detect_leaks=0")
     if env:
         run_env.update(env)
 

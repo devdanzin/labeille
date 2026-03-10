@@ -1,5 +1,7 @@
 """End-to-end integration tests exercising the CLI through click's CliRunner."""
 
+from __future__ import annotations
+
 import json
 import tempfile
 import unittest

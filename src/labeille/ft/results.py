@@ -15,12 +15,13 @@ from __future__ import annotations
 
 import enum
 import json
-import logging
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
-log = logging.getLogger("labeille")
+from labeille.logging import get_logger
+
+log = get_logger("ft.results")
 
 
 class FailureCategory(enum.Enum):

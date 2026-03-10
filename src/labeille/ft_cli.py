@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-import logging
 from pathlib import Path
 
 import click
 
-log = logging.getLogger("labeille")
+from labeille.logging import get_logger
+
+log = get_logger("ft_cli")
 
 
 @click.group()
@@ -28,11 +29,13 @@ def ft() -> None:
 @click.option(
     "--target-python",
     required=True,
-    type=click.Path(exists=True),
+    type=click.Path(exists=True, path_type=Path),
     help="Path to free-threaded Python build.",
 )
 @click.option("--iterations", "-n", default=10, help="Runs per package (default: 10).")
-@click.option("--timeout", default=600, help="Per-iteration timeout in seconds.")
+@click.option(
+    "--timeout", default=600, show_default=True, help="Per-iteration timeout in seconds."
+)
 @click.option(
     "--stall-threshold",
     default=60,
@@ -72,18 +75,22 @@ def ft() -> None:
 @click.option("--test-command-override", default=None, help="Override all test commands.")
 @click.option(
     "--results-dir",
-    type=click.Path(),
+    type=click.Path(path_type=Path),
     default="results",
     help="Output directory for results.",
 )
 @click.option(
     "--registry-dir",
-    type=click.Path(),
+    type=click.Path(path_type=Path),
     default=None,
     help="Registry directory (default: ~/.local/share/labeille/registry/).",
 )
-@click.option("--repos-dir", type=click.Path(), default="repos", help="Repos directory.")
-@click.option("--venvs-dir", type=click.Path(), default="venvs", help="Venvs directory.")
+@click.option(
+    "--repos-dir", type=click.Path(path_type=Path), default="repos", help="Repos directory."
+)
+@click.option(
+    "--venvs-dir", type=click.Path(path_type=Path), default="venvs", help="Venvs directory."
+)
 @click.option(
     "--env",
     "env_pairs",
@@ -125,7 +132,7 @@ def ft() -> None:
     ),
 )
 def run(
-    target_python: str,
+    target_python: Path,
     iterations: int,
     timeout: int,
     stall_threshold: int,
@@ -139,10 +146,10 @@ def run(
     extra_deps: str | None,
     test_command_suffix: str | None,
     test_command_override: str | None,
-    results_dir: str,
-    registry_dir: str | None,
-    repos_dir: str,
-    venvs_dir: str,
+    results_dir: Path,
+    registry_dir: Path | None,
+    repos_dir: Path,
+    venvs_dir: Path,
     env_pairs: tuple[str, ...],
     verbose: bool,
     install_from: str,
@@ -176,7 +183,7 @@ def run(
     from labeille.registry import default_registry_dir
 
     if registry_dir is None:
-        registry_dir = str(default_registry_dir())
+        registry_dir = default_registry_dir()
 
     env_overrides: dict[str, str] = {}
     for pair in env_pairs:
@@ -185,7 +192,7 @@ def run(
             env_overrides[k] = v
 
     config = FTRunConfig(
-        target_python=Path(target_python),
+        target_python=target_python,
         iterations=iterations,
         timeout=timeout,
         stall_threshold=stall_threshold,
@@ -193,10 +200,10 @@ def run(
             [p.strip() for p in packages.split(",") if p.strip()] if packages else None
         ),
         top_n=top_n,
-        registry_dir=Path(registry_dir),
-        repos_dir=Path(repos_dir),
-        venvs_dir=Path(venvs_dir),
-        results_dir=Path(results_dir),
+        registry_dir=registry_dir,
+        repos_dir=repos_dir,
+        venvs_dir=venvs_dir,
+        results_dir=results_dir,
         env_overrides=env_overrides,
         extra_deps=([d.strip() for d in extra_deps.split(",") if d.strip()] if extra_deps else []),
         test_command_suffix=test_command_suffix,
@@ -229,7 +236,7 @@ def run(
 
 
 @ft.command()
-@click.argument("result_dir", type=click.Path(exists=True))
+@click.argument("result_dir", type=click.Path(exists=True, path_type=Path))
 @click.option(
     "--sort",
     "sort_by",
@@ -237,7 +244,7 @@ def run(
     default="category",
 )
 @click.option("--limit", default=None, type=int, help="Maximum packages to show.")
-def show(result_dir: str, sort_by: str, limit: int | None) -> None:
+def show(result_dir: Path, sort_by: str, limit: int | None) -> None:
     """Display free-threading test results.
 
     Shows the compatibility summary, per-package table, and
@@ -246,7 +253,7 @@ def show(result_dir: str, sort_by: str, limit: int | None) -> None:
     from labeille.ft.display import format_compatibility_summary, format_package_table
     from labeille.ft.results import FTRunSummary, load_ft_run
 
-    meta, results = load_ft_run(Path(result_dir))
+    meta, results = load_ft_run(result_dir)
     summary = FTRunSummary.compute(results)
 
     # System and Python info.
@@ -295,9 +302,9 @@ def show(result_dir: str, sort_by: str, limit: int | None) -> None:
 
 
 @ft.command()
-@click.argument("result_dir", type=click.Path(exists=True))
+@click.argument("result_dir", type=click.Path(exists=True, path_type=Path))
 @click.option("--package", default=None, help="Show flakiness for a specific package.")
-def flaky(result_dir: str, package: str | None) -> None:
+def flaky(result_dir: Path, package: str | None) -> None:
     """Analyze intermittent failures in detail.
 
     Shows which specific tests fail intermittently, failure patterns,
@@ -307,7 +314,7 @@ def flaky(result_dir: str, package: str | None) -> None:
     from labeille.ft.display import format_flakiness_profile
     from labeille.ft.results import FailureCategory, load_ft_run
 
-    _, results = load_ft_run(Path(result_dir))
+    _, results = load_ft_run(result_dir)
 
     if package:
         targets = [r for r in results if r.package == package]
@@ -342,9 +349,9 @@ def flaky(result_dir: str, package: str | None) -> None:
 
 
 @ft.command()
-@click.argument("result_dir", type=click.Path(exists=True))
+@click.argument("result_dir", type=click.Path(exists=True, path_type=Path))
 @click.option("--extensions-only", is_flag=True, help="Only show packages with C extensions.")
-def compat(result_dir: str, extensions_only: bool) -> None:
+def compat(result_dir: Path, extensions_only: bool) -> None:
     """Show extension GIL compatibility details.
 
     Reports which packages have C extensions, whether they declare
@@ -353,7 +360,7 @@ def compat(result_dir: str, extensions_only: bool) -> None:
     from labeille.ft.compat import ExtensionCompat, format_extension_compat
     from labeille.ft.results import load_ft_run
 
-    _, results = load_ft_run(Path(result_dir))
+    _, results = load_ft_run(result_dir)
 
     for r in sorted(results, key=lambda r: r.package):
         if r.extension_compat is None:
@@ -374,9 +381,9 @@ def compat(result_dir: str, extensions_only: bool) -> None:
 
 
 @ft.command()
-@click.argument("run_a", type=click.Path(exists=True))
-@click.argument("run_b", type=click.Path(exists=True))
-def compare(run_a: str, run_b: str) -> None:
+@click.argument("run_a", type=click.Path(exists=True, path_type=Path))
+@click.argument("run_b", type=click.Path(exists=True, path_type=Path))
+def compare(run_a: Path, run_b: Path) -> None:
     """Compare two free-threading test runs.
 
     Shows which packages improved, regressed, or stayed the same
@@ -392,8 +399,8 @@ def compare(run_a: str, run_b: str) -> None:
     from labeille.ft.display import format_ft_comparison
     from labeille.ft.results import load_ft_run
 
-    meta_a, results_a = load_ft_run(Path(run_a))
-    meta_b, results_b = load_ft_run(Path(run_b))
+    meta_a, results_a = load_ft_run(run_a)
+    meta_b, results_b = load_ft_run(run_b)
 
     comparison = compare_ft_runs(results_a, results_b)
 
@@ -412,7 +419,7 @@ def compare(run_a: str, run_b: str) -> None:
 
 
 @ft.command()
-@click.argument("result_dir", type=click.Path(exists=True))
+@click.argument("result_dir", type=click.Path(exists=True, path_type=Path))
 @click.option(
     "--format",
     "fmt",
@@ -420,7 +427,7 @@ def compare(run_a: str, run_b: str) -> None:
     default="markdown",
 )
 @click.option("--output", "-o", default=None, help="Output file (default: stdout).")
-def report(result_dir: str, fmt: str, output: str | None) -> None:
+def report(result_dir: Path, fmt: str, output: str | None) -> None:
     """Generate a comprehensive compatibility report.
 
     Produces a full report suitable for sharing with the CPython
@@ -430,7 +437,7 @@ def report(result_dir: str, fmt: str, output: str | None) -> None:
     from labeille.ft.export import generate_report
     from labeille.ft.results import load_ft_run
 
-    meta, results = load_ft_run(Path(result_dir))
+    meta, results = load_ft_run(result_dir)
     report_text = generate_report(meta, results, format=fmt)
 
     if output:
@@ -446,7 +453,7 @@ def report(result_dir: str, fmt: str, output: str | None) -> None:
 
 
 @ft.command()
-@click.argument("result_dir", type=click.Path(exists=True))
+@click.argument("result_dir", type=click.Path(exists=True, path_type=Path))
 @click.option(
     "--format",
     "fmt",
@@ -454,7 +461,7 @@ def report(result_dir: str, fmt: str, output: str | None) -> None:
     default="csv",
 )
 @click.option("--output", "-o", default=None, help="Output file (default: stdout).")
-def export(result_dir: str, fmt: str, output: str | None) -> None:
+def export(result_dir: Path, fmt: str, output: str | None) -> None:
     """Export results for external analysis.
 
     CSV format includes one row per package with category, pass rate,
@@ -465,7 +472,7 @@ def export(result_dir: str, fmt: str, output: str | None) -> None:
     from labeille.ft.export import export_csv, export_json
     from labeille.ft.results import load_ft_run
 
-    _, results = load_ft_run(Path(result_dir))
+    _, results = load_ft_run(result_dir)
 
     if fmt == "csv":
         text = export_csv(results)

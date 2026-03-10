@@ -1,5 +1,7 @@
 """Tests for the ``labeille registry sync`` command."""
 
+from __future__ import annotations
+
 import tempfile
 import unittest
 import unittest.mock
