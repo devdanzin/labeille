@@ -19,6 +19,7 @@ Execution strategies:
 
 from __future__ import annotations
 
+import subprocess
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -319,7 +320,7 @@ class BenchRunner:
             try:
                 entry = load_package(name, self.config.registry_dir)
                 packages.append(entry)
-            except Exception as exc:  # noqa: BLE001
+            except (OSError, ValueError, KeyError) as exc:
                 log.warning("Failed to load package '%s': %s", name, exc)
 
         # Apply top_n.
@@ -616,7 +617,7 @@ class BenchRunner:
                 pull_repo(repo_dir)
             else:
                 clone_repo(pkg.repo, repo_dir)
-        except Exception as exc:  # noqa: BLE001
+        except (OSError, subprocess.SubprocessError) as exc:
             log.error("Failed to clone %s: %s", pkg.package, exc)
             return None
         setup["clone_duration"] = time.monotonic() - clone_start
@@ -642,7 +643,7 @@ class BenchRunner:
 
                     shutil.rmtree(venv_dir)
                 create_venv(python_path, venv_dir, installer)
-            except Exception as exc:  # noqa: BLE001
+            except (OSError, subprocess.SubprocessError) as exc:
                 log.error(
                     "Failed to create venv for %s/%s: %s",
                     pkg.package,
@@ -682,7 +683,7 @@ class BenchRunner:
                         result.returncode,
                     )
                     return None
-            except Exception as exc:  # noqa: BLE001
+            except (OSError, subprocess.SubprocessError) as exc:
                 log.error("Install failed for %s/%s: %s", pkg.package, cond_name, exc)
                 return None
             setup[f"install_{cond_name}"] = time.monotonic() - install_start
@@ -700,7 +701,7 @@ class BenchRunner:
                         timeout=self.config.timeout,
                         installer=actual_backend,
                     )
-                except Exception as exc:  # noqa: BLE001
+                except (OSError, subprocess.SubprocessError) as exc:
                     log.warning(
                         "Extra deps install warning for %s/%s: %s",
                         pkg.package,

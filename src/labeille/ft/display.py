@@ -176,8 +176,8 @@ def format_package_table(
             f"{detail_str}"
         )
 
-    if truncated:
-        lines.append(f"  ... ({total - max_rows} more)")  # type: ignore[operator]
+    if truncated and max_rows is not None:
+        lines.append(f"  ... ({total - max_rows} more)")
 
     return "\n".join(lines)
 

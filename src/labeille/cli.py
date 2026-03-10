@@ -33,26 +33,22 @@ def main() -> None:
     """labeille — Hunt for CPython JIT bugs by running real-world test suites."""
 
 
-# Register subgroups.
-from labeille.registry_cli import registry as registry_group  # noqa: E402
+def _register_subcommands() -> None:
+    """Register subcommand groups on the main CLI group."""
+    from labeille.analyze_cli import analyze as analyze_group
+    from labeille.bench_cli import bench as bench_group
+    from labeille.compat_cli import compat as compat_group
+    from labeille.ft_cli import ft as ft_group
+    from labeille.registry_cli import registry as registry_group
 
-main.add_command(registry_group)
+    main.add_command(registry_group)
+    main.add_command(analyze_group)
+    main.add_command(bench_group)
+    main.add_command(ft_group)
+    main.add_command(compat_group)
 
-from labeille.analyze_cli import analyze as analyze_group  # noqa: E402
 
-main.add_command(analyze_group)
-
-from labeille.bench_cli import bench as bench_group  # noqa: E402
-
-main.add_command(bench_group)
-
-from labeille.ft_cli import ft as ft_group  # noqa: E402
-
-main.add_command(ft_group)
-
-from labeille.compat_cli import compat as compat_group  # noqa: E402
-
-main.add_command(compat_group)
+_register_subcommands()
 
 
 @main.command()

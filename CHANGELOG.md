@@ -185,6 +185,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Replaced `raise SystemExit(130)  # noqa: B904` with `raise SystemExit(130) from None` in `bench_cli.py`, removing the suppression.
 - Narrowed `except Exception` in `bench/system.py` JIT detection to `except (AttributeError, TypeError)`.
 - Added explanatory comment for `except BaseException` in `io_utils.py` atomic write.
+- Narrowed 5 `except Exception` catches in `bench/runner.py` and 1 in `ft/runner.py` to specific exception tuples (`OSError`, `subprocess.SubprocessError`, `ValueError`, `KeyError`), removing all `noqa: BLE001` suppressions.
+- Restructured `cli.py` subgroup registration into `_register_subcommands()` function, eliminating 5 `noqa: E402` suppressions.
+- Fixed `type: ignore[operator]` in `ft/display.py` by adding explicit `None` guard, in `bench_cli.py` by restructuring conditionals, and `type: ignore[no-any-return]` in `resolve.py` by using intermediate variable.
 
 ### Removed
 - Dead code: `_log2()` from `bisect.py`, `RegistryStats`/`analyze_registry()` from `analyze.py` (superseded by `RegistryReport`/`generate_registry_report()`), `load_ft_summary()` from `ft/results.py`, `format_progress()`/`format_gil_comparison()` from `ft/display.py`, unused `_MOD_GIL_MENTION_PATTERN` regex from `ft/compat.py`.
