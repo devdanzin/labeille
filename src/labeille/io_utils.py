@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import signal
+import subprocess
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
@@ -104,3 +105,53 @@ def kill_process_group(pid: int) -> None:
         os.killpg(pgid, signal.SIGKILL)
     except (ProcessLookupError, PermissionError, OSError):
         pass
+
+
+def run_in_process_group(
+    cmd: str | list[str],
+    *,
+    cwd: str | Path | None = None,
+    env: dict[str, str] | None = None,
+    timeout: int = 600,
+) -> subprocess.CompletedProcess[str]:
+    """Run a command in its own process group with timeout enforcement.
+
+    On timeout, kills the entire process group (not just the immediate
+    child) to prevent orphaned grandchild processes from accumulating.
+
+    Args:
+        cmd: Shell command string or argument list.
+        cwd: Working directory.
+        env: Environment variables.
+        timeout: Timeout in seconds.
+
+    Returns:
+        A :class:`~subprocess.CompletedProcess` with stdout, stderr, and returncode.
+
+    Raises:
+        subprocess.TimeoutExpired: If the command exceeds the timeout.
+            The exception's ``stdout`` and ``stderr`` attributes contain any
+            partial output captured before the timeout.
+    """
+    shell = isinstance(cmd, str)
+    proc = subprocess.Popen(
+        cmd,
+        shell=shell,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        cwd=str(cwd) if cwd else None,
+        env=env,
+        start_new_session=True,
+    )
+    try:
+        stdout, stderr = proc.communicate(timeout=timeout)
+        return subprocess.CompletedProcess(proc.args, proc.returncode, stdout, stderr)
+    except subprocess.TimeoutExpired:
+        kill_process_group(proc.pid)
+        try:
+            stdout, stderr = proc.communicate(timeout=5)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            stdout, stderr = proc.communicate()
+        raise subprocess.TimeoutExpired(cmd, timeout, output=stdout, stderr=stderr)

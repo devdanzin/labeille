@@ -29,7 +29,7 @@ from labeille.bench.constraints import ResourceConstraints
 from labeille.bench.stats import DescriptiveStats, describe, detect_outliers
 from labeille.bench.system import PythonProfile, SystemProfile
 from labeille.bench.timing import PerTestTimings
-from labeille.io_utils import load_jsonl, write_meta_json
+from labeille.io_utils import append_jsonl, load_jsonl, write_meta_json
 from labeille.logging import get_logger
 
 log = get_logger("bench.results")
@@ -440,5 +440,4 @@ def append_package_result(
     Used for incremental writing during long benchmark runs so
     that results are preserved if the process is interrupted.
     """
-    with open(results_path, "a", encoding="utf-8") as f:
-        f.write(result.to_jsonl_line() + "\n")
+    append_jsonl(results_path, result.to_dict())

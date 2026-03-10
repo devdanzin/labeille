@@ -10,10 +10,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - `bench run` and `ft run` now use shared `setup_logging()` for consistent log formatting.
 - Simplify `_run_package_inner` in `runner.py` by extracting 4 helper functions: `_align_sdist_version`, `_setup_venv`, `_install_in_venv`, `_check_import_and_extras`.
 - Rename `compat diff` to `compat compare` for CLI vocabulary consistency.
+- Extract `run_in_process_group()` into `io_utils.py` as a shared subprocess lifecycle utility, used by both `runner.py` and `bench/timing.py`.
+- `bench/results.py` `append_package_result` now uses shared `append_jsonl` instead of raw `open()`.
 
 ### Fixed
 - Type `pkg: Any` parameters as `PackageEntry` in `bench/runner.py` and `ft/runner.py` for type safety.
 - Fix `IndexEntry.package` attribute access (should be `.name`) in `ft/runner.py:_select_packages`.
+- Add missing `encoding="utf-8"` to `bench_cli.py` export `write_text()` call.
 
 ### Tests
 - Add 26 tests for `bench track` subcommands: init, add, show, pin, unpin, list, trend, alert.

@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from labeille.io_utils import kill_process_group
+from labeille.io_utils import run_in_process_group
 from labeille.logging import get_logger
 
 log = get_logger("bench.timing")
@@ -103,27 +103,14 @@ def run_timed(
     wall_start = time.monotonic()
 
     timed_out = False
-    proc = subprocess.Popen(
-        command if isinstance(command, list) else command,
-        shell=isinstance(command, str),
-        cwd=str(cwd) if cwd else None,
-        env=run_env,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        start_new_session=True,
-    )
     try:
-        stdout, stderr = proc.communicate(timeout=timeout)
-        exit_code = proc.returncode
-    except subprocess.TimeoutExpired:
+        completed = run_in_process_group(command, cwd=cwd, env=run_env, timeout=timeout)
+        stdout, stderr = completed.stdout or "", completed.stderr or ""
+        exit_code = completed.returncode
+    except subprocess.TimeoutExpired as exc:
         timed_out = True
-        kill_process_group(proc.pid)
-        try:
-            stdout, stderr = proc.communicate(timeout=5)
-        except subprocess.TimeoutExpired:
-            proc.kill()
-            stdout, stderr = proc.communicate()
+        stdout = str(exc.stdout) if exc.stdout else ""
+        stderr = str(exc.stderr) if exc.stderr else ""
         exit_code = -1
 
     wall_time = time.monotonic() - wall_start
