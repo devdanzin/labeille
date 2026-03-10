@@ -803,6 +803,226 @@ def _analyze_test_result(
         log.info("FAIL: %s (exit %d, %.2fs)", pkg_name, test_proc.returncode, test_dur)
 
 
+def _align_sdist_version(
+    pkg: PackageEntry,
+    config: RunnerConfig,
+    result: PackageResult,
+    repo_dir: Path,
+    import_name: str,
+) -> tuple[str, str | None, bool | None]:
+    """Align repo to PyPI sdist version if install_from is 'sdist'.
+
+    Returns (source_layout, sdist_version, sdist_tag_matched).
+    """
+    if config.install_from != "sdist":
+        result.install_from = "source"
+        return "unknown", None, None
+
+    result.install_from = "sdist"
+    sdist_version = fetch_latest_pypi_version(pkg.package)
+    sdist_tag_matched: bool | None = None
+    if sdist_version:
+        log.info("PyPI latest version for %s: %s", pkg.package, sdist_version)
+        commit_hash, matched_tag = checkout_matching_tag(repo_dir, pkg.package, sdist_version)
+        if commit_hash:
+            result.git_revision = commit_hash
+            sdist_tag_matched = True
+            log.info(
+                "Checked out tag %s for %s (commit %s)",
+                matched_tag,
+                pkg.package,
+                commit_hash[:12],
+            )
+        else:
+            sdist_tag_matched = False
+            log.warning(
+                "No matching tag for %s version %s, staying on HEAD",
+                pkg.package,
+                sdist_version,
+            )
+    else:
+        log.warning("Could not fetch PyPI version for %s", pkg.package)
+
+    result.sdist_version = sdist_version
+    result.sdist_tag_matched = sdist_tag_matched
+    source_layout = detect_source_layout(repo_dir, import_name)
+    log.debug("Source layout for %s: %s", pkg.package, source_layout)
+    return source_layout, sdist_version, sdist_tag_matched
+
+
+def _setup_venv(
+    pkg: PackageEntry,
+    config: RunnerConfig,
+    result: PackageResult,
+    venv_dir: Path,
+) -> tuple[Path, InstallerBackend, bool] | None:
+    """Create or reuse a venv. Returns (venv_python, installer, venv_existed) or None on failure."""
+    venv_python = venv_dir / "bin" / "python"
+    venv_existed = venv_dir.exists() and venv_python.exists()
+
+    if venv_existed and config.refresh_venvs:
+        log.info("Refreshing venv for %s at %s", pkg.package, venv_dir)
+        shutil.rmtree(venv_dir)
+        venv_existed = False
+
+    installer = resolve_installer(config.installer)
+    result.installer_backend = installer.value
+    log.debug("Installer backend for %s: %s", pkg.package, installer.value)
+
+    if venv_existed:
+        log.info("Reusing venv for %s at %s", pkg.package, venv_dir)
+    else:
+        log.info("Creating venv for %s at %s", pkg.package, venv_dir)
+        venv_start = time.monotonic()
+        try:
+            create_venv(config.target_python, venv_dir, installer)
+        except (subprocess.CalledProcessError, OSError) as exc:
+            result.status = "error"
+            result.error_message = f"Venv creation failed: {exc}"
+            log.error("Venv creation failed for %s: %s", pkg.package, exc)
+            return None
+        log.debug("Venv created for %s in %.2fs", pkg.package, time.monotonic() - venv_start)
+
+    return venv_python, installer, venv_existed
+
+
+def _install_in_venv(
+    pkg: PackageEntry,
+    config: RunnerConfig,
+    result: PackageResult,
+    venv_dir: Path,
+    repo_dir: Path,
+    env: dict[str, str],
+    per_pkg_timeout: int,
+    venv_python: Path,
+    installer: InstallerBackend,
+    venv_existed: bool,
+) -> tuple[Path, InstallerBackend] | None:
+    """Install the package into the venv. Returns (venv_python, installer) or None on failure."""
+    if venv_existed:
+        log.info("Skipping install for %s (reusing venv)", pkg.package)
+        return venv_python, installer
+
+    if config.install_from == "sdist":
+        raw_install_cmd = pkg.install_command or "pip install -e ."
+        sdist_install_cmd, deps_install_cmd = build_sdist_install_commands(
+            pkg.package, raw_install_cmd
+        )
+        log.info("Installing %s from sdist: %s", pkg.package, sdist_install_cmd)
+
+        install_result = _run_install(
+            pkg,
+            config,
+            result,
+            venv_dir,
+            repo_dir,
+            env,
+            per_pkg_timeout,
+            installer,
+            sdist_install_cmd,
+            label=" (sdist)",
+        )
+        if install_result is None:
+            return None
+        venv_python, installer = install_result
+        log.debug(
+            "Sdist install for %s completed in %.2fs",
+            pkg.package,
+            result.install_duration_seconds,
+        )
+
+        if deps_install_cmd:
+            log.info("Installing test deps for %s: %s", pkg.package, deps_install_cmd)
+            try:
+                deps_proc = install_package(
+                    venv_python, deps_install_cmd, repo_dir, env, per_pkg_timeout, installer
+                )
+                if deps_proc.returncode != 0:
+                    log.warning(
+                        "Test deps install had non-zero exit for %s (exit %d, continuing)",
+                        pkg.package,
+                        deps_proc.returncode,
+                    )
+            except (subprocess.TimeoutExpired, OSError) as exc:
+                log.warning("Test deps install failed for %s: %s (continuing)", pkg.package, exc)
+    else:
+        install_cmd = pkg.install_command or "pip install -e ."
+        log.info("Installing %s: %s", pkg.package, install_cmd)
+        install_result = _run_install(
+            pkg,
+            config,
+            result,
+            venv_dir,
+            repo_dir,
+            env,
+            per_pkg_timeout,
+            installer,
+            install_cmd,
+        )
+        if install_result is None:
+            return None
+        venv_python, installer = install_result
+
+    return venv_python, installer
+
+
+def _check_import_and_extras(
+    pkg: PackageEntry,
+    config: RunnerConfig,
+    result: PackageResult,
+    venv_python: Path,
+    repo_dir: Path,
+    env: dict[str, str],
+    per_pkg_timeout: int,
+    installer: InstallerBackend,
+    import_name: str,
+    source_layout: str,
+    venv_existed: bool,
+) -> bool:
+    """Run import check and install extra deps. Returns False if import fails."""
+    _shield = (
+        shield_source_dir(repo_dir, import_name, source_layout)
+        if config.install_from == "sdist"
+        else nullcontext()
+    )
+    with _shield:
+        if not venv_existed:
+            log.info("Checking import for %s: import %s", pkg.package, import_name)
+            try:
+                import_proc = check_import(venv_python, import_name, env)
+                if import_proc.returncode != 0:
+                    result.status = "install_error"
+                    stderr_msg = import_proc.stderr.strip()[-200:] if import_proc.stderr else ""
+                    result.error_message = f"Package installed but import failed: {stderr_msg}"
+                    log.error("Import check failed for %s: %s", pkg.package, result.error_message)
+                    return False
+            except subprocess.TimeoutExpired:
+                result.status = "install_error"
+                result.error_message = "Package installed but import timed out"
+                log.error("Import check timed out for %s", pkg.package)
+                return False
+            except OSError as exc:
+                log.warning("Import check failed for %s: %s (continuing)", pkg.package, exc)
+
+    if config.extra_deps and not venv_existed:
+        extra_cmd = f"pip install {' '.join(config.extra_deps)}"
+        log.info("Installing extra deps for %s: %s", pkg.package, extra_cmd)
+        try:
+            extra_proc = install_package(
+                venv_python, extra_cmd, repo_dir, env, per_pkg_timeout, installer
+            )
+            if extra_proc.returncode != 0:
+                log.warning(
+                    "Extra deps install failed for %s (exit %d, non-fatal)",
+                    pkg.package,
+                    extra_proc.returncode,
+                )
+        except (subprocess.TimeoutExpired, OSError) as exc:
+            log.warning("Failed to install extra deps for %s: %s", pkg.package, exc)
+
+    return True
+
+
 def _run_package_inner(
     pkg: PackageEntry,
     config: RunnerConfig,
@@ -829,43 +1049,10 @@ def _run_package_inner(
     if not _ensure_repo(pkg, config, result, repo_dir):
         return result
 
-    # --- Sdist version alignment ---
-    sdist_version: str | None = None
-    sdist_tag_matched: bool | None = None
-    source_layout: str = "unknown"
     import_name = pkg.import_name or pkg.package.replace("-", "_")
 
-    if config.install_from == "sdist":
-        result.install_from = "sdist"
-        sdist_version = fetch_latest_pypi_version(pkg.package)
-        if sdist_version:
-            log.info("PyPI latest version for %s: %s", pkg.package, sdist_version)
-            commit_hash, matched_tag = checkout_matching_tag(repo_dir, pkg.package, sdist_version)
-            if commit_hash:
-                result.git_revision = commit_hash
-                sdist_tag_matched = True
-                log.info(
-                    "Checked out tag %s for %s (commit %s)",
-                    matched_tag,
-                    pkg.package,
-                    commit_hash[:12],
-                )
-            else:
-                sdist_tag_matched = False
-                log.warning(
-                    "No matching tag for %s version %s, staying on HEAD",
-                    pkg.package,
-                    sdist_version,
-                )
-        else:
-            log.warning("Could not fetch PyPI version for %s", pkg.package)
-
-        result.sdist_version = sdist_version
-        result.sdist_tag_matched = sdist_tag_matched
-        source_layout = detect_source_layout(repo_dir, import_name)
-        log.debug("Source layout for %s: %s", pkg.package, source_layout)
-    else:
-        result.install_from = "source"
+    # --- Sdist version alignment ---
+    source_layout, _, _ = _align_sdist_version(pkg, config, result, repo_dir, import_name)
 
     # --- Create or reuse venv ---
     if _cancelled():
@@ -873,151 +1060,48 @@ def _run_package_inner(
         result.error_message = "Run stopped (crash limit reached)"
         return result
 
-    venv_python = venv_dir / "bin" / "python"
-    venv_existed = venv_dir.exists() and venv_python.exists()
+    venv_setup = _setup_venv(pkg, config, result, venv_dir)
+    if venv_setup is None:
+        return result
+    venv_python, installer, venv_existed = venv_setup
 
-    if venv_existed and config.refresh_venvs:
-        log.info("Refreshing venv for %s at %s", pkg.package, venv_dir)
-        shutil.rmtree(venv_dir)
-        venv_existed = False
-
-    # Resolve installer backend.
-    installer = resolve_installer(config.installer)
-    result.installer_backend = installer.value
-    log.debug("Installer backend for %s: %s", pkg.package, installer.value)
-
-    if venv_existed:
-        log.info("Reusing venv for %s at %s", pkg.package, venv_dir)
-    else:
-        log.info("Creating venv for %s at %s", pkg.package, venv_dir)
-        venv_start = time.monotonic()
-        try:
-            create_venv(config.target_python, venv_dir, installer)
-        except (subprocess.CalledProcessError, OSError) as exc:
-            result.status = "error"
-            result.error_message = f"Venv creation failed: {exc}"
-            log.error("Venv creation failed for %s: %s", pkg.package, exc)
-            return result
-        log.debug("Venv created for %s in %.2fs", pkg.package, time.monotonic() - venv_start)
-
-    # --- Install (skip if reusing venv) ---
+    # --- Install ---
     if _cancelled():
         result.status = "error"
         result.error_message = "Run stopped (crash limit reached)"
         return result
 
-    if venv_existed:
-        log.info("Skipping install for %s (reusing venv)", pkg.package)
-    elif config.install_from == "sdist":
-        # --- Sdist install mode ---
-        raw_install_cmd = pkg.install_command or "pip install -e ."
-        sdist_install_cmd, deps_install_cmd = build_sdist_install_commands(
-            pkg.package, raw_install_cmd
-        )
-        log.info("Installing %s from sdist: %s", pkg.package, sdist_install_cmd)
-
-        install_result = _run_install(
-            pkg,
-            config,
-            result,
-            venv_dir,
-            repo_dir,
-            env,
-            per_pkg_timeout,
-            installer,
-            sdist_install_cmd,
-            label=" (sdist)",
-        )
-        if install_result is None:
-            return result
-        venv_python, installer = install_result
-        log.debug(
-            "Sdist install for %s completed in %.2fs",
-            pkg.package,
-            result.install_duration_seconds,
-        )
-
-        # Step 2: Install test dependencies from the repo.
-        if deps_install_cmd:
-            log.info("Installing test deps for %s: %s", pkg.package, deps_install_cmd)
-            try:
-                deps_proc = install_package(
-                    venv_python, deps_install_cmd, repo_dir, env, per_pkg_timeout, installer
-                )
-                if deps_proc.returncode != 0:
-                    log.warning(
-                        "Test deps install had non-zero exit for %s (exit %d, continuing)",
-                        pkg.package,
-                        deps_proc.returncode,
-                    )
-            except (subprocess.TimeoutExpired, OSError) as exc:
-                log.warning("Test deps install failed for %s: %s (continuing)", pkg.package, exc)
-    else:
-        # --- Source install mode (original behaviour) ---
-        install_cmd = pkg.install_command or "pip install -e ."
-        log.info("Installing %s: %s", pkg.package, install_cmd)
-
-        install_result = _run_install(
-            pkg,
-            config,
-            result,
-            venv_dir,
-            repo_dir,
-            env,
-            per_pkg_timeout,
-            installer,
-            install_cmd,
-        )
-        if install_result is None:
-            return result
-        venv_python, installer = install_result
-
-    # --- Import check (skip if reusing venv) ---
-    # Use shield_source_dir in sdist mode to prevent importing from local source.
-    _shield = (
-        shield_source_dir(repo_dir, import_name, source_layout)
-        if config.install_from == "sdist"
-        else nullcontext()
+    install_out = _install_in_venv(
+        pkg,
+        config,
+        result,
+        venv_dir,
+        repo_dir,
+        env,
+        per_pkg_timeout,
+        venv_python,
+        installer,
+        venv_existed,
     )
-    with _shield:
-        if not venv_existed:
-            log.info("Checking import for %s: import %s", pkg.package, import_name)
-            try:
-                import_proc = check_import(venv_python, import_name, env)
-                if import_proc.returncode != 0:
-                    result.status = "install_error"
-                    stderr_msg = import_proc.stderr.strip()[-200:] if import_proc.stderr else ""
-                    result.error_message = f"Package installed but import failed: {stderr_msg}"
-                    log.error(
-                        "Import check failed for %s: %s",
-                        pkg.package,
-                        result.error_message,
-                    )
-                    return result
-            except subprocess.TimeoutExpired:
-                result.status = "install_error"
-                result.error_message = "Package installed but import timed out"
-                log.error("Import check timed out for %s", pkg.package)
-                return result
-            except OSError as exc:
-                log.warning("Import check failed for %s: %s (continuing)", pkg.package, exc)
+    if install_out is None:
+        return result
+    venv_python, installer = install_out
 
-    # --- Install extra dependencies if specified ---
-    if config.extra_deps and not venv_existed:
-        extra_cmd = f"pip install {' '.join(config.extra_deps)}"
-        log.info("Installing extra deps for %s: %s", pkg.package, extra_cmd)
-        try:
-            extra_proc = install_package(
-                venv_python, extra_cmd, repo_dir, env, per_pkg_timeout, installer
-            )
-            if extra_proc.returncode != 0:
-                log.warning(
-                    "Extra deps install failed for %s (exit %d, non-fatal)",
-                    pkg.package,
-                    extra_proc.returncode,
-                )
-        except (subprocess.TimeoutExpired, OSError) as exc:
-            log.warning("Failed to install extra deps for %s: %s", pkg.package, exc)
+    # --- Import check and extra deps ---
+    if not _check_import_and_extras(
+        pkg,
+        config,
+        result,
+        venv_python,
+        repo_dir,
+        env,
+        per_pkg_timeout,
+        installer,
+        import_name,
+        source_layout,
+        venv_existed,
+    ):
+        return result
 
     # --- Collect installed packages ---
     result.installed_dependencies = get_installed_packages(venv_python, env, installer)
@@ -1048,7 +1132,6 @@ def _run_package_inner(
     log.info("Running tests for %s: %s", pkg.package, test_cmd)
     log.debug("Test timeout: %ds", per_pkg_timeout)
 
-    # Shield source directory in sdist mode to prevent local imports.
     _test_shield = (
         shield_source_dir(repo_dir, import_name, source_layout)
         if config.install_from == "sdist"
