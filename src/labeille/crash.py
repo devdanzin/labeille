@@ -36,7 +36,7 @@ _CRASH_PATTERNS: list[tuple[re.Pattern[str], bool]] = [
 ]
 
 
-@dataclass
+@dataclass(frozen=True)
 class CrashInfo:
     """Information about a detected crash."""
 

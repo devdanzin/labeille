@@ -91,7 +91,7 @@ _registry_dir_option = click.option(
     "-o",
     "--output",
     "output_path",
-    type=click.Path(),
+    type=click.Path(path_type=Path),
     default=None,
     help="Write output to file (default: stdout).",
 )
@@ -109,7 +109,7 @@ def registry_cmd(
     fmt: str,
     detail: bool,
     export_markdown: bool,
-    output_path: str | None,
+    output_path: Path | None,
     where_exprs: tuple[str, ...],
     python_versions: tuple[str, ...],
     verbose: bool,
@@ -182,7 +182,7 @@ def registry_cmd(
         output = format_registry_summary(report)
 
     if output_path:
-        Path(output_path).write_text(output + "\n", encoding="utf-8")
+        output_path.write_text(output + "\n", encoding="utf-8")
         click.echo(f"Report written to {output_path}")
     else:
         click.echo(output)

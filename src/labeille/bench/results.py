@@ -23,7 +23,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from labeille.bench.constraints import ResourceConstraints
 from labeille.bench.stats import DescriptiveStats, describe, detect_outliers
@@ -50,7 +50,7 @@ class BenchIteration:
     sys_time_s: float
     peak_rss_mb: float
     exit_code: int
-    status: str  # "ok", "fail", "timeout", "error"
+    status: Literal["ok", "fail", "timeout", "error", "oom"]
     outlier: bool = False  # Set by post-processing
     load_avg_start: float = 0.0
     load_avg_end: float = 0.0

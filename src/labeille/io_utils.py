@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import tempfile
+from datetime import datetime, timezone
 from pathlib import Path
 
 
@@ -24,3 +25,8 @@ def atomic_write_text(path: Path, content: str, *, encoding: str = "utf-8") -> N
         except OSError:
             pass
         raise
+
+
+def utc_now_iso() -> str:
+    """Return the current UTC time as an ISO 8601 string with Z suffix."""
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")

@@ -34,7 +34,7 @@ def ft() -> None:
 )
 @click.option("--iterations", "-n", default=10, help="Runs per package (default: 10).")
 @click.option(
-    "--timeout", default=600, show_default=True, help="Per-iteration timeout in seconds."
+    "--timeout", type=int, default=600, show_default=True, help="Per-iteration timeout in seconds."
 )
 @click.option(
     "--stall-threshold",
@@ -426,8 +426,14 @@ def compare(run_a: Path, run_b: Path) -> None:
     type=click.Choice(["markdown", "text"]),
     default="markdown",
 )
-@click.option("--output", "-o", default=None, help="Output file (default: stdout).")
-def report(result_dir: Path, fmt: str, output: str | None) -> None:
+@click.option(
+    "--output",
+    "-o",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Output file (default: stdout).",
+)
+def report(result_dir: Path, fmt: str, output: Path | None) -> None:
     """Generate a comprehensive compatibility report.
 
     Produces a full report suitable for sharing with the CPython
@@ -441,7 +447,7 @@ def report(result_dir: Path, fmt: str, output: str | None) -> None:
     report_text = generate_report(meta, results, format=fmt)
 
     if output:
-        Path(output).write_text(report_text, encoding="utf-8")
+        output.write_text(report_text, encoding="utf-8")
         click.echo(f"Report written to {output}")
     else:
         click.echo(report_text)
@@ -460,8 +466,14 @@ def report(result_dir: Path, fmt: str, output: str | None) -> None:
     type=click.Choice(["csv", "json"]),
     default="csv",
 )
-@click.option("--output", "-o", default=None, help="Output file (default: stdout).")
-def export(result_dir: Path, fmt: str, output: str | None) -> None:
+@click.option(
+    "--output",
+    "-o",
+    type=click.Path(path_type=Path),
+    default=None,
+    help="Output file (default: stdout).",
+)
+def export(result_dir: Path, fmt: str, output: Path | None) -> None:
     """Export results for external analysis.
 
     CSV format includes one row per package with category, pass rate,
@@ -480,7 +492,7 @@ def export(result_dir: Path, fmt: str, output: str | None) -> None:
         text = export_json(results)
 
     if output:
-        Path(output).write_text(text, encoding="utf-8")
+        output.write_text(text, encoding="utf-8")
         click.echo(f"Exported to {output}")
     else:
         click.echo(text)

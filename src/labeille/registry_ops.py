@@ -6,15 +6,16 @@ with file I/O, filtering, error handling, and reporting.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields as dataclass_fields
 from pathlib import Path
-from typing import Any
+from typing import Any, get_type_hints
 
 import yaml
 
 from labeille.logging import get_logger
 from labeille.registry import (
     IndexEntry,
+    PackageEntry,
     load_index,
     load_package,
     save_index,
@@ -169,8 +170,8 @@ def _read_lines(path: Path) -> list[str]:
     return text.splitlines(True)
 
 
-def _atomic_write(path: Path, lines: list[str]) -> None:
-    """Write lines to a file atomically using a temp file and os.replace."""
+def _write_lines(path: Path, lines: list[str]) -> None:
+    """Write lines to a file atomically."""
     from labeille.io_utils import atomic_write_text
 
     atomic_write_text(path, "".join(lines))
@@ -269,7 +270,7 @@ def batch_add_field(
                 sample_diffs.append((f.name, before_text, after_text))
             modified.append(f.name)
         else:
-            _atomic_write(f, new_lines)
+            _write_lines(f, new_lines)
             modified.append(f.name)
 
     if dry_run:
@@ -351,7 +352,7 @@ def batch_remove_field(
                 sample_diffs.append((f.name, "".join(lines), "".join(new_lines)))
             modified.append(f.name)
         else:
-            _atomic_write(f, new_lines)
+            _write_lines(f, new_lines)
             modified.append(f.name)
 
     if dry_run:
@@ -419,7 +420,7 @@ def batch_rename_field(
                 sample_diffs.append((f.name, "".join(lines), "".join(new_lines)))
             modified.append(f.name)
         else:
-            _atomic_write(f, new_lines)
+            _write_lines(f, new_lines)
             modified.append(f.name)
 
     if dry_run:
@@ -521,7 +522,7 @@ def batch_set_field(
                 sample_diffs.append((f.name, "".join(lines), "".join(new_lines)))
             modified.append(f.name)
         else:
-            _atomic_write(f, new_lines)
+            _write_lines(f, new_lines)
             modified.append(f.name)
 
     if dry_run:
@@ -542,49 +543,34 @@ def batch_set_field(
 # Required fields that must be present.
 _REQUIRED_FIELDS = {"package", "enriched"}
 
-# Known PackageEntry fields (synced with the dataclass).
-_KNOWN_FIELDS = {
-    "package",
-    "repo",
-    "pypi_url",
-    "extension_type",
-    "python_versions",
-    "install_method",
-    "install_command",
-    "test_command",
-    "test_framework",
-    "uses_xdist",
-    "timeout",
-    "skip",
-    "skip_reason",
-    "skip_versions",
-    "notes",
-    "enriched",
-    "clone_depth",
-    "import_name",
-}
+# Known PackageEntry fields — derived from the dataclass to stay in sync.
+_KNOWN_FIELDS = {f.name for f in dataclass_fields(PackageEntry)}
 
-# Expected types for known fields.
-_FIELD_TYPES: dict[str, type | tuple[type, ...]] = {
-    "package": str,
-    "repo": (str, type(None)),
-    "pypi_url": str,
-    "extension_type": str,
-    "python_versions": list,
-    "install_method": str,
-    "install_command": str,
-    "test_command": str,
-    "test_framework": str,
-    "uses_xdist": bool,
-    "timeout": (int, type(None)),
-    "skip": bool,
-    "skip_reason": (str, type(None)),
-    "skip_versions": dict,
-    "notes": str,
-    "enriched": bool,
-    "clone_depth": (int, type(None)),
-    "import_name": (str, type(None)),
-}
+
+def _build_field_types() -> dict[str, type | tuple[type, ...]]:
+    """Derive expected YAML types from PackageEntry field annotations."""
+    import types as _types
+
+    mapping: dict[str, type | tuple[type, ...]] = {}
+    hints = get_type_hints(PackageEntry, include_extras=True)
+    for f in dataclass_fields(PackageEntry):
+        ann = hints[f.name]
+        origin = getattr(ann, "__origin__", None)
+        # list[...] → list, dict[...] → dict
+        if origin is list:
+            mapping[f.name] = list
+        elif origin is dict:
+            mapping[f.name] = dict
+        # str | None  (types.UnionType on 3.10+)
+        elif isinstance(ann, _types.UnionType):
+            non_none = [t for t in ann.__args__ if t is not _types.NoneType]
+            mapping[f.name] = tuple([*non_none, type(None)])
+        else:
+            mapping[f.name] = ann
+    return mapping
+
+
+_FIELD_TYPES: dict[str, type | tuple[type, ...]] = _build_field_types()
 
 
 def validate_registry(

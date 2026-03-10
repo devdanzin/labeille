@@ -134,6 +134,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - All documentation updated to reflect the split. Enrichment docs now live in laruche.
 
 ### Enhanced
+- Added `utc_now_iso()` helper to `io_utils.py`, unifying 15+ timestamp generation sites across 8 modules to a single canonical UTC format with Z suffix.
+- Registry `save_index()` and `save_package()` now use `atomic_write_text()` for crash-safe writes, preventing corruption of the most sensitive files.
+- Added `Literal` types to `PackageResult.status`, `ResolveResult.action`, `BenchIteration.status`, and `EffectSize.classification` for compile-time typo detection.
+- Made `DescriptiveStats`, `TTestResult`, `EffectSize`, `BootstrapCI`, `OverheadResult`, and `CrashInfo` dataclasses frozen (immutable).
+- Narrowed 23 `except Exception` handlers in `bench/system.py` to `_PROBE_ERRORS` tuple, preventing accidental swallowing of programming errors while preserving best-effort system probing.
+- Added logging to 8 previously silent exception handlers in `ft/runner.py`, `bisect.py`, `cli.py`, `runner.py`, and `bench/timing.py`.
+- Added error handling to `save_crash_stderr()` with `mkdir` for the crashes directory.
+- Fixed `ScanResult` forward reference in `cli.py` — now uses `TYPE_CHECKING` import, removing 4 suppression markers and 2 runtime asserts.
+- Standardized `--output` options to `click.Path(path_type=Path)` in `ft_cli.py` and `analyze_cli.py`.
+- Added `type=int` to `ft run --timeout` for consistency with other commands.
+- Added docstrings to 7 undocumented public APIs in `compat.py` (properties, `to_dict`, `from_dict`).
+- Fixed `cli.py` module docstring to list all 9 subcommand groups.
+- Added `test_logging.py` (8 tests) and `test_io_utils.py` (10 tests) for previously untested foundation modules.
+- Derived `_KNOWN_FIELDS` and `_FIELD_TYPES` in `registry_ops.py` from `PackageEntry` dataclass metadata, preventing drift.
+- Added `PackageResult.to_dict()` method, simplifying `append_result()` from 22-field manual dict to `asdict()`.
+- Eliminated redundant `_atomic_write` wrappers in `registry_ops.py` and `migrations.py`.
+- Added `encoding="utf-8"` to `bench/runner.py` mid-run metadata write.
 - Extracted shared `atomic_write_text()` utility in `io_utils.py`, replacing duplicate implementations in `registry_ops.py`, `migrations.py`, and `bench/tracking.py`.
 - Promoted `_clean_env()` to public API as `clean_env()`, replacing inline env sanitization in `ft/compat.py` and `bench/runner.py`.
 - Unified logger acquisition: all 20 bench/ and ft/ modules now use `get_logger()` with per-module names (e.g., `bench.runner`, `ft.runner`) for filterable log output.

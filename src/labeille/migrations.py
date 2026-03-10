@@ -11,12 +11,12 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
 import yaml
 
+from labeille.io_utils import atomic_write_text, utc_now_iso
 from labeille.logging import get_logger
 from labeille.registry import _dict_to_package, _package_to_dict
 
@@ -178,13 +178,6 @@ def get_applied_date(registry_dir: Path, migration_name: str) -> str | None:
 # ---------------------------------------------------------------------------
 
 
-def _atomic_write(path: Path, content: str) -> None:
-    """Write content to a file atomically."""
-    from labeille.io_utils import atomic_write_text
-
-    atomic_write_text(path, content)
-
-
 def execute_migration(
     migration: MigrationSpec,
     registry_dir: Path,
@@ -233,7 +226,7 @@ def execute_migration(
                     sort_keys=False,
                     allow_unicode=True,
                 )
-                _atomic_write(f, text)
+                atomic_write_text(f, text)
         else:
             skipped_count += 1
 
@@ -248,7 +241,7 @@ def execute_migration(
     # Log the migration.
     log_entry = MigrationLogEntry(
         migration=migration.name,
-        applied_at=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        applied_at=utc_now_iso(),
         files_modified=modified_count,
         files_skipped=skipped_count,
     )

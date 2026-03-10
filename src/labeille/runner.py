@@ -27,12 +27,12 @@ import threading
 import time
 from contextlib import contextmanager, nullcontext
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any, Iterator, Literal
 
 from labeille.crash import detect_crash
+from labeille.io_utils import utc_now_iso
 from labeille.logging import get_logger
 from labeille.registry import Index, PackageEntry, load_index, load_package, package_exists
 from labeille.resolve import fetch_pypi_metadata
@@ -122,8 +122,8 @@ class RunnerConfig:
     test_command_override: str | None = None
     test_command_suffix: str | None = None
     repo_overrides: dict[str, str] = field(default_factory=dict)
-    installer: str = "auto"
-    install_from: str = "source"  # "source" or "sdist"
+    installer: str = "auto"  # auto | uv | pip
+    install_from: str = "source"  # source | sdist
 
 
 @dataclass
@@ -134,7 +134,9 @@ class PackageResult:
     repo: str | None = None
     package_version: str | None = None
     git_revision: str | None = None
-    status: str = "error"  # pass | fail | crash | timeout | install_error | clone_error | error
+    status: Literal[
+        "pass", "fail", "crash", "timeout", "install_error", "clone_error", "error"
+    ] = "error"
     exit_code: int = -1
     signal: int | None = None
     crash_signature: str | None = None
@@ -151,6 +153,10 @@ class PackageResult:
     sdist_tag_matched: bool | None = None
     installer_backend: str = ""
     timestamp: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        """Convert to a plain dict suitable for JSON serialization."""
+        return asdict(self)
 
 
 @dataclass
@@ -230,31 +236,8 @@ def write_run_meta(
 
 def append_result(run_dir: Path, result: PackageResult) -> None:
     """Append a single result as a JSON line to results.jsonl."""
-    data: dict[str, Any] = {
-        "package": result.package,
-        "repo": result.repo,
-        "package_version": result.package_version,
-        "git_revision": result.git_revision,
-        "status": result.status,
-        "exit_code": result.exit_code,
-        "signal": result.signal,
-        "crash_signature": result.crash_signature,
-        "duration_seconds": result.duration_seconds,
-        "install_duration_seconds": result.install_duration_seconds,
-        "test_command": result.test_command,
-        "timeout_hit": result.timeout_hit,
-        "stderr_tail": result.stderr_tail,
-        "installed_dependencies": result.installed_dependencies,
-        "error_message": result.error_message,
-        "requested_revision": result.requested_revision,
-        "install_from": result.install_from,
-        "sdist_version": result.sdist_version,
-        "sdist_tag_matched": result.sdist_tag_matched,
-        "installer_backend": result.installer_backend,
-        "timestamp": result.timestamp,
-    }
     with open(run_dir / "results.jsonl", "a", encoding="utf-8") as f:
-        f.write(json.dumps(data) + "\n")
+        f.write(json.dumps(result.to_dict()) + "\n")
 
 
 def load_completed_packages(run_dir: Path) -> set[str]:
@@ -277,7 +260,11 @@ def load_completed_packages(run_dir: Path) -> set[str]:
 def save_crash_stderr(run_dir: Path, package_name: str, stderr: str) -> None:
     """Save stderr output for a crashed package."""
     crash_file = run_dir / "crashes" / f"{package_name}.stderr"
-    crash_file.write_text(stderr, encoding="utf-8")
+    try:
+        crash_file.parent.mkdir(parents=True, exist_ok=True)
+        crash_file.write_text(stderr, encoding="utf-8")
+    except OSError as exc:
+        log.error("Could not save crash stderr for %s: %s", package_name, exc)
 
 
 # ---------------------------------------------------------------------------
@@ -727,8 +714,8 @@ def get_installed_packages(
         if proc.returncode == 0:
             packages = json.loads(proc.stdout)
             return {p["name"]: p["version"] for p in packages}
-    except (subprocess.TimeoutExpired, json.JSONDecodeError, KeyError, OSError):
-        pass
+    except (subprocess.TimeoutExpired, json.JSONDecodeError, KeyError, OSError) as exc:
+        log.debug("Could not list installed packages: %s", exc)
     return {}
 
 
@@ -1160,7 +1147,7 @@ def run_package(
         package=pkg.package,
         repo=pkg.repo,
         test_command=pkg.test_command,
-        timestamp=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        timestamp=utc_now_iso(),
     )
 
     per_pkg_timeout = pkg.timeout if pkg.timeout is not None else config.timeout
@@ -1840,7 +1827,7 @@ def _run_all_parallel(
                 repo=pkg.repo,
                 status="error",
                 error_message="Run stopped (crash limit reached)",
-                timestamp=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                timestamp=utc_now_iso(),
             )
 
         result = run_package(pkg, config, run_dir, env, cancel_event=cancel_event)
@@ -1874,7 +1861,7 @@ def _run_all_parallel(
                     repo=pkg.repo,
                     status="error",
                     error_message=f"Worker exception: {exc}",
-                    timestamp=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    timestamp=utc_now_iso(),
                 )
                 results.append(error_result)
                 _update_summary(summary, error_result)
@@ -1928,7 +1915,7 @@ def run_all(config: RunnerConfig) -> RunOutput:
     if config.workers > 1:
         log.info("Parallel mode: %d workers", config.workers)
 
-    started_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    started_at = utc_now_iso()
     write_run_meta(run_dir, config, python_version, jit_enabled, started_at=started_at)
 
     # Resumability: load already-completed packages.
@@ -1948,7 +1935,7 @@ def run_all(config: RunnerConfig) -> RunOutput:
 
     # Finalise run metadata.
     total_duration = round(time.monotonic() - run_start, 2)
-    finished_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    finished_at = utc_now_iso()
     write_run_meta(
         run_dir,
         config,

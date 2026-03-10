@@ -15,7 +15,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import requests
 
@@ -164,7 +164,7 @@ class ResolveResult:
     name: str
     repo_url: str | None = None
     extension_type: str = "unknown"
-    action: str = "skipped"  # created | updated | skipped | skipped_enriched | failed
+    action: Literal["created", "updated", "skipped", "skipped_enriched", "failed"] = "skipped"
     error: str | None = None
 
 

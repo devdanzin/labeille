@@ -205,8 +205,8 @@ def _parse_gnu_time_rss(time_output_file: str) -> float:
                 if len(parts) >= 2:
                     kb = int(parts[-1].strip())
                     return kb / 1024
-    except Exception:  # noqa: BLE001
-        pass
+    except (OSError, ValueError) as exc:
+        log.debug("Could not parse GNU time RSS from %s: %s", time_output_file, exc)
     return 0.0
 
 
