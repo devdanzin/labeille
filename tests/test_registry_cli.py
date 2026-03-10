@@ -287,6 +287,386 @@ class TestValidateCli(unittest.TestCase):
         self.assertIn("ERROR", result.output)
 
 
+class TestRenameFieldCli(unittest.TestCase):
+    """Tests for registry rename-field command."""
+
+    def setUp(self) -> None:
+        self.tmpdir = tempfile.TemporaryDirectory()
+        self.registry = Path(self.tmpdir.name)
+        for name in ["alpha", "beta"]:
+            _write_package(self.registry, name)
+        _write_index(self.registry, ["alpha", "beta"])
+        self.runner = CliRunner()
+
+    def tearDown(self) -> None:
+        self.tmpdir.cleanup()
+
+    def test_dry_run(self) -> None:
+        result = self.runner.invoke(
+            registry,
+            [
+                "rename-field",
+                "notes",
+                "comments",
+                "--registry-dir",
+                str(self.registry),
+            ],
+        )
+        self.assertEqual(result.exit_code, 0, result.output)
+        self.assertIn("DRY RUN", result.output)
+        self.assertIn("Would modify 2 files", result.output)
+
+    def test_apply(self) -> None:
+        result = self.runner.invoke(
+            registry,
+            [
+                "rename-field",
+                "notes",
+                "comments",
+                "--apply",
+                "--no-update-index",
+                "--registry-dir",
+                str(self.registry),
+            ],
+        )
+        self.assertEqual(result.exit_code, 0, result.output)
+        self.assertIn("Modified 2 files", result.output)
+        self.assertIn("Remember to rename", result.output)
+        for name in ["alpha", "beta"]:
+            data = yaml.safe_load((self.registry / "packages" / f"{name}.yaml").read_text())
+            self.assertIn("comments", data)
+            self.assertNotIn("notes", data)
+
+    def test_rename_with_packages_filter(self) -> None:
+        result = self.runner.invoke(
+            registry,
+            [
+                "rename-field",
+                "notes",
+                "comments",
+                "--packages",
+                "alpha",
+                "--apply",
+                "--no-update-index",
+                "--registry-dir",
+                str(self.registry),
+            ],
+        )
+        self.assertEqual(result.exit_code, 0, result.output)
+        self.assertIn("Modified 1 files", result.output)
+        alpha = yaml.safe_load((self.registry / "packages" / "alpha.yaml").read_text())
+        self.assertIn("comments", alpha)
+        beta = yaml.safe_load((self.registry / "packages" / "beta.yaml").read_text())
+        self.assertNotIn("comments", beta)
+
+    def test_rename_nonexistent_field_lenient(self) -> None:
+        result = self.runner.invoke(
+            registry,
+            [
+                "rename-field",
+                "nonexistent",
+                "new_name",
+                "--lenient",
+                "--registry-dir",
+                str(self.registry),
+            ],
+        )
+        self.assertEqual(result.exit_code, 0, result.output)
+        self.assertIn("Would skip 2 files", result.output)
+
+
+class TestSetFieldExtended(unittest.TestCase):
+    """Extended tests for registry set-field command."""
+
+    def setUp(self) -> None:
+        self.tmpdir = tempfile.TemporaryDirectory()
+        self.registry = Path(self.tmpdir.name)
+        _write_package(self.registry, "pure", extra_fields={"extension_type": "pure"})
+        _write_package(self.registry, "ext", extra_fields={"extension_type": "extensions"})
+        _write_index(self.registry, ["pure", "ext"])
+        self.runner = CliRunner()
+
+    def tearDown(self) -> None:
+        self.tmpdir.cleanup()
+
+    def test_set_with_all_flag(self) -> None:
+        result = self.runner.invoke(
+            registry,
+            [
+                "set-field",
+                "timeout",
+                "600",
+                "--type",
+                "int",
+                "--all",
+                "--apply",
+                "--no-update-index",
+                "--registry-dir",
+                str(self.registry),
+            ],
+        )
+        self.assertEqual(result.exit_code, 0, result.output)
+        for name in ["pure", "ext"]:
+            data = yaml.safe_load((self.registry / "packages" / f"{name}.yaml").read_text())
+            self.assertEqual(data["timeout"], 600)
+
+    def test_set_with_where_filter(self) -> None:
+        result = self.runner.invoke(
+            registry,
+            [
+                "set-field",
+                "timeout",
+                "300",
+                "--type",
+                "int",
+                "--where",
+                "extension_type=extensions",
+                "--apply",
+                "--no-update-index",
+                "--registry-dir",
+                str(self.registry),
+            ],
+        )
+        self.assertEqual(result.exit_code, 0, result.output)
+        ext = yaml.safe_load((self.registry / "packages" / "ext.yaml").read_text())
+        self.assertEqual(ext["timeout"], 300)
+        pure = yaml.safe_load((self.registry / "packages" / "pure.yaml").read_text())
+        self.assertIsNone(pure["timeout"])
+
+    def test_set_with_packages_filter(self) -> None:
+        result = self.runner.invoke(
+            registry,
+            [
+                "set-field",
+                "timeout",
+                "999",
+                "--type",
+                "int",
+                "--packages",
+                "ext",
+                "--apply",
+                "--no-update-index",
+                "--registry-dir",
+                str(self.registry),
+            ],
+        )
+        self.assertEqual(result.exit_code, 0, result.output)
+        ext = yaml.safe_load((self.registry / "packages" / "ext.yaml").read_text())
+        self.assertEqual(ext["timeout"], 999)
+
+    def test_dry_run_with_all(self) -> None:
+        result = self.runner.invoke(
+            registry,
+            [
+                "set-field",
+                "timeout",
+                "600",
+                "--type",
+                "int",
+                "--all",
+                "--registry-dir",
+                str(self.registry),
+            ],
+        )
+        self.assertEqual(result.exit_code, 0, result.output)
+        self.assertIn("DRY RUN", result.output)
+        self.assertIn("Would modify 2 files", result.output)
+
+
+class TestValidateExtended(unittest.TestCase):
+    """Extended tests for registry validate command."""
+
+    def setUp(self) -> None:
+        self.tmpdir = tempfile.TemporaryDirectory()
+        self.registry = Path(self.tmpdir.name)
+        self.runner = CliRunner()
+
+    def tearDown(self) -> None:
+        self.tmpdir.cleanup()
+
+    def test_validate_with_packages_filter(self) -> None:
+        for name in ["alpha", "beta", "gamma"]:
+            _write_package(self.registry, name)
+        result = self.runner.invoke(
+            registry,
+            [
+                "validate",
+                "--packages",
+                "alpha,beta",
+                "--registry-dir",
+                str(self.registry),
+            ],
+        )
+        self.assertEqual(result.exit_code, 0, result.output)
+        self.assertIn("Checking 2 packages", result.output)
+
+    def test_validate_with_warnings(self) -> None:
+        _write_package(
+            self.registry,
+            "alpha",
+            extra_fields={"test_command": None, "install_command": None},
+        )
+        result = self.runner.invoke(
+            registry,
+            ["validate", "--registry-dir", str(self.registry)],
+        )
+        self.assertEqual(result.exit_code, 0, result.output)
+
+
+class TestMigrateCli(unittest.TestCase):
+    """Tests for registry migrate command."""
+
+    def setUp(self) -> None:
+        self.tmpdir = tempfile.TemporaryDirectory()
+        self.registry = Path(self.tmpdir.name)
+        for name in ["alpha", "beta"]:
+            _write_package(self.registry, name)
+        _write_index(self.registry, ["alpha", "beta"])
+        self.runner = CliRunner()
+
+    def tearDown(self) -> None:
+        self.tmpdir.cleanup()
+
+    def test_list_migrations(self) -> None:
+        result = self.runner.invoke(
+            registry,
+            ["migrate", "--list", "--registry-dir", str(self.registry)],
+        )
+        self.assertEqual(result.exit_code, 0, result.output)
+        # Should show at least the registered migrations.
+        self.assertIn("Available migrations", result.output)
+
+    def test_missing_migration_name(self) -> None:
+        result = self.runner.invoke(
+            registry,
+            ["migrate", "--registry-dir", str(self.registry)],
+        )
+        self.assertNotEqual(result.exit_code, 0)
+        self.assertIn("missing MIGRATION_NAME", result.output)
+
+    def test_unknown_migration(self) -> None:
+        result = self.runner.invoke(
+            registry,
+            ["migrate", "nonexistent_migration", "--registry-dir", str(self.registry)],
+        )
+        self.assertNotEqual(result.exit_code, 0)
+        self.assertIn("unknown migration", result.output)
+
+
+class TestSyncCli(unittest.TestCase):
+    """Tests for registry sync command."""
+
+    def setUp(self) -> None:
+        self.runner = CliRunner()
+
+    def test_existing_git_repo_pull(self) -> None:
+        import subprocess
+        from unittest.mock import patch
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            target = Path(tmpdir)
+            (target / ".git").mkdir()
+
+            with patch("subprocess.run") as mock_run:
+                mock_run.return_value = subprocess.CompletedProcess(args=[], returncode=0)
+                result = self.runner.invoke(registry, ["sync", "--registry-dir", str(target)])
+            self.assertEqual(result.exit_code, 0, result.output)
+            self.assertIn("Updating", result.output)
+            self.assertIn("Registry updated", result.output)
+
+    def test_pull_failure(self) -> None:
+        import subprocess
+        from unittest.mock import patch
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            target = Path(tmpdir)
+            (target / ".git").mkdir()
+
+            with patch("subprocess.run") as mock_run:
+                mock_run.return_value = subprocess.CompletedProcess(
+                    args=[], returncode=1, stderr="merge conflict"
+                )
+                result = self.runner.invoke(registry, ["sync", "--registry-dir", str(target)])
+            self.assertNotEqual(result.exit_code, 0)
+
+    def test_non_git_directory_fails(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            target = Path(tmpdir)
+            (target / "some_file.txt").write_text("content", encoding="utf-8")
+
+            result = self.runner.invoke(registry, ["sync", "--registry-dir", str(target)])
+        self.assertNotEqual(result.exit_code, 0)
+        self.assertIn("not a git repository", result.output)
+
+    def test_fresh_clone(self) -> None:
+        import subprocess
+        from unittest.mock import patch
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            target = Path(tmpdir) / "new_registry"
+
+            with patch("subprocess.run") as mock_run:
+                mock_run.return_value = subprocess.CompletedProcess(args=[], returncode=0)
+                result = self.runner.invoke(registry, ["sync", "--registry-dir", str(target)])
+            self.assertEqual(result.exit_code, 0, result.output)
+            self.assertIn("Cloning", result.output)
+
+
+class TestIndexFieldCli(unittest.TestCase):
+    """Tests for registry add-index-field and remove-index-field commands."""
+
+    def setUp(self) -> None:
+        self.tmpdir = tempfile.TemporaryDirectory()
+        self.registry = Path(self.tmpdir.name)
+        for name in ["alpha", "beta"]:
+            _write_package(self.registry, name)
+        _write_index(self.registry, ["alpha", "beta"])
+        self.runner = CliRunner()
+
+    def tearDown(self) -> None:
+        self.tmpdir.cleanup()
+
+    def test_add_index_field_dry_run(self) -> None:
+        result = self.runner.invoke(
+            registry,
+            ["add-index-field", "new_field", "--registry-dir", str(self.registry)],
+        )
+        self.assertEqual(result.exit_code, 0, result.output)
+        self.assertIn("DRY RUN", result.output)
+
+    def test_remove_index_field_protected(self) -> None:
+        result = self.runner.invoke(
+            registry,
+            [
+                "remove-index-field",
+                "name",
+                "--registry-dir",
+                str(self.registry),
+            ],
+        )
+        self.assertNotEqual(result.exit_code, 0)
+        self.assertIn("protected", result.output)
+
+
+class TestRegistryCLIGroup(unittest.TestCase):
+    """Tests for the registry CLI group."""
+
+    def test_group_help(self) -> None:
+        runner = CliRunner()
+        result = runner.invoke(registry, ["--help"])
+        self.assertEqual(result.exit_code, 0)
+        for cmd in [
+            "add-field",
+            "remove-field",
+            "rename-field",
+            "set-field",
+            "validate",
+            "migrate",
+            "sync",
+        ]:
+            self.assertIn(cmd, result.output)
+
+
 class TestUpdateIndexFlag(unittest.TestCase):
     def setUp(self) -> None:
         self.tmpdir = tempfile.TemporaryDirectory()
