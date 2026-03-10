@@ -225,7 +225,7 @@ def probe_package(package_name):
                 to_check.append(modname)
                 if len(to_check) > 200:  # Safety limit.
                     break
-        except Exception:
+        except (ImportError, OSError, AttributeError):
             pass
 
     for modname in to_check:
@@ -242,7 +242,7 @@ def probe_package(package_name):
                     "is_extension": True,
                     "file": filepath,
                 })
-        except Exception:
+        except (ImportError, OSError):
             pass  # Some submodules may not be importable.
 
     print(json.dumps(result))
