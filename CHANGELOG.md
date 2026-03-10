@@ -198,6 +198,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Removed 12 unused `log = get_logger(...)` variables and their imports from modules that had logger scaffolding but no log calls.
 
 ### Fixed
+- Narrowed 3 bare `except Exception` handlers: `ft/compat.py` GIL probe (to `ImportError, OSError, AttributeError`), submodule import loop (to `ImportError, OSError`), and `registry.py` schema parsing (to `yaml.YAMLError, OSError`). Programming errors now propagate instead of being silently swallowed.
 - `bench/timing.py` now sanitizes subprocess environment via `clean_env()`, preventing PYTHONHOME/PYTHONPATH pollution in benchmark runs.
 - `ft/runner.py` now uses `start_new_session=True` instead of deprecated `preexec_fn=os.setpgrp`, fixing a thread-safety hazard with `ThreadPoolExecutor`.
 - Top-level error handlers in `runner.py`, `ft/runner.py`, and `resolve.py` now preserve tracebacks via `exc_info=True`.
