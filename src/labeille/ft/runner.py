@@ -16,7 +16,10 @@ import time
 from contextlib import nullcontext
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
+
+if TYPE_CHECKING:
+    from labeille.registry import Index, PackageEntry
 
 from labeille.classifier import has_ft_wheel
 from labeille.crash import detect_crash
@@ -464,7 +467,7 @@ def run_single_iteration(
 
 
 def _check_ft_wheel_trust(
-    pkg: Any,
+    pkg: PackageEntry,
     config: FTRunConfig,
     result: FTPackageResult,
 ) -> tuple[bool, dict[str, Any] | None]:
@@ -514,7 +517,7 @@ def _check_ft_wheel_trust(
 
 
 def _clone_and_align_ft(
-    pkg: Any,
+    pkg: PackageEntry,
     config: FTRunConfig,
     result: FTPackageResult,
     repo_dir: Path,
@@ -529,8 +532,10 @@ def _clone_and_align_ft(
     try:
         if repo_dir.exists():
             pull_repo(repo_dir)
-        else:
+        elif pkg.repo:
             clone_repo(pkg.repo, repo_dir)
+        else:
+            raise OSError(f"No repo URL for {pkg.package}")
     except (OSError, subprocess.SubprocessError) as exc:
         log.error("Failed to clone/pull %s: %s", pkg.package, exc)
         result.install_ok = False
@@ -596,7 +601,7 @@ def _clone_and_align_ft(
 
 
 def _create_venv_and_install_ft(
-    pkg: Any,
+    pkg: PackageEntry,
     config: FTRunConfig,
     result: FTPackageResult,
     repo_dir: Path,
@@ -645,7 +650,7 @@ def _create_venv_and_install_ft(
 
 
 def _install_sdist_mode(
-    pkg: Any,
+    pkg: PackageEntry,
     config: FTRunConfig,
     result: FTPackageResult,
     repo_dir: Path,
@@ -687,7 +692,7 @@ def _install_sdist_mode(
 
 
 def _install_source_mode(
-    pkg: Any,
+    pkg: PackageEntry,
     config: FTRunConfig,
     result: FTPackageResult,
     repo_dir: Path,
@@ -720,7 +725,7 @@ def _install_source_mode(
 
 
 def _run_ft_iterations(
-    pkg: Any,
+    pkg: PackageEntry,
     config: FTRunConfig,
     result: FTPackageResult,
     venv_python: Path,
@@ -766,7 +771,7 @@ def _run_ft_iterations(
 
 
 def _run_gil_comparison(
-    pkg: Any,
+    pkg: PackageEntry,
     config: FTRunConfig,
     result: FTPackageResult,
     venv_python: Path,
@@ -817,7 +822,7 @@ def _run_gil_comparison(
 
 
 def run_package_ft(
-    pkg: Any,
+    pkg: PackageEntry,
     config: FTRunConfig,
 ) -> FTPackageResult:
     """Run free-threading tests for a single package.
@@ -1075,7 +1080,7 @@ def run_ft(config: FTRunConfig) -> list[FTPackageResult]:
     return results
 
 
-def _select_packages(index: Any, config: FTRunConfig) -> list[Any]:
+def _select_packages(index: Index, config: FTRunConfig) -> list[PackageEntry]:
     """Select and filter packages from the registry index.
 
     Applies --packages filter, --top N, and skips packages with
@@ -1091,10 +1096,10 @@ def _select_packages(index: Any, config: FTRunConfig) -> list[Any]:
         if entry.skip:
             continue
         try:
-            pkg = load_package(entry.package, config.registry_dir)
+            pkg = load_package(entry.name, config.registry_dir)
             packages.append(pkg)
         except (OSError, ValueError, KeyError) as exc:
-            log.warning("Could not load package %s, skipping: %s", entry.package, exc)
+            log.warning("Could not load package %s, skipping: %s", entry.name, exc)
 
     if config.packages_filter:
         names = set(config.packages_filter)
