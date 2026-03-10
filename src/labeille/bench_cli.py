@@ -10,7 +10,6 @@ Subcommands:
 
 from __future__ import annotations
 
-import logging
 import sys
 from pathlib import Path
 from typing import Any
@@ -18,6 +17,7 @@ from typing import Any
 import click
 
 from labeille.bench.results import BenchMeta, BenchPackageResult
+from labeille.logging import setup_logging
 
 
 @click.group()
@@ -464,10 +464,7 @@ def run(  # noqa: PLR0913
         # Quick mode for development
         labeille bench run --profile bench-jit.yaml --quick
     """
-    if verbose:
-        logging.basicConfig(level=logging.DEBUG)
-    else:
-        logging.basicConfig(level=logging.INFO, format="%(message)s")
+    setup_logging(verbose=verbose)
 
     config = _build_bench_config(locals())
 
