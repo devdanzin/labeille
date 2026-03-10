@@ -15,7 +15,7 @@ from pathlib import Path
 from labeille.crash import detect_crash
 from labeille.logging import get_logger
 from labeille.runner import (
-    _clean_env,
+    clean_env,
     create_venv,
     install_package,
     install_with_fallback,
@@ -212,7 +212,7 @@ def test_revision(repo_dir: Path, commit: str, config: BisectConfig) -> BisectSt
             )
 
         venv_python = venv_path / "bin" / "python"
-        env = _clean_env(
+        env = clean_env(
             PYTHON_JIT="1",
             PYTHONFAULTHANDLER="1",
             PYTHONDONTWRITEBYTECODE="1",

@@ -9,10 +9,11 @@ from __future__ import annotations
 import csv
 import io
 import json
-import logging
 from typing import Any
 
-log = logging.getLogger("labeille")
+from labeille.logging import get_logger
+
+log = get_logger("ft.export")
 
 
 def export_csv(

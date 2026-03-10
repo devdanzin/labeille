@@ -24,7 +24,7 @@ from labeille.crash import detect_crash
 from labeille.logging import get_logger
 from labeille.runner import (
     InstallerBackend,
-    _clean_env,
+    clean_env,
     check_import,
     clone_repo,
     install_with_fallback,
@@ -784,7 +784,7 @@ def _survey_package(
             cwd = repo_dir
 
         # Install.
-        env = _clean_env(ASAN_OPTIONS="detect_leaks=0")
+        env = clean_env(ASAN_OPTIONS="detect_leaks=0")
         install_proc: subprocess.CompletedProcess[str] | None = None
         try:
             install_proc, actual_backend = install_with_fallback(
@@ -836,7 +836,7 @@ def _survey_package(
         # Import check.
         import_name = pkg.import_name or pkg.name.replace("-", "_")
         venv_python = venv_dir / "bin" / "python"
-        import_env = _clean_env(PYTHON_JIT="0", ASAN_OPTIONS="detect_leaks=0")
+        import_env = clean_env(PYTHON_JIT="0", ASAN_OPTIONS="detect_leaks=0")
         try:
             import_proc = check_import(venv_python, import_name, import_env)
         except subprocess.TimeoutExpired:

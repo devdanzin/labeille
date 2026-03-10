@@ -297,7 +297,7 @@ def validate_target_python(python_path: Path) -> str:
             capture_output=True,
             text=True,
             timeout=30,
-            env=_clean_env(ASAN_OPTIONS="detect_leaks=0"),
+            env=clean_env(ASAN_OPTIONS="detect_leaks=0"),
         )
     except FileNotFoundError:
         raise RuntimeError(f"Python interpreter not found: {python_path}") from None
@@ -331,7 +331,7 @@ def check_jit_enabled(python_path: Path) -> bool:
             capture_output=True,
             text=True,
             timeout=30,
-            env=_clean_env(PYTHON_JIT="1", ASAN_OPTIONS="detect_leaks=0"),
+            env=clean_env(PYTHON_JIT="1", ASAN_OPTIONS="detect_leaks=0"),
         )
         return proc.stdout.strip() == "True"
     except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
@@ -343,7 +343,7 @@ def check_jit_enabled(python_path: Path) -> bool:
 # ---------------------------------------------------------------------------
 
 
-def _clean_env(**overrides: str) -> dict[str, str]:
+def clean_env(**overrides: str) -> dict[str, str]:
     """Build a clean environment dict, stripping Python-specific pollution.
 
     Removes ``PYTHONHOME`` and ``PYTHONPATH`` which would corrupt the target
@@ -358,7 +358,7 @@ def _clean_env(**overrides: str) -> dict[str, str]:
 
 def build_env(config: RunnerConfig) -> dict[str, str]:
     """Build the environment dict for test subprocesses."""
-    env = _clean_env()
+    env = clean_env()
     env["PYTHON_JIT"] = "1"
     env["PYTHONFAULTHANDLER"] = "1"
     env["PYTHONDONTWRITEBYTECODE"] = "1"
@@ -526,7 +526,7 @@ def create_venv(
                 text=True,
                 timeout=120,
                 check=True,
-                env=_clean_env(ASAN_OPTIONS="detect_leaks=0"),
+                env=clean_env(ASAN_OPTIONS="detect_leaks=0"),
             )
             return
 
@@ -537,7 +537,7 @@ def create_venv(
         text=True,
         timeout=120,
         check=True,
-        env=_clean_env(ASAN_OPTIONS="detect_leaks=0"),
+        env=clean_env(ASAN_OPTIONS="detect_leaks=0"),
     )
     # Ensure pip is available.
     venv_python = venv_dir / "bin" / "python"
@@ -548,7 +548,7 @@ def create_venv(
         text=True,
         timeout=120,
         check=False,  # ensurepip may fail on some builds; pip might already exist
-        env=_clean_env(ASAN_OPTIONS="detect_leaks=0"),
+        env=clean_env(ASAN_OPTIONS="detect_leaks=0"),
     )
     if ensurepip_proc.returncode != 0:
         log.debug("ensurepip exited %d (non-fatal)", ensurepip_proc.returncode)
@@ -1184,7 +1184,7 @@ def run_package(
     except Exception as exc:
         result.status = "error"
         result.error_message = str(exc)
-        log.error("Unexpected error testing %s: %s", pkg.package, exc)
+        log.error("Unexpected error testing %s: %s", pkg.package, exc, exc_info=True)
     finally:
         result.duration_seconds = round(time.monotonic() - start, 2)
         if is_temp and not config.keep_work_dirs and work_dir is not None:
@@ -1868,7 +1868,7 @@ def _run_all_parallel(
                 results.append(result)
                 _update_summary(summary, result)
             except Exception as exc:
-                log.error("Worker exception for %s: %s", pkg.package, exc)
+                log.error("Worker exception for %s: %s", pkg.package, exc, exc_info=True)
                 error_result = PackageResult(
                     package=pkg.package,
                     repo=pkg.repo,

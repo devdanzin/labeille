@@ -9,9 +9,7 @@ accidental re-application.
 from __future__ import annotations
 
 import json
-import os
 import re
-import tempfile
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -182,17 +180,9 @@ def get_applied_date(registry_dir: Path, migration_name: str) -> str | None:
 
 def _atomic_write(path: Path, content: str) -> None:
     """Write content to a file atomically."""
-    fd, tmp_path = tempfile.mkstemp(dir=path.parent, suffix=".tmp")
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            f.write(content)
-        os.replace(tmp_path, path)
-    except BaseException:
-        try:
-            os.unlink(tmp_path)
-        except OSError:
-            pass
-        raise
+    from labeille.io_utils import atomic_write_text
+
+    atomic_write_text(path, content)
 
 
 def execute_migration(

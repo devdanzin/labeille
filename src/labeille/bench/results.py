@@ -21,7 +21,6 @@ Files produced::
 from __future__ import annotations
 
 import json
-import logging
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -30,8 +29,9 @@ from labeille.bench.constraints import ResourceConstraints
 from labeille.bench.stats import DescriptiveStats, describe, detect_outliers
 from labeille.bench.system import PythonProfile, SystemProfile
 from labeille.bench.timing import PerTestTimings
+from labeille.logging import get_logger
 
-log = logging.getLogger("labeille")
+log = get_logger("bench.results")
 
 
 # ---------------------------------------------------------------------------
@@ -391,11 +391,11 @@ def save_bench_run(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     meta_path = output_dir / "bench_meta.json"
-    meta_path.write_text(json.dumps(meta.to_dict(), indent=2) + "\n")
+    meta_path.write_text(json.dumps(meta.to_dict(), indent=2) + "\n", encoding="utf-8")
     log.info("Wrote %s", meta_path)
 
     results_path = output_dir / "bench_results.jsonl"
-    with open(results_path, "w") as f:
+    with open(results_path, "w", encoding="utf-8") as f:
         for result in results:
             f.write(result.to_jsonl_line() + "\n")
     log.info("Wrote %d package results to %s", len(results), results_path)
@@ -420,12 +420,12 @@ def load_bench_run(
     if not meta_path.exists():
         raise FileNotFoundError(f"No bench_meta.json in {run_dir}")
 
-    meta = BenchMeta.from_dict(json.loads(meta_path.read_text()))
+    meta = BenchMeta.from_dict(json.loads(meta_path.read_text(encoding="utf-8")))
 
     results: list[BenchPackageResult] = []
     results_path = run_dir / "bench_results.jsonl"
     if results_path.exists():
-        for line in results_path.read_text().splitlines():
+        for line in results_path.read_text(encoding="utf-8").splitlines():
             line = line.strip()
             if line:
                 results.append(BenchPackageResult.from_jsonl_line(line))
@@ -442,5 +442,5 @@ def append_package_result(
     Used for incremental writing during long benchmark runs so
     that results are preserved if the process is interrupted.
     """
-    with open(results_path, "a") as f:
+    with open(results_path, "a", encoding="utf-8") as f:
         f.write(result.to_jsonl_line() + "\n")

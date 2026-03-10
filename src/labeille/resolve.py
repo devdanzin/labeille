@@ -580,7 +580,7 @@ def resolve_all(
                     result = future.result()
                 except Exception as exc:
                     pkg = futures[future]
-                    log.error("Resolve worker exception for %s: %s", pkg.name, exc)
+                    log.error("Resolve worker exception for %s: %s", pkg.name, exc, exc_info=True)
                     result = ResolveResult(
                         name=pkg.name, action="failed", error=f"Worker exception: {exc}"
                     )

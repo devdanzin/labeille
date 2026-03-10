@@ -14,14 +14,14 @@ no overhead to the run itself.
 
 from __future__ import annotations
 
-import logging
 import math
 from dataclasses import dataclass, field
 from typing import Any
 
 from labeille.bench.results import BenchConditionResult, BenchPackageResult
+from labeille.logging import get_logger
 
-log = logging.getLogger("labeille")
+log = get_logger("bench.anomaly")
 
 
 # ---------------------------------------------------------------------------

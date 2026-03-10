@@ -16,14 +16,15 @@ the current user (which is the default).
 
 from __future__ import annotations
 
-import logging
 import os
 import shutil
 import sys
 from dataclasses import dataclass
 from typing import Any
 
-log = logging.getLogger("labeille")
+from labeille.logging import get_logger
+
+log = get_logger("bench.constraints")
 
 
 @dataclass

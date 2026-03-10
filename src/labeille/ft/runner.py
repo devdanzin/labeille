@@ -8,7 +8,6 @@ to isolate free-threading-specific failures.
 
 from __future__ import annotations
 
-import logging
 import os
 import re
 import subprocess
@@ -31,9 +30,10 @@ from labeille.ft.results import (
     append_ft_result,
     save_ft_run,
 )
+from labeille.logging import get_logger
 from labeille.resolve import fetch_pypi_metadata
 from labeille.runner import (
-    _clean_env,
+    clean_env,
     build_sdist_install_commands,
     checkout_matching_tag,
     clone_repo,
@@ -45,7 +45,7 @@ from labeille.runner import (
     shield_source_dir,
 )
 
-log = logging.getLogger("labeille")
+log = get_logger("ft.runner")
 
 _PYTHON_VERSION_RE = re.compile(r"(\d+)\.(\d+)")
 
@@ -352,7 +352,7 @@ def run_single_iteration(
             stderr=subprocess.PIPE,
             cwd=str(cwd),
             env=env,
-            preexec_fn=os.setpgrp,
+            start_new_session=True,
         )
     except OSError as exc:
         return IterationOutcome(
@@ -609,7 +609,7 @@ def run_package_ft(
 
     venv_python = venv_dir / "bin" / "python"
 
-    env = _clean_env(
+    env = clean_env(
         PYTHON_GIL="0",
         PYTHONFAULTHANDLER="1",
         PYTHONDONTWRITEBYTECODE="1",
@@ -946,6 +946,7 @@ def run_ft(config: FTRunConfig) -> list[FTPackageResult]:
                 "Unexpected error testing %s: %s",
                 pkg.package,
                 exc,
+                exc_info=True,
             )
             pkg_result = FTPackageResult(
                 package=pkg.package,

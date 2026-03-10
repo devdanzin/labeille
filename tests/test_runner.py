@@ -1,5 +1,7 @@
 """Tests for labeille.runner."""
 
+from __future__ import annotations
+
 import json
 import signal
 import subprocess
@@ -19,7 +21,7 @@ from labeille.registry import (
 from labeille.runner import (
     PackageResult,
     RunnerConfig,
-    _clean_env,
+    clean_env,
     _resolve_dirs,
     _run_in_process_group,
     append_result,
@@ -105,27 +107,27 @@ def _make_package(
 class TestCleanEnv(unittest.TestCase):
     @patch.dict("os.environ", {"PYTHONHOME": "/bad", "PYTHONPATH": "/also/bad", "HOME": "/ok"})
     def test_strips_python_vars(self) -> None:
-        env = _clean_env()
+        env = clean_env()
         self.assertNotIn("PYTHONHOME", env)
         self.assertNotIn("PYTHONPATH", env)
         self.assertEqual(env["HOME"], "/ok")
 
     @patch.dict("os.environ", {"HOME": "/ok"}, clear=True)
     def test_overrides_applied(self) -> None:
-        env = _clean_env(PYTHON_JIT="1", ASAN_OPTIONS="detect_leaks=0")
+        env = clean_env(PYTHON_JIT="1", ASAN_OPTIONS="detect_leaks=0")
         self.assertEqual(env["PYTHON_JIT"], "1")
         self.assertEqual(env["ASAN_OPTIONS"], "detect_leaks=0")
 
     @patch.dict("os.environ", {"PYTHONHOME": "/bad"}, clear=True)
     def test_overrides_after_strip(self) -> None:
         """Overrides don't re-add stripped vars unless explicitly passed."""
-        env = _clean_env()
+        env = clean_env()
         self.assertNotIn("PYTHONHOME", env)
 
     @patch.dict("os.environ", {}, clear=True)
     def test_no_error_when_vars_absent(self) -> None:
         """Works fine when PYTHONHOME/PYTHONPATH aren't set at all."""
-        env = _clean_env(FOO="bar")
+        env = clean_env(FOO="bar")
         self.assertEqual(env["FOO"], "bar")
 
 

@@ -19,16 +19,15 @@ from __future__ import annotations
 
 import hashlib
 import json
-import logging
-import os
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 from labeille.bench.results import BenchMeta, BenchPackageResult, load_bench_run
+from labeille.logging import get_logger
 
-log = logging.getLogger("labeille")
+log = get_logger("bench.tracking")
 
 
 # ---------------------------------------------------------------------------
@@ -204,7 +203,7 @@ def load_series(series_dir: Path) -> TrackingSeries:
     if not tracking_file.exists():
         raise FileNotFoundError(f"No tracking.json found in {series_dir}")
 
-    text = tracking_file.read_text()
+    text = tracking_file.read_text(encoding="utf-8")
     try:
         data = json.loads(text)
     except json.JSONDecodeError as exc:
@@ -226,13 +225,13 @@ def save_series(series: TrackingSeries, series_dir: Path) -> None:
         series: The series to save.
         series_dir: Path to the series directory.
     """
+    from labeille.io_utils import atomic_write_text
+
     series_dir.mkdir(parents=True, exist_ok=True)
     tracking_file = series_dir / "tracking.json"
-    tmp_file = series_dir / "tracking.json.tmp"
 
     text = json.dumps(series.to_dict(), indent=2) + "\n"
-    tmp_file.write_text(text)
-    os.replace(str(tmp_file), str(tracking_file))
+    atomic_write_text(tracking_file, text)
 
 
 def list_series(tracking_dir: Path) -> list[TrackingSeries]:

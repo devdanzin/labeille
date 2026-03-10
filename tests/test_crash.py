@@ -1,5 +1,7 @@
 """Tests for labeille.crash."""
 
+from __future__ import annotations
+
 import signal
 import unittest
 

@@ -7,7 +7,6 @@ for CPU times and ``/usr/bin/time -v`` for per-process peak RSS.
 
 from __future__ import annotations
 
-import logging
 import os
 import re
 import resource
@@ -18,7 +17,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-log = logging.getLogger("labeille")
+from labeille.logging import get_logger
+
+log = get_logger("bench.timing")
 
 
 # ---------------------------------------------------------------------------
@@ -71,7 +72,9 @@ def run_timed(
     Returns:
         TimedResult with timing data and process output.
     """
-    run_env = dict(os.environ)
+    from labeille.runner import clean_env
+
+    run_env = clean_env()
     if env:
         run_env.update(env)
 
@@ -195,7 +198,7 @@ def _parse_gnu_time_rss(time_output_file: str) -> float:
     Returns peak RSS in MB, or 0.0 if parsing fails.
     """
     try:
-        content = Path(time_output_file).read_text()
+        content = Path(time_output_file).read_text(encoding="utf-8")
         for line in content.splitlines():
             if "Maximum resident set size" in line:
                 parts = line.split(":")

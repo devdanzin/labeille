@@ -17,8 +17,9 @@ from pathlib import Path
 import click
 
 from labeille.bench.results import BenchMeta, BenchPackageResult
+from labeille.logging import get_logger
 
-log = logging.getLogger("labeille")
+log = get_logger("bench_cli")
 
 
 @click.group()
@@ -35,7 +36,7 @@ def bench() -> None:
 @click.option(
     "--profile",
     "profile_path",
-    type=click.Path(exists=True),
+    type=click.Path(exists=True, path_type=Path),
     help="YAML profile defining benchmark conditions.",
 )
 @click.option(
@@ -47,7 +48,7 @@ def bench() -> None:
 )
 @click.option(
     "--target-python",
-    type=click.Path(exists=True),
+    type=click.Path(exists=True, path_type=Path),
     help="Default target Python interpreter.",
 )
 @click.option(
@@ -66,6 +67,7 @@ def bench() -> None:
     "--timeout",
     type=int,
     default=None,
+    show_default=True,
     help="Per-iteration timeout in seconds (default: 600).",
 )
 @click.option(
@@ -106,31 +108,31 @@ def bench() -> None:
 )
 @click.option(
     "--registry-dir",
-    type=click.Path(),
+    type=click.Path(path_type=Path),
     default=None,
     help="Registry directory (default: ~/.local/share/labeille/registry/).",
 )
 @click.option(
     "--repos-dir",
-    type=click.Path(),
+    type=click.Path(path_type=Path),
     default=None,
     help="Persistent repos directory.",
 )
 @click.option(
     "--venvs-dir",
-    type=click.Path(),
+    type=click.Path(path_type=Path),
     default=None,
     help="Persistent venvs directory.",
 )
 @click.option(
     "--work-dir",
-    type=click.Path(),
+    type=click.Path(path_type=Path),
     default=None,
     help="Sets both repos and venvs dirs.",
 )
 @click.option(
     "--results-dir",
-    type=click.Path(),
+    type=click.Path(path_type=Path),
     default="results",
     help="Results output directory.",
 )
@@ -234,9 +236,9 @@ def bench() -> None:
 )
 @click.option("-v", "--verbose", is_flag=True, default=False)
 def run(  # noqa: PLR0913
-    profile_path: str | None,
+    profile_path: Path | None,
     inline_conditions: tuple[str, ...],
-    target_python: str | None,
+    target_python: Path | None,
     iterations: int | None,
     warmup: int | None,
     timeout: int | None,
@@ -246,11 +248,11 @@ def run(  # noqa: PLR0913
     top_n: int | None,
     extra_deps: str | None,
     test_command_suffix: str | None,
-    registry_dir: str | None,
-    repos_dir: str | None,
-    venvs_dir: str | None,
-    work_dir: str | None,
-    results_dir: str,
+    registry_dir: Path | None,
+    repos_dir: Path | None,
+    venvs_dir: Path | None,
+    work_dir: Path | None,
+    results_dir: Path,
     name: str | None,
     check_stability: bool,
     wait_for_stability: bool,
@@ -299,7 +301,7 @@ def run(  # noqa: PLR0913
     from labeille.registry import default_registry_dir
 
     if registry_dir is None:
-        registry_dir = str(default_registry_dir())
+        registry_dir = default_registry_dir()
 
     if verbose:
         logging.basicConfig(level=logging.DEBUG)
@@ -308,13 +310,13 @@ def run(  # noqa: PLR0913
 
     # Build configuration.
     cli_overrides: dict[str, object] = {
-        "target_python": target_python,
+        "target_python": str(target_python) if target_python else None,
         "iterations": iterations,
         "warmup": warmup,
         "timeout": timeout,
         "registry_dir": registry_dir,
-        "repos_dir": repos_dir or (work_dir and str(Path(work_dir) / "repos")),
-        "venvs_dir": venvs_dir or (work_dir and str(Path(work_dir) / "venvs")),
+        "repos_dir": repos_dir or (work_dir and work_dir / "repos"),
+        "venvs_dir": venvs_dir or (work_dir and work_dir / "venvs"),
         "results_dir": results_dir,
         "name": name,
         "check_stability": check_stability,
@@ -331,7 +333,7 @@ def run(  # noqa: PLR0913
     }
 
     if profile_path:
-        profile_data = load_profile(Path(profile_path))
+        profile_data = load_profile(profile_path)
         config = config_from_profile(profile_data, cli_overrides=cli_overrides)
     else:
         config = BenchConfig(
@@ -339,14 +341,14 @@ def run(  # noqa: PLR0913
             iterations=iterations or 5,
             warmup=warmup if warmup is not None else 1,
             timeout=timeout or 600,
-            default_target_python=target_python or "",
-            registry_dir=Path(registry_dir),
+            default_target_python=str(target_python) if target_python else "",
+            registry_dir=registry_dir,
         )
         if repos_dir or work_dir:
-            config.repos_dir = Path(repos_dir or str(Path(work_dir) / "repos"))  # type: ignore[arg-type]
+            config.repos_dir = repos_dir or (work_dir / "repos")  # type: ignore[operator]
         if venvs_dir or work_dir:
-            config.venvs_dir = Path(venvs_dir or str(Path(work_dir) / "venvs"))  # type: ignore[arg-type]
-        config.results_dir = Path(results_dir)
+            config.venvs_dir = venvs_dir or (work_dir / "venvs")  # type: ignore[operator]
+        config.results_dir = results_dir
         if packages:
             config.packages_filter = [p.strip() for p in packages.split(",") if p.strip()]
         if top_n:
@@ -403,8 +405,7 @@ def run(  # noqa: PLR0913
     try:
         meta, results = runner.run()
     except ValueError as exc:
-        click.echo(f"Error: {exc}", err=True)
-        raise SystemExit(1) from exc
+        raise click.ClickException(str(exc)) from exc
     except KeyboardInterrupt:
         click.echo("\nBenchmark interrupted.", err=True)
         raise SystemExit(130)  # noqa: B904
@@ -424,7 +425,7 @@ def run(  # noqa: PLR0913
 
 
 @bench.command("show")
-@click.argument("result_dir", type=click.Path(exists=True))
+@click.argument("result_dir", type=click.Path(exists=True, path_type=Path))
 @click.option("--anomalies", is_flag=True, default=False, help="Show measurement anomalies.")
 @click.option(
     "--per-test",
@@ -433,7 +434,7 @@ def run(  # noqa: PLR0913
     default=None,
     help="Show per-test timing for a specific package.",
 )
-def show(result_dir: str, anomalies: bool, per_test_package: str | None) -> None:
+def show(result_dir: Path, anomalies: bool, per_test_package: str | None) -> None:
     """Display results from a benchmark run.
 
     RESULT_DIR is the path to a benchmark output directory
@@ -442,7 +443,7 @@ def show(result_dir: str, anomalies: bool, per_test_package: str | None) -> None
     from labeille.bench.display import format_bench_show
     from labeille.bench.results import load_bench_run
 
-    meta, results = load_bench_run(Path(result_dir))
+    meta, results = load_bench_run(result_dir)
     click.echo(format_bench_show(meta, results))
 
     if per_test_package:
@@ -481,7 +482,7 @@ def show(result_dir: str, anomalies: bool, per_test_package: str | None) -> None
     "result_dirs",
     nargs=-1,
     required=True,
-    type=click.Path(exists=True),
+    type=click.Path(exists=True, path_type=Path),
 )
 @click.option(
     "--baseline",
@@ -503,7 +504,7 @@ def show(result_dir: str, anomalies: bool, per_test_package: str | None) -> None
     help="Show per-test overhead for a specific package.",
 )
 def compare(
-    result_dirs: tuple[str, ...],
+    result_dirs: tuple[Path, ...],
     baseline: str | None,
     metric: str,
     per_test_package: str | None,
@@ -530,23 +531,19 @@ def compare(
 
     if len(result_dirs) == 1:
         # Single directory: compare conditions within the run.
-        meta, results = load_bench_run(Path(result_dirs[0]))
+        meta, results = load_bench_run(result_dirs[0])
         conditions = list(meta.conditions.keys())
         if len(conditions) < 2:
-            click.echo(
-                "Error: Single benchmark run has only one condition. "
-                "Provide two result directories for cross-run comparison.",
-                err=True,
+            raise click.ClickException(
+                "Single benchmark run has only one condition. "
+                "Provide two result directories for cross-run comparison."
             )
-            raise SystemExit(1)
 
         baseline_name = baseline or conditions[0]
         if baseline_name not in conditions:
-            click.echo(
-                f"Error: Baseline '{baseline_name}' not found. Available: {', '.join(conditions)}",
-                err=True,
+            raise click.ClickException(
+                f"Baseline '{baseline_name}' not found. Available: {', '.join(conditions)}"
             )
-            raise SystemExit(1)
 
         click.echo(format_bench_show(meta, results))
         click.echo()
@@ -585,7 +582,7 @@ def compare(
         # Multiple directories: cross-run comparison.
         all_runs: list[tuple[BenchMeta, list[BenchPackageResult]]] = []
         for rd in result_dirs:
-            meta, results = load_bench_run(Path(rd))
+            meta, results = load_bench_run(rd)
             all_runs.append((meta, results))
 
         click.echo("Cross-run comparison:")
@@ -648,12 +645,12 @@ def compare(
 @bench.command("system")
 @click.option(
     "--target-python",
-    type=click.Path(exists=True),
+    type=click.Path(exists=True, path_type=Path),
     default=None,
     help="Also profile a target Python.",
 )
 @click.option("--json", "as_json", is_flag=True, help="Output as JSON.")
-def system_cmd(target_python: str | None, as_json: bool) -> None:
+def system_cmd(target_python: Path | None, as_json: bool) -> None:
     """Print system characterization for benchmark documentation."""
     from labeille.bench.system import (
         capture_python_profile,
@@ -669,14 +666,14 @@ def system_cmd(target_python: str | None, as_json: bool) -> None:
 
         data = profile.to_dict()
         if target_python:
-            pp = capture_python_profile(Path(target_python))
+            pp = capture_python_profile(target_python)
             data["target_python"] = pp.to_dict()
         click.echo(json.dumps(data, indent=2))
     else:
         click.echo(format_system_profile(profile))
         if target_python:
             click.echo()
-            pp = capture_python_profile(Path(target_python))
+            pp = capture_python_profile(target_python)
             click.echo(format_python_profile(pp))
 
 
@@ -686,7 +683,7 @@ def system_cmd(target_python: str | None, as_json: bool) -> None:
 
 
 @bench.command("export")
-@click.argument("result_dir", type=click.Path(exists=True))
+@click.argument("result_dir", type=click.Path(exists=True, path_type=Path))
 @click.option(
     "--format",
     "fmt",
@@ -697,11 +694,11 @@ def system_cmd(target_python: str | None, as_json: bool) -> None:
 @click.option(
     "--output",
     "-o",
-    type=click.Path(),
+    type=click.Path(path_type=Path),
     default=None,
     help="Output file (default: stdout).",
 )
-def export(result_dir: str, fmt: str, output: str | None) -> None:
+def export(result_dir: Path, fmt: str, output: Path | None) -> None:
     """Export benchmark results to CSV or Markdown.
 
     \b
@@ -713,7 +710,7 @@ def export(result_dir: str, fmt: str, output: str | None) -> None:
     from labeille.bench.export import export_csv, export_csv_summary, export_markdown
     from labeille.bench.results import load_bench_run
 
-    meta, results = load_bench_run(Path(result_dir))
+    meta, results = load_bench_run(result_dir)
 
     if fmt == "csv":
         text = export_csv(meta, results)
@@ -726,7 +723,7 @@ def export(result_dir: str, fmt: str, output: str | None) -> None:
         text = export_markdown(meta, results, anomaly_report=anomaly_report)
 
     if output:
-        Path(output).write_text(text)
+        output.write_text(text)
         click.echo(f"Exported to {output}")
     else:
         click.echo(text)
@@ -782,25 +779,24 @@ def track() -> None:
 @click.option("--description", "-d", default="", help="Series description.")
 @click.option(
     "--tracking-dir",
-    type=click.Path(),
+    type=click.Path(path_type=Path),
     default="results/tracking",
     help="Parent directory for tracking series.",
 )
-def track_init(series_name: str, description: str, tracking_dir: str) -> None:
+def track_init(series_name: str, description: str, tracking_dir: Path) -> None:
     """Create a new benchmark tracking series."""
     from labeille.bench.tracking import init_series
 
     try:
-        series = init_series(Path(tracking_dir), series_name, description=description)
+        series = init_series(tracking_dir, series_name, description=description)
         click.echo(f"Created tracking series '{series.series_id}'.")
     except ValueError as exc:
-        click.echo(f"Error: {exc}", err=True)
-        raise SystemExit(1) from exc
+        raise click.ClickException(str(exc)) from exc
 
 
 @track.command("add")
 @click.argument("series_name")
-@click.argument("bench_run_dir", type=click.Path(exists=True))
+@click.argument("bench_run_dir", type=click.Path(exists=True, path_type=Path))
 @click.option("--notes", "-n", default="", help="Notes for this run.")
 @click.option(
     "--commit",
@@ -810,16 +806,16 @@ def track_init(series_name: str, description: str, tracking_dir: str) -> None:
 )
 @click.option(
     "--tracking-dir",
-    type=click.Path(),
+    type=click.Path(path_type=Path),
     default="results/tracking",
     help="Parent directory for tracking series.",
 )
 def track_add(
     series_name: str,
-    bench_run_dir: str,
+    bench_run_dir: Path,
     notes: str,
     commit: tuple[str, ...],
-    tracking_dir: str,
+    tracking_dir: Path,
 ) -> None:
     """Add a benchmark run to a tracking series."""
     from labeille.bench.tracking import add_run_to_series
@@ -830,18 +826,17 @@ def track_add(
             k, v = pair.split("=", 1)
             commit_info[k] = v
 
-    series_dir = Path(tracking_dir) / series_name
+    series_dir = tracking_dir / series_name
     try:
         entry = add_run_to_series(
             series_dir,
-            Path(bench_run_dir),
+            bench_run_dir,
             notes=notes,
             commit_info=commit_info,
         )
         click.echo(f"Added run '{entry.bench_id}' to series '{series_name}'.")
     except FileNotFoundError as exc:
-        click.echo(f"Error: {exc}", err=True)
-        raise SystemExit(1) from exc
+        raise click.ClickException(str(exc)) from exc
 
 
 @track.command("show")
@@ -849,20 +844,19 @@ def track_add(
 @click.option("--last", "last_n", type=int, default=None, help="Show only last N runs.")
 @click.option(
     "--tracking-dir",
-    type=click.Path(),
+    type=click.Path(path_type=Path),
     default="results/tracking",
     help="Parent directory for tracking series.",
 )
-def track_show(series_name: str, last_n: int | None, tracking_dir: str) -> None:
+def track_show(series_name: str, last_n: int | None, tracking_dir: Path) -> None:
     """Show runs in a tracking series."""
     from labeille.bench.tracking import load_series
 
-    series_dir = Path(tracking_dir) / series_name
+    series_dir = tracking_dir / series_name
     try:
         series = load_series(series_dir)
     except FileNotFoundError:
-        click.echo(f"Series '{series_name}' not found.", err=True)
-        raise SystemExit(1)  # noqa: B904
+        raise click.ClickException(f"Series '{series_name}' not found.")
 
     click.echo(f"Series: {series.series_id}")
     if series.description:
@@ -898,56 +892,54 @@ def track_show(series_name: str, last_n: int | None, tracking_dir: str) -> None:
 @click.argument("bench_id")
 @click.option(
     "--tracking-dir",
-    type=click.Path(),
+    type=click.Path(path_type=Path),
     default="results/tracking",
     help="Parent directory for tracking series.",
 )
-def track_pin(series_name: str, bench_id: str, tracking_dir: str) -> None:
+def track_pin(series_name: str, bench_id: str, tracking_dir: Path) -> None:
     """Pin a run as the baseline for trend analysis."""
     from labeille.bench.tracking import pin_baseline
 
-    series_dir = Path(tracking_dir) / series_name
+    series_dir = tracking_dir / series_name
     try:
         pin_baseline(series_dir, bench_id)
         click.echo(f"Pinned '{bench_id}' as baseline for series '{series_name}'.")
     except (FileNotFoundError, ValueError) as exc:
-        click.echo(f"Error: {exc}", err=True)
-        raise SystemExit(1) from exc
+        raise click.ClickException(str(exc)) from exc
 
 
 @track.command("unpin")
 @click.argument("series_name")
 @click.option(
     "--tracking-dir",
-    type=click.Path(),
+    type=click.Path(path_type=Path),
     default="results/tracking",
     help="Parent directory for tracking series.",
 )
-def track_unpin(series_name: str, tracking_dir: str) -> None:
+def track_unpin(series_name: str, tracking_dir: Path) -> None:
     """Remove the pinned baseline."""
     from labeille.bench.tracking import unpin_baseline
 
-    series_dir = Path(tracking_dir) / series_name
+    series_dir = tracking_dir / series_name
     try:
         unpin_baseline(series_dir)
         click.echo(f"Unpinned baseline for series '{series_name}'.")
     except FileNotFoundError as exc:
-        click.echo(f"Error: {exc}", err=True)
-        raise SystemExit(1) from exc
+        raise click.ClickException(str(exc)) from exc
 
 
 @track.command("list")
 @click.option(
     "--tracking-dir",
-    type=click.Path(),
+    type=click.Path(path_type=Path),
     default="results/tracking",
     help="Parent directory for tracking series.",
 )
-def track_list(tracking_dir: str) -> None:
+def track_list(tracking_dir: Path) -> None:
     """List all tracking series."""
     from labeille.bench.tracking import list_series
 
-    all_series = list_series(Path(tracking_dir))
+    all_series = list_series(tracking_dir)
     if not all_series:
         click.echo("No tracking series found.")
         return
@@ -984,7 +976,7 @@ def track_list(tracking_dir: str) -> None:
 )
 @click.option(
     "--tracking-dir",
-    type=click.Path(),
+    type=click.Path(path_type=Path),
     default="results/tracking",
 )
 def track_trend(
@@ -993,18 +985,17 @@ def track_trend(
     regression_threshold: float,
     trend_threshold: float,
     fmt: str,
-    tracking_dir: str,
+    tracking_dir: Path,
 ) -> None:
     """Analyze trends across runs in a tracking series."""
     from labeille.bench.tracking import load_series
     from labeille.bench.trends import analyze_series_trends
 
-    series_dir = Path(tracking_dir) / series_name
+    series_dir = tracking_dir / series_name
     try:
         series = load_series(series_dir)
     except FileNotFoundError:
-        click.echo(f"Series '{series_name}' not found.", err=True)
-        raise SystemExit(1)  # noqa: B904
+        raise click.ClickException(f"Series '{series_name}' not found.")
 
     trend = analyze_series_trends(
         series,
@@ -1033,13 +1024,13 @@ def track_trend(
 @click.option("--condition", type=str, default=None, help="Condition to analyze.")
 @click.option(
     "--tracking-dir",
-    type=click.Path(),
+    type=click.Path(path_type=Path),
     default="results/tracking",
 )
 def track_alert(
     series_name: str,
     condition: str | None,
-    tracking_dir: str,
+    tracking_dir: Path,
 ) -> None:
     """Show regression alerts for a tracking series.
 
@@ -1050,12 +1041,11 @@ def track_alert(
     from labeille.bench.tracking import load_series
     from labeille.bench.trends import analyze_series_trends
 
-    series_dir = Path(tracking_dir) / series_name
+    series_dir = tracking_dir / series_name
     try:
         series = load_series(series_dir)
     except FileNotFoundError:
-        click.echo(f"Series '{series_name}' not found.", err=True)
-        raise SystemExit(1)  # noqa: B904
+        raise click.ClickException(f"Series '{series_name}' not found.")
 
     trend = analyze_series_trends(series, series_dir, condition=condition)
 
