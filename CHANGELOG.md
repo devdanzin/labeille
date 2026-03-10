@@ -134,6 +134,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - All documentation updated to reflect the split. Enrichment docs now live in laruche.
 
 ### Enhanced
+- Extracted `_build_bench_config()` helper from `bench_cli.run`, reducing the command body from ~130 lines to ~15 lines. Organized 35 Click options into labeled sections (profile, execution, package selection, paths, stability, adaptive, advanced).
 - Added `utc_now_iso()` helper to `io_utils.py`, unifying 15+ timestamp generation sites across 8 modules to a single canonical UTC format with Z suffix.
 - Registry `save_index()` and `save_package()` now use `atomic_write_text()` for crash-safe writes, preventing corruption of the most sensitive files.
 - Added `Literal` types to `PackageResult.status`, `ResolveResult.action`, `BenchIteration.status`, and `EffectSize.classification` for compile-time typo detection.
