@@ -334,6 +334,7 @@ def run_bisect(config: BisectConfig) -> BisectResult:
     steps: list[BisectStep] = []
 
     # Load package info from registry if available.
+    repo_url: str | None = None
     if config.registry_dir:
         try:
             pkg_entry = load_package(config.package, config.registry_dir)
@@ -341,17 +342,9 @@ def run_bisect(config: BisectConfig) -> BisectResult:
                 config.install_command = pkg_entry.install_command
             if config.test_command is None:
                 config.test_command = pkg_entry.test_command
-        except Exception as exc:  # noqa: BLE001
-            log.debug("Registry lookup failed for %s: %s", config.package, exc)
-
-    # Determine repo URL.
-    repo_url: str | None = None
-    if config.registry_dir:
-        try:
-            pkg_entry = load_package(config.package, config.registry_dir)
             repo_url = pkg_entry.repo
-        except Exception as exc:  # noqa: BLE001
-            log.debug("Registry lookup failed for %s: %s", config.package, exc)
+        except (FileNotFoundError, OSError) as exc:
+            log.warning("Registry lookup failed for %s: %s", config.package, exc)
     if not repo_url:
         raise ValueError(
             f"No repo URL for {config.package}. "

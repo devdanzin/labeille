@@ -157,6 +157,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Added `encoding="utf-8"` to all bench/ file I/O calls for cross-platform consistency.
 - Added `show_default=True` to `--timeout` options in `bench_cli.py` and `ft_cli.py`.
 - Standardized `click.Path(path_type=Path)` across `bench_cli.py` and `ft_cli.py`, removing manual `Path()` wrapping.
+- Added `write_meta_json()`, `append_jsonl()`, `load_jsonl()`, and `iter_jsonl()` utilities to `io_utils.py`, unifying persistence patterns across all four subsystems (runner, bench, ft, compat).
+- All meta.json writes now use `atomic_write_text()` for crash safety (previously only registry files were atomic).
+- All JSONL loads now use streaming iteration with error tolerance for malformed trailing lines.
+- Extracted `_ensure_repo()`, `_run_install()`, and `_analyze_test_result()` from `_run_package_inner()` in `runner.py`, reducing the 420-line monolith to ~180 lines and eliminating duplicated install error handling.
+- Narrowed remaining `except Exception` blocks: `ft/runner.py:397` to `OSError`, `ft/runner.py:700` to `(TimeoutExpired, SubprocessError, OSError)`, `bisect.py` to `(FileNotFoundError, OSError)`, `cli.py` to `(OSError, ValueError, KeyError, TypeError)`.
+- Merged duplicate `load_package()` calls in `bisect.py` into a single call with warning-level logging.
+- Raised `get_installed_packages` logging from debug to info for better diagnostics.
 - Added `from __future__ import annotations` to all test files for consistency with source modules.
 - `labeille analyze registry` shows percentages alongside all counts.
 - Download tier coverage (top 100, 500, 1000, 2000) shows what fraction of the most-downloaded packages are testable.

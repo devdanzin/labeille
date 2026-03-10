@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from labeille.io_utils import utc_now_iso
+from labeille.io_utils import load_jsonl, utc_now_iso
 from labeille.registry import Index, PackageEntry
 
 
@@ -164,16 +164,7 @@ class RunData:
         results_file = self.run_dir / "results.jsonl"
         if not results_file.exists():
             return []
-        results: list[PackageResult] = []
-        for line in results_file.read_text(encoding="utf-8").splitlines():
-            line = line.strip()
-            if line:
-                try:
-                    data = json.loads(line)
-                    results.append(PackageResult.from_dict(data))
-                except json.JSONDecodeError:
-                    continue
-        return results
+        return load_jsonl(results_file, PackageResult.from_dict)
 
 
 def extract_minor_version(version_string: str) -> str:
