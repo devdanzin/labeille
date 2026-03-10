@@ -6,6 +6,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 from click.testing import CliRunner
@@ -229,7 +230,7 @@ class TestShowCommand(unittest.TestCase):
 class TestDiffCommand(unittest.TestCase):
     """Tests for compat diff command."""
 
-    def _create_survey_dir(self, tmpdir: str, sid: str, results: list[dict]) -> str:  # type: ignore[type-arg]
+    def _create_survey_dir(self, tmpdir: str, sid: str, results: list[dict[str, Any]]) -> str:
         survey_dir = Path(tmpdir) / sid
         survey_dir.mkdir()
         meta = {

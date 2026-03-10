@@ -190,6 +190,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Fixed `type: ignore[operator]` in `ft/display.py` by adding explicit `None` guard, in `bench_cli.py` by restructuring conditionals, and `type: ignore[no-any-return]` in `resolve.py` by using intermediate variable.
 - Extracted 7 helper functions from `run_package_ft` in `ft/runner.py` (360→~80 lines): `_check_ft_wheel_trust`, `_clone_and_align_ft`, `_create_venv_and_install_ft`, `_install_sdist_mode`, `_install_source_mode`, `_run_ft_iterations`, `_run_gil_comparison`.
 - Split `runner.py` (1972→1445 lines): extracted data models to `runner_models.py` and git/repo/sdist operations to `repo_ops.py`, with re-exports preserving all existing imports.
+- Reduced `type: ignore` markers in test files from 59 to 2 by typing builder kwargs as `Any`, using `assert x is not None` for type narrowing, adding explicit generic parameters, and typing mock parameters as `MagicMock`.
 
 ### Removed
 - Dead code: `_log2()` from `bisect.py`, `RegistryStats`/`analyze_registry()` from `analyze.py` (superseded by `RegistryReport`/`generate_registry_report()`), `load_ft_summary()` from `ft/results.py`, `format_progress()`/`format_gil_comparison()` from `ft/display.py`, unused `_MOD_GIL_MENTION_PATTERN` regex from `ft/compat.py`.

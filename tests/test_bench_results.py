@@ -6,6 +6,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from typing import Any
 
 from labeille.bench.results import (
     BenchConditionResult,
@@ -28,9 +29,9 @@ from labeille.bench.system import PythonProfile, SystemProfile
 class TestBenchIteration(unittest.TestCase):
     """Tests for BenchIteration dataclass."""
 
-    def _make_iteration(self, **kwargs: object) -> BenchIteration:
+    def _make_iteration(self, **kwargs: Any) -> BenchIteration:
         """Create a BenchIteration with sensible defaults."""
-        defaults: dict[str, object] = {
+        defaults: dict[str, Any] = {
             "index": 1,
             "warmup": False,
             "wall_time_s": 1.5,
@@ -45,7 +46,7 @@ class TestBenchIteration(unittest.TestCase):
             "ram_available_start_gb": 8.0,
         }
         defaults.update(kwargs)
-        return BenchIteration(**defaults)  # type: ignore[arg-type]
+        return BenchIteration(**defaults)
 
     def test_iteration_to_dict_roundtrip(self) -> None:
         """to_dict → from_dict should preserve all fields."""

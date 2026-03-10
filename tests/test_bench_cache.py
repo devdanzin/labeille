@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import subprocess
 import unittest
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from labeille.bench.cache import (
     DROP_CACHES_SCRIPT,
@@ -30,9 +30,9 @@ class TestCheckCacheDropAvailable(unittest.TestCase):
     @patch("labeille.bench.cache.sys.platform", "linux")
     @patch("labeille.bench.cache.os.getuid", return_value=1000)
     def test_linux_all_configured(
-        self, mock_uid: object, mock_exists: object, mock_run: object
+        self, mock_uid: MagicMock, mock_exists: MagicMock, mock_run: MagicMock
     ) -> None:
-        mock_run.return_value = subprocess.CompletedProcess(args=[], returncode=0)  # type: ignore[attr-defined]
+        mock_run.return_value = subprocess.CompletedProcess(args=[], returncode=0)
         status = check_cache_drop_available()
         self.assertTrue(status.available)
         self.assertTrue(status.platform_supported)
@@ -45,16 +45,16 @@ class TestCheckCacheDropAvailable(unittest.TestCase):
     @patch("labeille.bench.cache.sys.platform", "darwin")
     @patch("labeille.bench.cache.os.getuid", return_value=1000)
     def test_macos_all_configured(
-        self, mock_uid: object, mock_exists: object, mock_run: object
+        self, mock_uid: MagicMock, mock_exists: MagicMock, mock_run: MagicMock
     ) -> None:
-        mock_run.return_value = subprocess.CompletedProcess(args=[], returncode=0)  # type: ignore[attr-defined]
+        mock_run.return_value = subprocess.CompletedProcess(args=[], returncode=0)
         status = check_cache_drop_available()
         self.assertTrue(status.available)
         self.assertTrue(status.platform_supported)
 
     @patch("labeille.bench.cache.os.getuid", return_value=1000)
     @patch("labeille.bench.cache.sys.platform", "win32")
-    def test_unsupported_platform(self, mock_uid: object) -> None:
+    def test_unsupported_platform(self, mock_uid: MagicMock) -> None:
         status = check_cache_drop_available()
         self.assertFalse(status.available)
         self.assertFalse(status.platform_supported)
@@ -63,7 +63,7 @@ class TestCheckCacheDropAvailable(unittest.TestCase):
     @patch("labeille.bench.cache.Path.exists", return_value=False)
     @patch("labeille.bench.cache.sys.platform", "linux")
     @patch("labeille.bench.cache.os.getuid", return_value=1000)
-    def test_script_missing(self, mock_uid: object, mock_exists: object) -> None:
+    def test_script_missing(self, mock_uid: MagicMock, mock_exists: MagicMock) -> None:
         status = check_cache_drop_available()
         self.assertFalse(status.available)
         self.assertFalse(status.script_exists)
@@ -73,8 +73,10 @@ class TestCheckCacheDropAvailable(unittest.TestCase):
     @patch("labeille.bench.cache.Path.exists", return_value=True)
     @patch("labeille.bench.cache.sys.platform", "linux")
     @patch("labeille.bench.cache.os.getuid", return_value=1000)
-    def test_sudo_fails(self, mock_uid: object, mock_exists: object, mock_run: object) -> None:
-        mock_run.return_value = subprocess.CompletedProcess(args=[], returncode=1)  # type: ignore[attr-defined]
+    def test_sudo_fails(
+        self, mock_uid: MagicMock, mock_exists: MagicMock, mock_run: MagicMock
+    ) -> None:
+        mock_run.return_value = subprocess.CompletedProcess(args=[], returncode=1)
         status = check_cache_drop_available()
         self.assertFalse(status.available)
         self.assertFalse(status.sudo_works)
@@ -84,8 +86,10 @@ class TestCheckCacheDropAvailable(unittest.TestCase):
     @patch("labeille.bench.cache.Path.exists", return_value=True)
     @patch("labeille.bench.cache.sys.platform", "linux")
     @patch("labeille.bench.cache.os.getuid", return_value=1000)
-    def test_sudo_timeout(self, mock_uid: object, mock_exists: object, mock_run: object) -> None:
-        mock_run.side_effect = subprocess.TimeoutExpired(cmd="sudo", timeout=5)  # type: ignore[attr-defined]
+    def test_sudo_timeout(
+        self, mock_uid: MagicMock, mock_exists: MagicMock, mock_run: MagicMock
+    ) -> None:
+        mock_run.side_effect = subprocess.TimeoutExpired(cmd="sudo", timeout=5)
         status = check_cache_drop_available()
         self.assertFalse(status.available)
         self.assertFalse(status.sudo_works)
@@ -95,9 +99,9 @@ class TestCheckCacheDropAvailable(unittest.TestCase):
     @patch("labeille.bench.cache.sys.platform", "linux")
     @patch("labeille.bench.cache.os.getuid", return_value=0)
     def test_running_as_root_detected(
-        self, mock_uid: object, mock_exists: object, mock_run: object
+        self, mock_uid: MagicMock, mock_exists: MagicMock, mock_run: MagicMock
     ) -> None:
-        mock_run.return_value = subprocess.CompletedProcess(args=[], returncode=0)  # type: ignore[attr-defined]
+        mock_run.return_value = subprocess.CompletedProcess(args=[], returncode=0)
         status = check_cache_drop_available()
         self.assertTrue(status.running_as_root)
         self.assertTrue(status.available)
@@ -113,51 +117,51 @@ class TestDropCaches(unittest.TestCase):
 
     @patch("labeille.bench.cache.subprocess.run")
     @patch("labeille.bench.cache.os.getuid", return_value=1000)
-    def test_drop_caches_success(self, mock_uid: object, mock_run: object) -> None:
-        mock_run.return_value = subprocess.CompletedProcess(  # type: ignore[attr-defined]
+    def test_drop_caches_success(self, mock_uid: MagicMock, mock_run: MagicMock) -> None:
+        mock_run.return_value = subprocess.CompletedProcess(
             args=[], returncode=0, stdout=b"", stderr=b""
         )
         self.assertTrue(drop_caches())
 
     @patch("labeille.bench.cache.subprocess.run")
     @patch("labeille.bench.cache.os.getuid", return_value=1000)
-    def test_drop_caches_failure(self, mock_uid: object, mock_run: object) -> None:
-        mock_run.return_value = subprocess.CompletedProcess(  # type: ignore[attr-defined]
+    def test_drop_caches_failure(self, mock_uid: MagicMock, mock_run: MagicMock) -> None:
+        mock_run.return_value = subprocess.CompletedProcess(
             args=[], returncode=1, stdout=b"", stderr=b"permission denied"
         )
         self.assertFalse(drop_caches())
 
     @patch("labeille.bench.cache.subprocess.run")
     @patch("labeille.bench.cache.os.getuid", return_value=0)
-    def test_drop_caches_refuses_root(self, mock_uid: object, mock_run: object) -> None:
+    def test_drop_caches_refuses_root(self, mock_uid: MagicMock, mock_run: MagicMock) -> None:
         self.assertFalse(drop_caches(allow_root=False))
-        mock_run.assert_not_called()  # type: ignore[attr-defined]
+        mock_run.assert_not_called()
 
     @patch("labeille.bench.cache.subprocess.run")
     @patch("labeille.bench.cache.os.getuid", return_value=0)
-    def test_drop_caches_allows_root(self, mock_uid: object, mock_run: object) -> None:
-        mock_run.return_value = subprocess.CompletedProcess(  # type: ignore[attr-defined]
+    def test_drop_caches_allows_root(self, mock_uid: MagicMock, mock_run: MagicMock) -> None:
+        mock_run.return_value = subprocess.CompletedProcess(
             args=[], returncode=0, stdout=b"", stderr=b""
         )
         self.assertTrue(drop_caches(allow_root=True))
         # Should run without sudo.
-        args = mock_run.call_args[0][0]  # type: ignore[attr-defined]
+        args = mock_run.call_args[0][0]
         self.assertEqual(args, [DROP_CACHES_SCRIPT])
 
     @patch("labeille.bench.cache.subprocess.run")
     @patch("labeille.bench.cache.os.getuid", return_value=1000)
-    def test_drop_caches_timeout(self, mock_uid: object, mock_run: object) -> None:
-        mock_run.side_effect = subprocess.TimeoutExpired(cmd="sudo", timeout=10)  # type: ignore[attr-defined]
+    def test_drop_caches_timeout(self, mock_uid: MagicMock, mock_run: MagicMock) -> None:
+        mock_run.side_effect = subprocess.TimeoutExpired(cmd="sudo", timeout=10)
         self.assertFalse(drop_caches())
 
     @patch("labeille.bench.cache.subprocess.run")
     @patch("labeille.bench.cache.os.getuid", return_value=1000)
-    def test_drop_caches_uses_sudo(self, mock_uid: object, mock_run: object) -> None:
-        mock_run.return_value = subprocess.CompletedProcess(  # type: ignore[attr-defined]
+    def test_drop_caches_uses_sudo(self, mock_uid: MagicMock, mock_run: MagicMock) -> None:
+        mock_run.return_value = subprocess.CompletedProcess(
             args=[], returncode=0, stdout=b"", stderr=b""
         )
         drop_caches()
-        args = mock_run.call_args[0][0]  # type: ignore[attr-defined]
+        args = mock_run.call_args[0][0]
         self.assertEqual(args[:2], ["sudo", "-n"])
 
 
@@ -170,17 +174,17 @@ class TestCheckNotRoot(unittest.TestCase):
     """Tests for check_not_root()."""
 
     @patch("labeille.bench.cache.os.getuid", return_value=1000)
-    def test_not_root_passes(self, mock_uid: object) -> None:
+    def test_not_root_passes(self, mock_uid: MagicMock) -> None:
         # Should not raise.
         check_not_root()
 
     @patch("labeille.bench.cache.os.getuid", return_value=0)
-    def test_root_without_flag_exits(self, mock_uid: object) -> None:
+    def test_root_without_flag_exits(self, mock_uid: MagicMock) -> None:
         with self.assertRaises(SystemExit):
             check_not_root(allow_root=False)
 
     @patch("labeille.bench.cache.os.getuid", return_value=0)
-    def test_root_with_flag_passes(self, mock_uid: object) -> None:
+    def test_root_with_flag_passes(self, mock_uid: MagicMock) -> None:
         # Should not raise.
         check_not_root(allow_root=True)
 

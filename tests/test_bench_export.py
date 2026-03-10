@@ -9,13 +9,13 @@ import unittest
 from bench_test_helpers import make_meta, make_package_result
 
 from labeille.bench.export import export_csv, export_csv_summary, export_markdown
-from labeille.bench.results import BenchPackageResult
+from labeille.bench.results import BenchMeta, BenchPackageResult
 
 
 class TestExportCSV(unittest.TestCase):
     """Tests for export_csv (long-format CSV)."""
 
-    def _make_data(self) -> tuple[object, list[BenchPackageResult]]:
+    def _make_data(self) -> tuple[BenchMeta, list[BenchPackageResult]]:
         meta = make_meta(conditions=["baseline", "treatment"])
         results = [
             make_package_result(
@@ -38,7 +38,7 @@ class TestExportCSV(unittest.TestCase):
     def test_export_csv_header(self) -> None:
         """First line contains all expected column names."""
         meta, results = self._make_data()
-        output = export_csv(meta, results)  # type: ignore[arg-type]
+        output = export_csv(meta, results)
         first_line = output.splitlines()[0]
         for col in [
             "package",
@@ -61,7 +61,7 @@ class TestExportCSV(unittest.TestCase):
     def test_export_csv_row_count(self) -> None:
         """2 packages x 2 conditions x 3 iterations = 12 data rows + 1 header."""
         meta, results = self._make_data()
-        output = export_csv(meta, results)  # type: ignore[arg-type]
+        output = export_csv(meta, results)
         lines = [line for line in output.splitlines() if line.strip()]
         self.assertEqual(len(lines), 13)
 
@@ -77,7 +77,7 @@ class TestExportCSV(unittest.TestCase):
                 warmup_count=1,
             ),
         ]
-        output = export_csv(meta, results)  # type: ignore[arg-type]
+        output = export_csv(meta, results)
         self.assertIn("True", output)  # warmup=True for first iteration
 
     def test_export_csv_values_correct(self) -> None:
@@ -86,7 +86,7 @@ class TestExportCSV(unittest.TestCase):
         results = [
             make_package_result("testpkg", {"baseline": [1.234567]}),
         ]
-        output = export_csv(meta, results)  # type: ignore[arg-type]
+        output = export_csv(meta, results)
         self.assertIn("testpkg", output)
         self.assertIn("1.234567", output)
 
@@ -97,14 +97,14 @@ class TestExportCSV(unittest.TestCase):
             make_package_result("active", {"baseline": [10.0, 10.1, 10.0]}),
             BenchPackageResult(package="skipped", skipped=True, skip_reason="fail"),
         ]
-        output = export_csv(meta, results)  # type: ignore[arg-type]
+        output = export_csv(meta, results)
         self.assertIn("active", output)
         self.assertNotIn("skipped", output)
 
     def test_export_csv_parseable(self) -> None:
         """Parse output with csv.reader — no errors, correct column count."""
         meta, results = self._make_data()
-        output = export_csv(meta, results)  # type: ignore[arg-type]
+        output = export_csv(meta, results)
         reader = csv.reader(io.StringIO(output))
         rows = list(reader)
         self.assertTrue(len(rows) > 1)
@@ -122,7 +122,7 @@ class TestExportCSVSummary(unittest.TestCase):
         results = [
             make_package_result("pkg1", {"baseline": [10.0, 10.1, 10.0, 10.1, 10.0]}),
         ]
-        output = export_csv_summary(meta, results)  # type: ignore[arg-type]
+        output = export_csv_summary(meta, results)
         first_line = output.splitlines()[0]
         for col in [
             "package",
@@ -145,7 +145,7 @@ class TestExportCSVSummary(unittest.TestCase):
             make_package_result("pkg1", {"baseline": [10.0, 10.1, 10.0]}),
             make_package_result("pkg2", {"baseline": [5.0, 5.1, 5.0]}),
         ]
-        output = export_csv_summary(meta, results)  # type: ignore[arg-type]
+        output = export_csv_summary(meta, results)
         lines = [line for line in output.splitlines() if line.strip()]
         self.assertEqual(len(lines), 3)  # 1 header + 2 data
 

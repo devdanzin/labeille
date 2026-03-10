@@ -5,6 +5,7 @@ from __future__ import annotations
 import subprocess
 import unittest
 from pathlib import Path
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import click
@@ -90,15 +91,15 @@ class TestGetCommitRange(unittest.TestCase):
 class TestTestRevision(unittest.TestCase):
     """Tests for test_revision."""
 
-    def _make_config(self, **overrides: object) -> BisectConfig:
-        defaults: dict[str, object] = {
+    def _make_config(self, **overrides: Any) -> BisectConfig:
+        defaults: dict[str, Any] = {
             "package": "test-pkg",
             "good_rev": "v1.0",
             "bad_rev": "v2.0",
             "target_python": Path("/usr/bin/python3"),
         }
         defaults.update(overrides)
-        return BisectConfig(**defaults)  # type: ignore[arg-type]
+        return BisectConfig(**defaults)
 
     @patch("labeille.bisect.subprocess.run")
     def test_checkout_failure_returns_skip(self, mock_run: MagicMock) -> None:
@@ -438,8 +439,8 @@ class TestTryNeighbors(unittest.TestCase):
 class TestRunBisect(unittest.TestCase):
     """Tests for the main run_bisect function."""
 
-    def _make_config(self, **overrides: object) -> BisectConfig:
-        defaults: dict[str, object] = {
+    def _make_config(self, **overrides: Any) -> BisectConfig:
+        defaults: dict[str, Any] = {
             "package": "test-pkg",
             "good_rev": "v1.0",
             "bad_rev": "v2.0",
@@ -447,7 +448,7 @@ class TestRunBisect(unittest.TestCase):
             "registry_dir": Path("/registry"),
         }
         defaults.update(overrides)
-        return BisectConfig(**defaults)  # type: ignore[arg-type]
+        return BisectConfig(**defaults)
 
     @patch("labeille.bisect.test_revision")
     @patch("labeille.bisect.get_commit_range")

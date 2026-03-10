@@ -8,6 +8,7 @@ import unittest
 from dataclasses import dataclass
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 from labeille.bench.config import BenchConfig
@@ -27,21 +28,21 @@ from labeille.registry import Index, IndexEntry
 # ---------------------------------------------------------------------------
 
 
-def _make_config(**kwargs: object) -> BenchConfig:
+def _make_config(**kwargs: Any) -> BenchConfig:
     """Create a BenchConfig with sensible test defaults."""
-    defaults: dict[str, object] = {
+    defaults: dict[str, Any] = {
         "iterations": 3,
         "warmup": 1,
         "timeout": 60,
         "default_target_python": "/usr/bin/python3",
     }
     defaults.update(kwargs)
-    return BenchConfig(**defaults)  # type: ignore[arg-type]
+    return BenchConfig(**defaults)
 
 
-def _make_condition(name: str = "baseline", **kwargs: object) -> ConditionDef:
+def _make_condition(name: str = "baseline", **kwargs: Any) -> ConditionDef:
     """Create a ConditionDef with defaults."""
-    return ConditionDef(name=name, **kwargs)  # type: ignore[arg-type]
+    return ConditionDef(name=name, **kwargs)
 
 
 @dataclass
@@ -56,9 +57,9 @@ class FakePackage:
     enriched: bool = True
 
 
-def _make_timed_result(**kwargs: object) -> TimedResult:
+def _make_timed_result(**kwargs: Any) -> TimedResult:
     """Create a TimedResult with sensible defaults."""
-    defaults: dict[str, object] = {
+    defaults: dict[str, Any] = {
         "wall_time_s": 1.5,
         "user_time_s": 1.2,
         "sys_time_s": 0.1,
@@ -69,7 +70,7 @@ def _make_timed_result(**kwargs: object) -> TimedResult:
         "timed_out": False,
     }
     defaults.update(kwargs)
-    return TimedResult(**defaults)  # type: ignore[arg-type]
+    return TimedResult(**defaults)
 
 
 def _make_snapshot(load_avg: float = 0.5, ram_gb: float = 8.0) -> SystemSnapshot:
@@ -185,9 +186,9 @@ class TestValidation(unittest.TestCase):
 class TestSetupPackage(unittest.TestCase):
     """Tests for _setup_package."""
 
-    def _make_runner(self, **config_kwargs: object) -> BenchRunner:
+    def _make_runner(self, **config_kwargs: Any) -> BenchRunner:
         """Create a BenchRunner with a single condition and temp dirs."""
-        conditions = config_kwargs.pop("conditions", None) or {  # type: ignore[union-attr]
+        conditions = config_kwargs.pop("conditions", None) or {
             "baseline": _make_condition(),
         }
         config = _make_config(conditions=conditions, **config_kwargs)
@@ -679,16 +680,16 @@ class TestExecutionStrategies(unittest.TestCase):
 
         def tracking_run_iteration(
             *,
-            pkg: object,
-            cond: object,
+            pkg: Any,
+            cond: Any,
             setup: object,
             iter_index: int,
             is_warmup: bool,
         ) -> BenchIteration:
             call_log.append(
                 (
-                    pkg.package,  # type: ignore[union-attr]
-                    cond.name,  # type: ignore[union-attr]
+                    pkg.package,
+                    cond.name,
                     iter_index,
                     is_warmup,
                 )
@@ -1097,8 +1098,8 @@ class TestAdaptiveConvergence(unittest.TestCase):
 
         def tracking_run_iteration(
             *,
-            pkg: object,
-            cond: object,
+            pkg: Any,
+            cond: Any,
             setup: object,
             iter_index: int,
             is_warmup: bool,
@@ -1106,8 +1107,8 @@ class TestAdaptiveConvergence(unittest.TestCase):
             wt = next(time_iter, 1.0)
             call_log.append(
                 (
-                    pkg.package,  # type: ignore[union-attr]
-                    cond.name,  # type: ignore[union-attr]
+                    pkg.package,
+                    cond.name,
                     iter_index,
                     is_warmup,
                 )

@@ -6,6 +6,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from typing import Any
 
 from labeille.analyze import (
     PackageComparison,
@@ -106,7 +107,7 @@ def _make_pkg(
     enriched: bool = True,
     extension_type: str = "pure",
     test_framework: str = "pytest",
-    **kwargs: object,
+    **kwargs: Any,
 ) -> PackageEntry:
     """Create a PackageEntry for testing."""
     return PackageEntry(
@@ -119,11 +120,11 @@ def _make_pkg(
         test_framework=test_framework,
         install_command=str(kwargs.get("install_command", "pip install -e '.[dev]'")),
         test_command=str(kwargs.get("test_command", "python -m pytest")),
-        timeout=kwargs.get("timeout"),  # type: ignore[arg-type]
-        clone_depth=kwargs.get("clone_depth"),  # type: ignore[arg-type]
-        import_name=kwargs.get("import_name"),  # type: ignore[arg-type]
+        timeout=kwargs.get("timeout"),
+        clone_depth=kwargs.get("clone_depth"),
+        import_name=kwargs.get("import_name"),
         uses_xdist=bool(kwargs.get("uses_xdist", False)),
-        skip_versions=kwargs.get("skip_versions") or {},  # type: ignore[arg-type]
+        skip_versions=kwargs.get("skip_versions") or {},
     )
 
 
@@ -167,8 +168,8 @@ class TestRunData(unittest.TestCase):
         )
         run = RunData(run_id="run1", run_dir=self.results_dir / "run1")
         r = run.result_for("alpha")
-        self.assertIsNotNone(r)
-        self.assertEqual(r.package, "alpha")  # type: ignore[union-attr]
+        assert r is not None
+        self.assertEqual(r.package, "alpha")
 
     def test_result_for_missing(self) -> None:
         _write_run(self.results_dir, "run1", results=[_make_result("alpha")])
@@ -229,15 +230,15 @@ class TestResultsStore(unittest.TestCase):
         _write_run(self.results_dir, "2026-02-22", results=[_make_result()])
         store = ResultsStore(self.results_dir)
         latest = store.latest()
-        self.assertIsNotNone(latest)
-        self.assertEqual(latest.run_id, "2026-02-22")  # type: ignore[union-attr]
+        assert latest is not None
+        self.assertEqual(latest.run_id, "2026-02-22")
 
     def test_get_by_id(self) -> None:
         _write_run(self.results_dir, "run1", results=[_make_result()])
         store = ResultsStore(self.results_dir)
         run = store.get("run1")
-        self.assertIsNotNone(run)
-        self.assertEqual(run.run_id, "run1")  # type: ignore[union-attr]
+        assert run is not None
+        self.assertEqual(run.run_id, "run1")
 
     def test_get_latest_alias(self) -> None:
         _write_run(self.results_dir, "run1", results=[_make_result()])
@@ -372,10 +373,10 @@ class TestAnalyzeRun(unittest.TestCase):
         analysis = analyze_run(run)
         self.assertAlmostEqual(analysis.total_duration, 30.0)
         self.assertAlmostEqual(analysis.avg_duration, 10.0)
-        self.assertIsNotNone(analysis.fastest)
-        self.assertEqual(analysis.fastest.package, "a")  # type: ignore[union-attr]
-        self.assertIsNotNone(analysis.slowest)
-        self.assertEqual(analysis.slowest.package, "b")  # type: ignore[union-attr]
+        assert analysis.fastest is not None
+        self.assertEqual(analysis.fastest.package, "a")
+        assert analysis.slowest is not None
+        self.assertEqual(analysis.slowest.package, "b")
 
     def test_duration_buckets(self) -> None:
         results = [
@@ -411,8 +412,8 @@ class TestAnalyzeRun(unittest.TestCase):
         old = RunData(run_id="run1", run_dir=self.results_dir / "run1")
         new = RunData(run_id="run2", run_dir=self.results_dir / "run2")
         analysis = analyze_run(new, previous_run=old)
-        self.assertIsNotNone(analysis.status_changes)
-        self.assertEqual(len(analysis.status_changes), 2)  # type: ignore[arg-type]
+        assert analysis.status_changes is not None
+        self.assertEqual(len(analysis.status_changes), 2)
 
     def test_no_previous(self) -> None:
         _write_run(self.results_dir, "run1", results=[_make_result()])
