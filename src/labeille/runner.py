@@ -972,7 +972,10 @@ def _check_import_and_extras(
                 log.error("Import check timed out for %s", pkg.package)
                 return False
             except OSError as exc:
-                log.warning("Import check failed for %s: %s (continuing)", pkg.package, exc)
+                result.status = "install_error"
+                result.error_message = f"Import check OSError: {exc}"
+                log.error("Import check failed for %s: %s", pkg.package, exc)
+                return False
 
     if config.extra_deps and not venv_existed:
         extra_cmd = f"pip install {' '.join(config.extra_deps)}"
