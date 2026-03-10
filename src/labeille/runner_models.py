@@ -61,8 +61,8 @@ class RunnerConfig:
     test_command_override: str | None = None
     test_command_suffix: str | None = None
     repo_overrides: dict[str, str] = field(default_factory=dict)
-    installer: str = "auto"  # auto | uv | pip
-    install_from: str = "source"  # source | sdist
+    installer: Literal["auto", "uv", "pip"] = "auto"
+    install_from: Literal["source", "sdist"] = "source"
 
 
 @dataclass

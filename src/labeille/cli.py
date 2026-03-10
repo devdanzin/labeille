@@ -437,8 +437,8 @@ def run_cmd(
         test_command_override=test_command_override,
         test_command_suffix=test_command_suffix,
         repo_overrides=repo_overrides,
-        installer=installer,
-        install_from=install_from,
+        installer=installer,  # type: ignore[arg-type]  # Click Choice returns str
+        install_from=install_from,  # type: ignore[arg-type]  # Click Choice returns str
     )
 
     click.echo(f"Run ID: {run_id}")

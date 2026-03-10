@@ -134,6 +134,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - All documentation updated to reflect the split. Enrichment docs now live in laruche.
 
 ### Enhanced
+- Added `Literal` types to 6 string-constrained fields: `IterationOutcome.status`, `RunnerConfig.installer`/`install_from`, `PackageEntry.extension_type`/`install_method`/`test_framework`. Mypy now catches invalid values at type-check time.
 - Extracted shared `kill_process_group()` into `io_utils.py`, replacing 3 independent implementations in `runner.py`, `bench/timing.py`, and `ft/runner.py`. The FT runner now correctly uses `os.getpgid()` and `signal.SIGKILL` instead of raw `os.killpg(pid, 9)`.
 - Extracted `_build_bench_config()` helper from `bench_cli.run`, reducing the command body from ~130 lines to ~15 lines. Organized 35 Click options into labeled sections (profile, execution, package selection, paths, stability, adaptive, advanced).
 - Added `utc_now_iso()` helper to `io_utils.py`, unifying 15+ timestamp generation sites across 8 modules to a single canonical UTC format with Z suffix.

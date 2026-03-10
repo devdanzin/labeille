@@ -547,6 +547,7 @@ _KNOWN_FIELDS = {f.name for f in dataclass_fields(PackageEntry)}
 def _build_field_types() -> dict[str, type | tuple[type, ...]]:
     """Derive expected YAML types from PackageEntry field annotations."""
     import types as _types
+    from typing import Literal, get_origin
 
     mapping: dict[str, type | tuple[type, ...]] = {}
     hints = get_type_hints(PackageEntry, include_extras=True)
@@ -558,6 +559,9 @@ def _build_field_types() -> dict[str, type | tuple[type, ...]]:
             mapping[f.name] = list
         elif origin is dict:
             mapping[f.name] = dict
+        # Literal["x", "y"] → str (all our Literals are string-valued)
+        elif get_origin(ann) is Literal:
+            mapping[f.name] = str
         # str | None  (types.UnionType on 3.10+)
         elif isinstance(ann, _types.UnionType):
             non_none = [t for t in ann.__args__ if t is not _types.NoneType]
