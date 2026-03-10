@@ -20,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Tests
 - Add 26 tests for `bench track` subcommands: init, add, show, pin, unpin, list, trend, alert.
+- Add CLI tests for `registry` subcommands: rename-field, set-field (--all, --where, --packages), validate (--packages filter), migrate (list, unknown, missing name), sync (clone, pull, failure, non-git), add-index-field, remove-index-field, and group help.
 
 ### Added
 - `labeille analyze registry` now generates a comprehensive three-tier report: summary (default), detailed (`--detail`), and verbose (`--detail --verbose`).
