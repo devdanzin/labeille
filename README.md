@@ -409,9 +409,9 @@ labeille compat survey --target-python ~/cpython-315/python \
 labeille compat survey --target-python ~/cpython-315/python \
     --packages numpy,scipy,pandas --from source
 
-# View results, diff two surveys
+# View results, compare two surveys
 labeille compat show compat-results/compat_*
-labeille compat diff compat-results/compat_314 compat-results/compat_315
+labeille compat compare compat-results/compat_314 compat-results/compat_315
 ```
 
 Key features: three build modes (sdist, git source, `--no-binary :all:`), 40+

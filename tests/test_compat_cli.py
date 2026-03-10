@@ -23,7 +23,7 @@ class TestCompatCLIGroup(unittest.TestCase):
         self.assertEqual(result.exit_code, 0)
         self.assertIn("survey", result.output)
         self.assertIn("show", result.output)
-        self.assertIn("diff", result.output)
+        self.assertIn("compare", result.output)
         self.assertIn("patterns", result.output)
 
 
@@ -223,12 +223,12 @@ class TestShowCommand(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# compat diff
+# compat compare
 # ---------------------------------------------------------------------------
 
 
-class TestDiffCommand(unittest.TestCase):
-    """Tests for compat diff command."""
+class TestCompareCommand(unittest.TestCase):
+    """Tests for compat compare command."""
 
     def _create_survey_dir(self, tmpdir: str, sid: str, results: list[dict[str, Any]]) -> str:
         survey_dir = Path(tmpdir) / sid
@@ -251,16 +251,16 @@ class TestDiffCommand(unittest.TestCase):
         )
         return str(survey_dir)
 
-    def test_diff_no_changes(self) -> None:
+    def test_compare_no_changes(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             a = self._create_survey_dir(tmpdir, "a", [{"package": "x", "status": "build_ok"}])
             b = self._create_survey_dir(tmpdir, "b", [{"package": "x", "status": "build_ok"}])
             runner = CliRunner()
-            result = runner.invoke(compat, ["diff", a, b])
+            result = runner.invoke(compat, ["compare", a, b])
         self.assertEqual(result.exit_code, 0, result.output)
         self.assertIn("No differences found", result.output)
 
-    def test_diff_with_regression(self) -> None:
+    def test_compare_with_regression(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             a = self._create_survey_dir(tmpdir, "a", [{"package": "x", "status": "build_ok"}])
             b = self._create_survey_dir(
@@ -269,7 +269,7 @@ class TestDiffCommand(unittest.TestCase):
                 [{"package": "x", "status": "build_fail", "primary_category": "removed_c_api"}],
             )
             runner = CliRunner()
-            result = runner.invoke(compat, ["diff", a, b])
+            result = runner.invoke(compat, ["compare", a, b])
         self.assertEqual(result.exit_code, 0, result.output)
         self.assertIn("1 regressions", result.output)
 

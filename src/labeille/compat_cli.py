@@ -3,7 +3,7 @@
 Subcommands:
     labeille compat survey    Run a C extension compatibility survey
     labeille compat show      Display results from a saved survey
-    labeille compat diff      Compare two surveys
+    labeille compat compare   Compare two surveys
     labeille compat patterns  List built-in error classification patterns
 """
 
@@ -296,14 +296,14 @@ def show(
 
 
 # ---------------------------------------------------------------------------
-# compat diff
+# compat compare
 # ---------------------------------------------------------------------------
 
 
 @compat.command()
 @click.argument("survey_a", type=click.Path(exists=True, path_type=Path))
 @click.argument("survey_b", type=click.Path(exists=True, path_type=Path))
-def diff(survey_a: Path, survey_b: Path) -> None:
+def compare(survey_a: Path, survey_b: Path) -> None:
     """Compare two compatibility surveys (A = baseline, B = new)."""
     from labeille.compat import (
         diff_surveys,

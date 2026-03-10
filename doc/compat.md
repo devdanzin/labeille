@@ -50,7 +50,7 @@ labeille compat survey \
 labeille compat show results/compat_20260303
 
 # Compare two surveys (e.g., Python 3.14 vs 3.15)
-labeille compat diff results/compat_314 results/compat_315
+labeille compat compare results/compat_314 results/compat_315
 ```
 
 
@@ -208,7 +208,7 @@ labeille compat patterns --extra-patterns my-patterns.yaml
 Compare two surveys to track compatibility changes:
 
 ```bash
-labeille compat diff results/compat_314 results/compat_315
+labeille compat compare results/compat_314 results/compat_315
 ```
 
 Shows:
@@ -303,8 +303,8 @@ labeille compat survey \
     --packages-file c-ext-packages.txt \
     --output-dir compat-315
 
-# Diff: what changed?
-labeille compat diff compat-314/compat_* compat-315/compat_*
+# Compare: what changed?
+labeille compat compare compat-314/compat_* compat-315/compat_*
 ```
 
 ### Source mode for unreleased code
