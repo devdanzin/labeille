@@ -14,19 +14,19 @@ from labeille.analyze import (
     ComparisonResult,
     HistoryAnalysis,
     PackageHistory,
-    RegistryStats,
+    RegistryReport,
     ResultsStore,
     RunAnalysis,
     RunData,
     StatusChange,
     analyze_history,
     analyze_package,
-    analyze_registry,
     analyze_run,
     build_reproduce_command,
     categorize_install_errors,
     compare_runs,
     extract_minor_version,
+    generate_registry_report,
     result_detail,
 )
 from labeille.formatting import (
@@ -72,30 +72,120 @@ _registry_dir_option = click.option(
 @click.option(
     "--format",
     "fmt",
-    type=click.Choice(["counts", "table"]),
-    default="counts",
+    type=click.Choice(["summary", "detail", "table", "counts"]),
+    default="summary",
     show_default=True,
+    help="Output format. 'counts' is a legacy alias for 'summary'.",
+)
+@click.option(
+    "--detail",
+    is_flag=True,
+    help="Show detailed breakdown (compat blockers, repo hosts, install complexity).",
+)
+@click.option(
+    "--export-markdown",
+    is_flag=True,
+    help="Output as Markdown document.",
+)
+@click.option(
+    "-o",
+    "--output",
+    "output_path",
+    type=click.Path(),
+    default=None,
+    help="Write output to file (default: stdout).",
 )
 @click.option("--where", "where_exprs", type=str, multiple=True)
-@click.option("--python-version", type=str, default=None)
+@click.option(
+    "--python-version",
+    "python_versions",
+    type=str,
+    multiple=True,
+    help="Python version(s) for version analysis (repeatable).",
+)
+@click.option("-v", "--verbose", is_flag=True)
 def registry_cmd(
     registry_dir: Path | None,
     fmt: str,
+    detail: bool,
+    export_markdown: bool,
+    output_path: str | None,
     where_exprs: tuple[str, ...],
-    python_version: str | None,
+    python_versions: tuple[str, ...],
+    verbose: bool,
 ) -> None:
-    """Analyze registry composition."""
-    from labeille.registry import default_registry_dir
+    """Analyze registry composition and generate reports."""
+    from labeille.registry import Index, default_registry_dir, load_index
 
     if registry_dir is None:
         registry_dir = default_registry_dir()
-    packages = _load_all_packages(registry_dir, where_exprs)
 
-    if fmt == "table":
-        _print_registry_table(packages, python_version)
+    # Normalize legacy alias.
+    if fmt == "counts":
+        fmt = "summary"
+
+    # Table format uses the old per-row display that the report dataclass
+    # does not model, so it keeps the existing code path.
+    if fmt == "table" and not detail and not export_markdown:
+        packages = _load_all_packages(registry_dir, where_exprs)
+        pv = python_versions[0] if python_versions else None
+        _print_registry_table(packages, pv)
+        return
+
+    packages = _load_all_packages(registry_dir, where_exprs)
+    if not packages:
+        packages_dir = registry_dir / "packages"
+        if not packages_dir.is_dir():
+            click.echo(
+                f"No packages directory found at {packages_dir}.\n"
+                "Run 'labeille registry sync' to fetch the registry.",
+                err=True,
+            )
+        elif where_exprs:
+            click.echo("No packages match the --where filter.", err=True)
+        else:
+            click.echo("No packages found in registry.", err=True)
+        return
+
+    index: Index | None = None
+    if not where_exprs:
+        try:
+            index = load_index(registry_dir)
+        except FileNotFoundError:
+            pass
+        except Exception as exc:
+            click.echo(
+                f"Warning: could not load index ({exc}); download tier coverage will be omitted.",
+                err=True,
+            )
+
+    target_versions = list(python_versions) if python_versions else None
+
+    report = generate_registry_report(
+        packages,
+        index=index,
+        target_python_versions=target_versions,
+        collect_package_lists=verbose,
+    )
+
+    if where_exprs:
+        report.filter_description = ", ".join(where_exprs)
+
+    if export_markdown:
+        output = export_registry_report_md(report)
+    elif detail or fmt == "detail":
+        if verbose:
+            output = format_registry_verbose(report)
+        else:
+            output = format_registry_detail(report)
     else:
-        stats = analyze_registry(packages, target_python_version=python_version)
-        _print_registry_counts(stats)
+        output = format_registry_summary(report)
+
+    if output_path:
+        Path(output_path).write_text(output + "\n", encoding="utf-8")
+        click.echo(f"Report written to {output_path}")
+    else:
+        click.echo(output)
 
 
 def _load_all_packages(
@@ -122,49 +212,6 @@ def _load_all_packages(
         packages.append(pkg)
 
     return packages
-
-
-def _print_registry_counts(stats: RegistryStats) -> None:
-    """Print the counts format for registry analysis."""
-    click.echo(
-        f"Registry: {stats.total} packages ({stats.active} active, {stats.skipped} skipped)"
-    )
-    click.echo()
-
-    # By extension type.
-    click.echo("By extension type:")
-    for ext_type in sorted(stats.by_extension_type.keys()):
-        active, skipped = stats.by_extension_type[ext_type]
-        total = active + skipped
-        click.echo(f"  {ext_type:<15s} {total:3d}  ({active:3d} active, {skipped:3d} skipped)")
-    click.echo()
-
-    # By skip reason.
-    if stats.by_skip_category:
-        click.echo(f"By skip reason ({stats.skipped} skipped):")
-        for cat, count in sorted(stats.by_skip_category.items(), key=lambda x: -x[1]):
-            click.echo(f"  {cat:<30s} {count:3d}")
-        click.echo()
-
-    # By test framework.
-    if stats.by_test_framework:
-        click.echo(f"By test framework ({stats.active} active):")
-        for fw, count in sorted(stats.by_test_framework.items(), key=lambda x: -x[1]):
-            click.echo(f"  {fw:<15s} {count:3d}")
-        click.echo()
-
-    # Notable.
-    if stats.notable:
-        click.echo("Notable:")
-        for label, count in sorted(stats.notable.items()):
-            click.echo(f"  {label + ':':<20s} {count:3d} packages")
-        click.echo()
-
-    # Quality warnings.
-    if stats.quality_warnings:
-        click.echo(f"Quality warnings ({len(stats.quality_warnings)}):")
-        for pkg_name, warning in stats.quality_warnings[:20]:
-            click.echo(f"  {pkg_name}: {warning}")
 
 
 def _print_registry_table(packages: list[PackageEntry], python_version: str | None) -> None:
@@ -205,6 +252,363 @@ def _print_registry_table(packages: list[PackageEntry], python_version: str | No
             max_col_width={0: 25, 5: 30},
         )
     )
+
+
+# ---------------------------------------------------------------------------
+# Registry report formatting
+# ---------------------------------------------------------------------------
+
+_BLOCKER_LABELS: dict[str, str] = {
+    "pyo3_rust": "PyO3/Rust",
+    "cython": "Cython",
+    "meson": "Meson",
+    "cmake": "CMake",
+    "fortran": "Fortran",
+    "c_api_removed": "Removed C API",
+    "no_python_support": "No Python support",
+    "other_build": "Other build",
+}
+
+
+def _pct(count: int, total: int) -> str:
+    """Format as right-aligned percentage string."""
+    if total == 0:
+        return "  -"
+    return f"{count / total * 100:5.1f}%"
+
+
+def format_registry_summary(report: RegistryReport) -> str:
+    """Format the summary tier of the registry report."""
+    lines: list[str] = []
+    lines.append("Registry Report")
+    lines.append("\u2550" * 15)
+    lines.append("")
+
+    if report.filter_description:
+        lines.append(f"Filter: {report.filter_description}")
+        lines.append("")
+
+    lines.append(
+        f"Packages:  {report.total:,} total  "
+        f"({report.active:,} active, {report.skipped:,} skipped)"
+    )
+    enr = report.enrichment
+    lines.append(
+        f"Enriched:  {enr.enriched:,} of {enr.total:,} ({_pct(enr.enriched, enr.total).strip()})"
+    )
+    lines.append("")
+
+    # Extension types.
+    if report.by_extension_type:
+        lines.append("By type:")
+        for ext_type in sorted(report.by_extension_type.keys()):
+            active, skipped = report.by_extension_type[ext_type]
+            total = active + skipped
+            lines.append(
+                f"  {ext_type:<18s} {total:>5,}  ({_pct(total, report.total).strip()})  "
+                f"\u2014 {active:,} active, {skipped:,} skipped"
+            )
+        lines.append("")
+
+    # Version readiness.
+    if report.per_version:
+        lines.append("Version readiness:")
+        for va in report.per_version:
+            ver_skipped = va.skipped - report.skipped  # version-specific only
+            if ver_skipped < 0:
+                ver_skipped = 0
+            lines.append(
+                f"  Python {va.version}:  {va.total_active:,} active  "
+                f"({ver_skipped:,} version-skipped)"
+            )
+        lines.append("")
+
+    # Top skip reasons (max 5 in summary).
+    if report.by_skip_category:
+        lines.append(f"Top skip reasons ({report.skipped:,} skipped):")
+        sorted_cats = sorted(report.by_skip_category.items(), key=lambda x: -x[1])
+        for cat, count in sorted_cats[:5]:
+            lines.append(f"  {cat:<30s} {count:>4,}  ({_pct(count, report.skipped).strip()})")
+        if len(sorted_cats) > 5:
+            remaining = sum(c for _, c in sorted_cats[5:])
+            lines.append(f"  {'(other)':<30s} {remaining:>4,}")
+        lines.append("")
+
+    # Download coverage.
+    tiers = report.download_tiers
+    if tiers.all_packages != (0, 0):
+        lines.append("Download coverage:")
+        for label, (active, total) in [
+            ("Top 100", tiers.top_100),
+            ("Top 500", tiers.top_500),
+            ("Top 1000", tiers.top_1000),
+            ("Top 2000", tiers.top_2000),
+        ]:
+            if total > 0:
+                lines.append(
+                    f"  {label + ':':<12s} {active:>4,} of {total:,} active "
+                    f"({_pct(active, total).strip()})"
+                )
+
+    return "\n".join(lines)
+
+
+def format_registry_detail(report: RegistryReport) -> str:
+    """Format the detailed tier of the registry report."""
+    lines: list[str] = [format_registry_summary(report), ""]
+
+    # Compatibility blockers.
+    blockers = report.compat_blockers
+    blocker_items: list[tuple[str, int]] = []
+    for field_name, label in _BLOCKER_LABELS.items():
+        count = getattr(blockers, field_name)
+        if count > 0:
+            blocker_items.append((label, count))
+    if blocker_items:
+        lines.append("Compatibility blockers:")
+        for label, count in sorted(blocker_items, key=lambda x: -x[1]):
+            lines.append(f"  {label:<25s} {count:>4,} packages")
+        lines.append("")
+
+    # Repository hosting.
+    rh = report.repo_hosts
+    host_items: list[tuple[str, int]] = [
+        ("GitHub", rh.github),
+        ("GitLab", rh.gitlab),
+        ("Bitbucket", rh.bitbucket),
+        ("Codeberg", rh.codeberg),
+        ("No repo URL", rh.no_repo),
+        ("Other", rh.other),
+    ]
+    host_items = [(lb, ct) for lb, ct in host_items if ct > 0]
+    if host_items:
+        lines.append("Repository hosting:")
+        for label, count in host_items:
+            lines.append(f"  {label:<15s} {count:>5,}  ({_pct(count, report.total).strip()})")
+        lines.append("")
+
+    # Install complexity.
+    if report.active > 0:
+        ic = report.install_complexity
+        install_items: list[tuple[str, int]] = [
+            ("Simple editable", ic.simple_editable),
+            ("Editable + extras", ic.editable_with_extras),
+            ("Multi-step", ic.multi_step),
+            ("Custom", ic.custom),
+        ]
+        lines.append(f"Install complexity ({report.active:,} active):")
+        for label, count in install_items:
+            if count > 0:
+                lines.append(f"  {label:<20s} {count:>5,}  ({_pct(count, report.active).strip()})")
+        if ic.has_git_fetch_tags > 0:
+            lines.append(
+                f"  {'setuptools-scm fix':<20s} {ic.has_git_fetch_tags:>5,}  "
+                f"({_pct(ic.has_git_fetch_tags, report.active).strip()})"
+            )
+        lines.append("")
+
+    # Test framework.
+    if report.by_test_framework:
+        lines.append(f"Test framework ({report.active:,} active):")
+        for fw, count in sorted(report.by_test_framework.items(), key=lambda x: -x[1]):
+            lines.append(f"  {fw:<15s} {count:>5,}  ({_pct(count, report.active).strip()})")
+        lines.append("")
+
+    # Notable.
+    if report.notable:
+        lines.append("Notable:")
+        for label, count in sorted(report.notable.items()):
+            lines.append(
+                f"  {label + ':':<20s} {count:>4,} packages "
+                f"({_pct(count, report.active).strip()} of active)"
+            )
+        lines.append("")
+
+    return "\n".join(lines)
+
+
+def format_registry_verbose(report: RegistryReport) -> str:
+    """Format the verbose tier of the registry report."""
+    lines: list[str] = [format_registry_detail(report)]
+
+    # Quality warnings.
+    if report.quality_warnings:
+        lines.append(f"Quality warnings ({len(report.quality_warnings)}):")
+        for pkg_name, warning in report.quality_warnings:
+            lines.append(f"  {pkg_name}: {warning}")
+        lines.append("")
+
+    # Unenriched packages.
+    unenriched = report.enrichment.not_enriched
+    if unenriched > 0:
+        lines.append(f"Unenriched packages ({unenriched}):")
+        # We don't have names in the report, so note the count.
+        lines.append("  (use --where enriched:false --format table to list)")
+        lines.append("")
+
+    # Per-blocker package lists.
+    if report.compat_blockers.packages_by_blocker:
+        lines.append("Packages by blocker:")
+        for blocker_key, pkg_list in sorted(report.compat_blockers.packages_by_blocker.items()):
+            label = _BLOCKER_LABELS.get(blocker_key, blocker_key)
+            lines.append(f"  {label} ({len(pkg_list)}):")
+            display_pkgs = pkg_list[:20]
+            suffix = ", ..." if len(pkg_list) > 20 else ""
+            lines.append(f"    {', '.join(display_pkgs)}{suffix}")
+        lines.append("")
+
+    return "\n".join(lines)
+
+
+def export_registry_report_md(report: RegistryReport) -> str:
+    """Export the registry report as a Markdown document."""
+    lines: list[str] = []
+    lines.append("# Registry Report")
+    lines.append("")
+    lines.append(f"Generated: {report.generated_at}")
+    if report.filter_description:
+        lines.append(f"Filter: {report.filter_description}")
+    lines.append("")
+
+    # Overview table.
+    lines.append("## Overview")
+    lines.append("")
+    lines.append("| Metric | Count | Percentage |")
+    lines.append("|--------|------:|------------|")
+    lines.append(f"| Total packages | {report.total:,} | \u2014 |")
+    lines.append(f"| Active | {report.active:,} | {_pct(report.active, report.total).strip()} |")
+    lines.append(
+        f"| Skipped | {report.skipped:,} | {_pct(report.skipped, report.total).strip()} |"
+    )
+    enr = report.enrichment
+    lines.append(f"| Enriched | {enr.enriched:,} | {_pct(enr.enriched, enr.total).strip()} |")
+    lines.append("")
+
+    # Package types.
+    if report.by_extension_type:
+        lines.append("## Package Types")
+        lines.append("")
+        lines.append("| Type | Total | Active | Skipped | % of Total |")
+        lines.append("|------|------:|-------:|--------:|-----------:|")
+        for ext_type in sorted(report.by_extension_type.keys()):
+            active, skipped = report.by_extension_type[ext_type]
+            total = active + skipped
+            lines.append(
+                f"| {ext_type} | {total:,} | {active:,} | {skipped:,} | "
+                f"{_pct(total, report.total).strip()} |"
+            )
+        lines.append("")
+
+    # Version readiness.
+    if report.per_version:
+        lines.append("## Version Readiness")
+        lines.append("")
+        lines.append("| Python Version | Active | Version-Skipped | Active % |")
+        lines.append("|---------------|-------:|----------------:|---------:|")
+        for va in report.per_version:
+            ver_skipped = va.skipped - report.skipped
+            if ver_skipped < 0:
+                ver_skipped = 0
+            active_pct = _pct(va.total_active, va.total_active + va.skipped).strip()
+            lines.append(
+                f"| {va.version} | {va.total_active:,} | {ver_skipped:,} | {active_pct} |"
+            )
+        lines.append("")
+
+    # Skip reasons.
+    if report.by_skip_category:
+        lines.append("## Skip Reasons")
+        lines.append("")
+        lines.append("| Reason | Count | % of Skipped |")
+        lines.append("|--------|------:|-------------:|")
+        for cat, count in sorted(report.by_skip_category.items(), key=lambda x: -x[1]):
+            lines.append(f"| {cat} | {count:,} | {_pct(count, report.skipped).strip()} |")
+        lines.append("")
+
+    # Compatibility blockers.
+    blocker_items: list[tuple[str, int]] = []
+    for field_name, label in _BLOCKER_LABELS.items():
+        count = getattr(report.compat_blockers, field_name)
+        if count > 0:
+            blocker_items.append((label, count))
+    if blocker_items:
+        lines.append("## Compatibility Blockers")
+        lines.append("")
+        lines.append("| Technology | Packages |")
+        lines.append("|-----------|--------:|")
+        for label, count in sorted(blocker_items, key=lambda x: -x[1]):
+            lines.append(f"| {label} | {count:,} |")
+        lines.append("")
+
+    # Download coverage.
+    tiers = report.download_tiers
+    if tiers.all_packages != (0, 0):
+        lines.append("## Download Coverage")
+        lines.append("")
+        lines.append("| Tier | Active | Total | Coverage |")
+        lines.append("|------|-------:|------:|---------:|")
+        for label, (active, total) in [
+            ("Top 100", tiers.top_100),
+            ("Top 500", tiers.top_500),
+            ("Top 1000", tiers.top_1000),
+            ("Top 2000", tiers.top_2000),
+        ]:
+            if total > 0:
+                lines.append(
+                    f"| {label} | {active:,} | {total:,} | {_pct(active, total).strip()} |"
+                )
+        lines.append("")
+
+    # Repository hosting.
+    rh = report.repo_hosts
+    host_items: list[tuple[str, int]] = [
+        ("GitHub", rh.github),
+        ("GitLab", rh.gitlab),
+        ("Bitbucket", rh.bitbucket),
+        ("Codeberg", rh.codeberg),
+        ("No repo URL", rh.no_repo),
+        ("Other", rh.other),
+    ]
+    host_items = [(lb, ct) for lb, ct in host_items if ct > 0]
+    if host_items:
+        lines.append("## Repository Hosting")
+        lines.append("")
+        lines.append("| Host | Count | Percentage |")
+        lines.append("|------|------:|-----------:|")
+        for label, count in host_items:
+            lines.append(f"| {label} | {count:,} | {_pct(count, report.total).strip()} |")
+        lines.append("")
+
+    # Install complexity.
+    if report.active > 0:
+        ic = report.install_complexity
+        install_items: list[tuple[str, int]] = [
+            ("Simple editable", ic.simple_editable),
+            ("Editable + extras", ic.editable_with_extras),
+            ("Multi-step", ic.multi_step),
+            ("Custom", ic.custom),
+        ]
+        install_items = [(lb, ct) for lb, ct in install_items if ct > 0]
+        if install_items:
+            lines.append("## Install Complexity")
+            lines.append("")
+            lines.append("| Type | Count | % of Active |")
+            lines.append("|------|------:|------------:|")
+            for label, count in install_items:
+                lines.append(f"| {label} | {count:,} | {_pct(count, report.active).strip()} |")
+            lines.append("")
+
+    # Test framework.
+    if report.by_test_framework:
+        lines.append("## Test Framework")
+        lines.append("")
+        lines.append("| Framework | Count | % of Active |")
+        lines.append("|-----------|------:|------------:|")
+        for fw, count in sorted(report.by_test_framework.items(), key=lambda x: -x[1]):
+            lines.append(f"| {fw} | {count:,} | {_pct(count, report.active).strip()} |")
+        lines.append("")
+
+    return "\n".join(lines)
 
 
 # ---------------------------------------------------------------------------

@@ -7,6 +7,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+- `labeille analyze registry` now generates a comprehensive three-tier report: summary (default), detailed (`--detail`), and verbose (`--detail --verbose`).
+- `--export-markdown` flag for `analyze registry` generates a Markdown document suitable for inclusion in a repository.
+- `-o`/`--output` flag to write report output to a file.
+- `--python-version` is now repeatable for multi-version analysis.
+- New report sections: enrichment progress, per-version readiness, compatibility blockers (PyO3, Cython, Meson, CMake, Fortran, removed C API), repository hosting distribution, install command complexity, and download tier coverage.
+- `RegistryReport` dataclass with sub-reports: `EnrichmentProgress`, `VersionAnalysis`, `RepoHostStats`, `InstallComplexity`, `CompatBlockers`, `DownloadTierCoverage`.
+- `generate_registry_report()` function for comprehensive registry analysis in a single pass.
+- Helper classifiers: `_classify_repo_host()`, `_classify_install_complexity()`, `_classify_compat_blocker()`.
 - `labeille registry sync` command to clone or update the laruche registry into the default location.
 - Schema version checking via `schema.yaml` at the registry root. labeille checks this at load time and gives an actionable error if the registry schema is incompatible.
 - `default_registry_dir()` and `LABEILLE_REGISTRY_DIR` environment variable for configuring the registry location.
@@ -126,6 +134,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - All documentation updated to reflect the split. Enrichment docs now live in laruche.
 
 ### Enhanced
+- `labeille analyze registry` shows percentages alongside all counts.
+- Download tier coverage (top 100, 500, 1000, 2000) shows what fraction of the most-downloaded packages are testable.
+- Version readiness section shows per-Python-version active/skipped counts with top skip reasons.
+- `--format counts` is preserved as a backward-compatible alias for the summary format.
 - Updated 63 registry packages with accurate skip reasons from compat analysis: cleared vague 3.15 skip_versions, added specific failure categories (Meson, CMake, removed APIs), reclassified non-3.15 issues as skip with precise reasons, and unskipped 5 packages that now build on 3.15.
 - `BenchRunner._run_iteration()` applies resource constraints via command wrapping before execution.
 - `BenchRunner.run()` now checks for root execution and refuses unless `--run-dangerously-as-root` is passed.
