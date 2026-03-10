@@ -6,6 +6,7 @@ import csv
 import io
 import json
 import unittest
+from typing import Any
 
 from labeille.ft.export import export_csv, export_json, generate_report
 from labeille.ft.results import (
@@ -21,7 +22,7 @@ def _make_result(
     category: FailureCategory = FailureCategory.COMPATIBLE,
     pass_rate: float = 1.0,
     crash_count: int = 0,
-    **kwargs: object,
+    **kwargs: Any,
 ) -> FTPackageResult:
     """Create a minimal FTPackageResult for export tests."""
     if "pass_count" not in kwargs:
@@ -33,23 +34,23 @@ def _make_result(
         category=category,
         pass_rate=pass_rate,
         crash_count=crash_count,
-        **kwargs,  # type: ignore[arg-type]
+        **kwargs,
     )
 
 
-def _make_meta(**kwargs: object) -> FTRunMeta:
+def _make_meta(**kwargs: Any) -> FTRunMeta:
     return FTRunMeta(
-        run_id=kwargs.get("run_id", "test-run"),  # type: ignore[arg-type]
-        timestamp=kwargs.get("timestamp", "2026-01-15T12:00:00"),  # type: ignore[arg-type]
-        python_profile=kwargs.get(  # type: ignore[arg-type]
+        run_id=kwargs.get("run_id", "test-run"),
+        timestamp=kwargs.get("timestamp", "2026-01-15T12:00:00"),
+        python_profile=kwargs.get(
             "python_profile",
             {"version": "3.14.0b2", "gil_disabled": True, "implementation": "cpython"},
         ),
-        system_profile=kwargs.get(  # type: ignore[arg-type]
+        system_profile=kwargs.get(
             "system_profile",
             {"cpu_model": "AMD Ryzen 9", "ram_total_gb": 64, "os_distro": "Ubuntu 24.04"},
         ),
-        config=kwargs.get("config", {"iterations": 10}),  # type: ignore[arg-type]
+        config=kwargs.get("config", {"iterations": 10}),
     )
 
 

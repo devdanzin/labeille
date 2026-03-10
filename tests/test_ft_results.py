@@ -269,8 +269,8 @@ class TestFTPackageResult(unittest.TestCase):
             gil_enabled_iterations=gil_iters,
         )
         result.compute_aggregates()
-        self.assertIsNotNone(result.gil_enabled_pass_rate)
-        self.assertAlmostEqual(result.gil_enabled_pass_rate, 0.8)  # type: ignore[arg-type]
+        assert result.gil_enabled_pass_rate is not None
+        self.assertAlmostEqual(result.gil_enabled_pass_rate, 0.8)
 
     def test_serialization_roundtrip(self) -> None:
         result = FTPackageResult(

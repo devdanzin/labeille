@@ -6,6 +6,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from typing import Any
 from unittest.mock import patch
 
 from click.testing import CliRunner
@@ -29,7 +30,7 @@ class TestVersionCommand(unittest.TestCase):
         self.assertIn(__version__, result.output)
 
 
-def _fake_pypi_metadata(name: str) -> dict:  # type: ignore[type-arg]
+def _fake_pypi_metadata(name: str) -> dict[str, Any]:
     """Return minimal PyPI-like metadata for mocked fetch calls."""
     return {
         "info": {

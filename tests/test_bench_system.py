@@ -720,8 +720,8 @@ class TestGetAvailableRamGb(unittest.TestCase):
         from labeille.bench.system import _get_available_ram_gb
 
         result = _get_available_ram_gb()
-        self.assertIsNotNone(result)
-        self.assertAlmostEqual(result, 8.0, places=0)  # type: ignore[arg-type]
+        assert result is not None
+        self.assertAlmostEqual(result, 8.0, places=0)
 
     @patch("labeille.bench.system.sys.platform", "darwin")
     @patch("labeille.bench.system._parse_vm_stat")
@@ -732,9 +732,9 @@ class TestGetAvailableRamGb(unittest.TestCase):
             page_size=16384, pages_free=100000, pages_inactive=50000
         )
         result = _get_available_ram_gb()
-        self.assertIsNotNone(result)
+        assert result is not None
         expected = (100000 + 50000) * 16384 / (1024**3)
-        self.assertAlmostEqual(result, expected, places=1)  # type: ignore[arg-type]
+        self.assertAlmostEqual(result, expected, places=1)
 
     @patch("labeille.bench.system.sys.platform", "win32")
     def test_unsupported_platform(self) -> None:

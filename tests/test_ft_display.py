@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import unittest
+from typing import Any
 from unittest.mock import MagicMock
 
 from labeille.ft.display import (
@@ -22,7 +23,7 @@ def _make_result(
     iterations_completed: int = 10,
     crash_count: int = 0,
     pass_rate: float = 1.0,
-    **kwargs: object,
+    **kwargs: Any,
 ) -> FTPackageResult:
     """Create a minimal FTPackageResult for display tests."""
     return FTPackageResult(
@@ -32,7 +33,7 @@ def _make_result(
         iterations_completed=iterations_completed,
         crash_count=crash_count,
         pass_rate=pass_rate,
-        **kwargs,  # type: ignore[arg-type]
+        **kwargs,
     )
 
 

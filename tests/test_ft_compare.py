@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import unittest
+from typing import Any
 
 from labeille.ft.compare import (
     PackageTransition,
@@ -18,7 +19,7 @@ def _make_result(
     pass_rate: float = 1.0,
     crash_count: int = 0,
     deadlock_count: int = 0,
-    **kwargs: object,
+    **kwargs: Any,
 ) -> FTPackageResult:
     """Create a minimal FTPackageResult for comparison tests."""
     if "pass_count" not in kwargs:
@@ -31,7 +32,7 @@ def _make_result(
         pass_rate=pass_rate,
         crash_count=crash_count,
         deadlock_count=deadlock_count,
-        **kwargs,  # type: ignore[arg-type]
+        **kwargs,
     )
 
 

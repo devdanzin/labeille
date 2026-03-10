@@ -8,6 +8,7 @@ import time
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 from labeille.ft.results import FailureCategory, IterationOutcome
@@ -384,12 +385,12 @@ class TestRunPackageFt(unittest.TestCase):
         defaults.update(overrides)
         return SimpleNamespace(**defaults)
 
-    def _make_config(self, **overrides: object) -> FTRunConfig:
+    def _make_config(self, **overrides: Any) -> FTRunConfig:
         """Create a test config with real tmp paths."""
         import tempfile
 
         tmpdir = Path(tempfile.mkdtemp())
-        defaults: dict[str, object] = {
+        defaults: dict[str, Any] = {
             "target_python": Path("/fake/python"),
             "iterations": 3,
             "timeout": 60,
@@ -402,7 +403,7 @@ class TestRunPackageFt(unittest.TestCase):
             "stop_on_first_pass": False,
         }
         defaults.update(overrides)
-        return FTRunConfig(**defaults)  # type: ignore[arg-type]
+        return FTRunConfig(**defaults)
 
     @patch("labeille.ft.runner.clone_repo")
     def test_run_package_clone_failure(self, mock_clone: MagicMock) -> None:
@@ -733,11 +734,11 @@ class TestRunPackageFtWheelTrust(unittest.TestCase):
         defaults.update(overrides)
         return SimpleNamespace(**defaults)
 
-    def _make_config(self, **overrides: object) -> FTRunConfig:
+    def _make_config(self, **overrides: Any) -> FTRunConfig:
         import tempfile
 
         tmpdir = Path(tempfile.mkdtemp())
-        defaults: dict[str, object] = {
+        defaults: dict[str, Any] = {
             "target_python": Path("/fake/python"),
             "iterations": 3,
             "timeout": 60,
@@ -750,7 +751,7 @@ class TestRunPackageFtWheelTrust(unittest.TestCase):
             "stop_on_first_pass": False,
         }
         defaults.update(overrides)
-        return FTRunConfig(**defaults)  # type: ignore[arg-type]
+        return FTRunConfig(**defaults)
 
     @patch("labeille.ft.runner.install_package")
     @patch("labeille.ft.runner.create_venv")
