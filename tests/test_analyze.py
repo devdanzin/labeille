@@ -13,6 +13,9 @@ from labeille.analyze import (
     ResultsStore,
     RunData,
     StatusChange,
+    _classify_compat_blocker,
+    _classify_install_complexity,
+    _classify_repo_host,
     analyze_history,
     analyze_package,
     analyze_registry,
@@ -24,8 +27,9 @@ from labeille.analyze import (
     compute_duration_buckets,
     detect_flaky_packages,
     detect_quality_warnings,
+    generate_registry_report,
 )
-from labeille.registry import PackageEntry
+from labeille.registry import Index, IndexEntry, PackageEntry
 
 
 # ---------------------------------------------------------------------------
@@ -1161,6 +1165,267 @@ class TestCompareRunsCommitInfo(unittest.TestCase):
         self.assertEqual(len(comp.package_details), 1)
         self.assertIsNone(comp.package_details[0].commit_a)
         self.assertIsNone(comp.package_details[0].commit_b)
+
+
+# ---------------------------------------------------------------------------
+# Registry report tests
+# ---------------------------------------------------------------------------
+
+
+class TestGenerateRegistryReport(unittest.TestCase):
+    def test_report_basic_counts(self) -> None:
+        packages = [
+            _make_pkg("a"),
+            _make_pkg("b"),
+            _make_pkg("c"),
+            _make_pkg("d", skip=True, skip_reason="PyO3"),
+            _make_pkg("e", skip=True, skip_reason="no repo"),
+        ]
+        report = generate_registry_report(packages)
+        self.assertEqual(report.total, 5)
+        self.assertEqual(report.active, 3)
+        self.assertEqual(report.skipped, 2)
+
+    def test_report_enrichment_progress(self) -> None:
+        packages = [
+            _make_pkg("a", enriched=True),
+            _make_pkg("b", enriched=True),
+            _make_pkg("c", enriched=True, skip=True, skip_reason="x"),
+            _make_pkg("d", enriched=True),
+            _make_pkg("e", enriched=False),
+        ]
+        report = generate_registry_report(packages)
+        self.assertEqual(report.enrichment.enriched, 4)
+        self.assertEqual(report.enrichment.enriched_active, 3)
+        self.assertEqual(report.enrichment.enriched_skipped, 1)
+        self.assertEqual(report.enrichment.not_enriched, 1)
+
+    def test_report_extension_types(self) -> None:
+        packages = [
+            _make_pkg("a", extension_type="pure"),
+            _make_pkg("b", extension_type="pure", skip=True, skip_reason="x"),
+            _make_pkg("c", extension_type="c_extension"),
+        ]
+        report = generate_registry_report(packages)
+        self.assertEqual(report.by_extension_type["pure"], (1, 1))
+        self.assertEqual(report.by_extension_type["c_extension"], (1, 0))
+
+    def test_report_per_version_auto_detect(self) -> None:
+        packages = [
+            _make_pkg("a", skip_versions={"3.15": "PyO3", "3.14": "broken"}),
+            _make_pkg("b"),
+        ]
+        report = generate_registry_report(packages)
+        versions = [va.version for va in report.per_version]
+        self.assertIn("3.15", versions)
+        self.assertIn("3.14", versions)
+
+    def test_report_per_version_explicit(self) -> None:
+        packages = [
+            _make_pkg("a", skip_versions={"3.15": "PyO3", "3.14": "broken"}),
+        ]
+        report = generate_registry_report(packages, target_python_versions=["3.15"])
+        self.assertEqual(len(report.per_version), 1)
+        self.assertEqual(report.per_version[0].version, "3.15")
+
+    def test_report_per_version_counts(self) -> None:
+        packages = [
+            _make_pkg("a", skip_versions={"3.15": "PyO3"}),
+            _make_pkg("b", skip=True, skip_reason="no repo"),
+            _make_pkg("c"),
+        ]
+        report = generate_registry_report(packages, target_python_versions=["3.15"])
+        va = report.per_version[0]
+        self.assertEqual(va.total_active, 1)
+        self.assertEqual(va.skipped, 2)
+
+    def test_report_repo_hosts(self) -> None:
+        packages = [
+            _make_pkg("a"),  # default: github
+            _make_pkg("b"),  # default: github
+        ]
+        packages[0].repo = "https://github.com/user/a"
+        packages[1].repo = "https://gitlab.com/user/b"
+        pkg_none = _make_pkg("c")
+        pkg_none.repo = None
+        packages.append(pkg_none)
+        report = generate_registry_report(packages)
+        self.assertEqual(report.repo_hosts.github, 1)
+        self.assertEqual(report.repo_hosts.gitlab, 1)
+        self.assertEqual(report.repo_hosts.no_repo, 1)
+
+    def test_report_install_complexity(self) -> None:
+        packages = [
+            _make_pkg("a", install_command="pip install -e ."),
+            _make_pkg("b", install_command="pip install -e '.[test]'"),
+            _make_pkg("c", install_command="pip install -e . && pip install pytest"),
+            _make_pkg("d", install_command="make install"),
+        ]
+        report = generate_registry_report(packages)
+        self.assertEqual(report.install_complexity.simple_editable, 1)
+        self.assertEqual(report.install_complexity.editable_with_extras, 1)
+        self.assertEqual(report.install_complexity.multi_step, 1)
+        self.assertEqual(report.install_complexity.custom, 1)
+
+    def test_report_install_git_fetch_tags(self) -> None:
+        packages = [
+            _make_pkg(
+                "a",
+                install_command="git fetch --tags --depth 1 && pip install -e .",
+            ),
+        ]
+        report = generate_registry_report(packages)
+        self.assertEqual(report.install_complexity.has_git_fetch_tags, 1)
+        self.assertEqual(report.install_complexity.multi_step, 1)
+
+    def test_report_compat_blockers(self) -> None:
+        packages = [
+            _make_pkg("a", skip=True, skip_reason="PyO3 not supported"),
+            _make_pkg("b", skip=True, skip_reason="Cython build failure"),
+            _make_pkg("c", skip=True, skip_reason="meson build error"),
+        ]
+        report = generate_registry_report(packages)
+        self.assertEqual(report.compat_blockers.pyo3_rust, 1)
+        self.assertEqual(report.compat_blockers.cython, 1)
+        self.assertEqual(report.compat_blockers.meson, 1)
+
+    def test_report_compat_blockers_dedup(self) -> None:
+        """Package with same blocker in skip_reason and skip_versions counted once."""
+        packages = [
+            _make_pkg(
+                "a",
+                skip=True,
+                skip_reason="PyO3 not supported",
+                skip_versions={"3.15": "PyO3 build fails"},
+            ),
+        ]
+        report = generate_registry_report(packages)
+        self.assertEqual(report.compat_blockers.pyo3_rust, 1)
+
+    def test_report_compat_blockers_package_lists(self) -> None:
+        packages = [
+            _make_pkg("cryptography", skip=True, skip_reason="PyO3"),
+            _make_pkg("orjson", skip=True, skip_reason="maturin/Rust"),
+        ]
+        report = generate_registry_report(packages, collect_package_lists=True)
+        self.assertIn("pyo3_rust", report.compat_blockers.packages_by_blocker)
+        names = report.compat_blockers.packages_by_blocker["pyo3_rust"]
+        self.assertIn("cryptography", names)
+        self.assertIn("orjson", names)
+
+    def test_report_download_tiers(self) -> None:
+        packages = [_make_pkg(f"pkg{i}") for i in range(150)]
+        entries = [IndexEntry(name=f"pkg{i}", download_count=10000 - i) for i in range(150)]
+        index = Index(packages=entries)
+        report = generate_registry_report(packages, index=index)
+        self.assertEqual(report.download_tiers.top_100[1], 100)
+        self.assertEqual(report.download_tiers.top_100[0], 100)
+
+    def test_report_download_tiers_no_index(self) -> None:
+        packages = [_make_pkg("a")]
+        report = generate_registry_report(packages, index=None)
+        self.assertEqual(report.download_tiers.all_packages, (0, 0))
+
+    def test_report_test_framework(self) -> None:
+        packages = [
+            _make_pkg("a", test_framework="pytest"),
+            _make_pkg("b", test_framework="pytest"),
+            _make_pkg("c", test_framework="unittest"),
+        ]
+        report = generate_registry_report(packages)
+        self.assertEqual(report.by_test_framework["pytest"], 2)
+        self.assertEqual(report.by_test_framework["unittest"], 1)
+
+    def test_report_notable_attributes(self) -> None:
+        packages = [_make_pkg("a", timeout=300, uses_xdist=True)]
+        report = generate_registry_report(packages)
+        self.assertEqual(report.notable["Custom timeout"], 1)
+        self.assertEqual(report.notable["uses_xdist"], 1)
+
+    def test_report_quality_warnings(self) -> None:
+        packages = [_make_pkg("a", enriched=True, test_command="")]
+        report = generate_registry_report(packages)
+        self.assertTrue(len(report.quality_warnings) > 0)
+
+    def test_report_generated_at(self) -> None:
+        packages = [_make_pkg("a")]
+        report = generate_registry_report(packages)
+        self.assertTrue(len(report.generated_at) > 0)
+
+
+class TestClassifyRepoHost(unittest.TestCase):
+    def test_github(self) -> None:
+        self.assertEqual(_classify_repo_host("https://github.com/user/repo"), "github")
+
+    def test_gitlab(self) -> None:
+        self.assertEqual(_classify_repo_host("https://gitlab.com/user/repo"), "gitlab")
+
+    def test_self_hosted_gitlab(self) -> None:
+        self.assertEqual(_classify_repo_host("https://gitlab.example.com/repo"), "gitlab")
+
+    def test_bitbucket(self) -> None:
+        self.assertEqual(_classify_repo_host("https://bitbucket.org/user/repo"), "bitbucket")
+
+    def test_codeberg(self) -> None:
+        self.assertEqual(_classify_repo_host("https://codeberg.org/user/repo"), "codeberg")
+
+    def test_no_repo(self) -> None:
+        self.assertEqual(_classify_repo_host(None), "no_repo")
+
+    def test_other(self) -> None:
+        self.assertEqual(_classify_repo_host("https://example.com/repo"), "other")
+
+
+class TestClassifyInstallComplexity(unittest.TestCase):
+    def test_simple_editable(self) -> None:
+        self.assertEqual(_classify_install_complexity("pip install -e ."), "simple_editable")
+
+    def test_editable_with_extras(self) -> None:
+        self.assertEqual(
+            _classify_install_complexity("pip install -e '.[test]'"),
+            "editable_with_extras",
+        )
+
+    def test_multi_step(self) -> None:
+        self.assertEqual(
+            _classify_install_complexity("pip install -e . && pip install pytest"),
+            "multi_step",
+        )
+
+    def test_custom(self) -> None:
+        self.assertEqual(_classify_install_complexity("make install"), "custom")
+
+    def test_empty(self) -> None:
+        self.assertEqual(_classify_install_complexity(""), "custom")
+
+
+class TestClassifyCompatBlocker(unittest.TestCase):
+    def test_pyo3(self) -> None:
+        self.assertEqual(_classify_compat_blocker("PyO3 not supported"), "pyo3_rust")
+
+    def test_rust(self) -> None:
+        self.assertEqual(_classify_compat_blocker("Built with Rust via maturin"), "pyo3_rust")
+
+    def test_cython(self) -> None:
+        self.assertEqual(_classify_compat_blocker("Cython build failure"), "cython")
+
+    def test_meson(self) -> None:
+        self.assertEqual(_classify_compat_blocker("Meson build error"), "meson")
+
+    def test_cmake(self) -> None:
+        self.assertEqual(_classify_compat_blocker("CMake error"), "cmake")
+
+    def test_fortran(self) -> None:
+        self.assertEqual(_classify_compat_blocker("Uses f2py"), "fortran")
+
+    def test_c_api(self) -> None:
+        self.assertEqual(_classify_compat_blocker("Removed C API: tp_print"), "c_api_removed")
+
+    def test_no_support(self) -> None:
+        self.assertEqual(_classify_compat_blocker("No 3.15 support"), "no_python_support")
+
+    def test_unrelated(self) -> None:
+        self.assertIsNone(_classify_compat_blocker("Part of monorepo"))
 
 
 if __name__ == "__main__":

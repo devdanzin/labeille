@@ -184,7 +184,7 @@ class TestRegistryCommand(_FixtureMixin, unittest.TestCase):
             ["registry", "--registry-dir", str(self.registry_dir)],
         )
         self.assertEqual(result.exit_code, 0, result.output)
-        self.assertIn("Registry:", result.output)
+        self.assertIn("Registry Report", result.output)
         self.assertIn("active", result.output)
         self.assertIn("skipped", result.output)
 
@@ -505,6 +505,167 @@ class TestPackageCommand(_FixtureMixin, unittest.TestCase):
 # ---------------------------------------------------------------------------
 # Commit-aware comparison tests
 # ---------------------------------------------------------------------------
+
+
+class TestRegistryReportCLI(_FixtureMixin, unittest.TestCase):
+    def setUp(self) -> None:
+        self._setup_fixtures()
+        # Add a package with skip_versions for version analysis.
+        data = {
+            "package": "versioned",
+            "repo": "https://github.com/user/versioned",
+            "pypi_url": "https://pypi.org/project/versioned/",
+            "extension_type": "c_extension",
+            "python_versions": [],
+            "install_method": "pip",
+            "install_command": "pip install -e '.[dev]'",
+            "test_command": "python -m pytest tests/",
+            "test_framework": "pytest",
+            "uses_xdist": False,
+            "timeout": None,
+            "skip": False,
+            "skip_reason": None,
+            "skip_versions": {"3.15": "PyO3 not supported"},
+            "notes": "",
+            "enriched": True,
+            "clone_depth": None,
+            "import_name": None,
+        }
+        pkg_dir = self.registry_dir / "packages"
+        (pkg_dir / "versioned.yaml").write_text(
+            yaml.dump(data, default_flow_style=False, sort_keys=False),
+            encoding="utf-8",
+        )
+
+    def tearDown(self) -> None:
+        self._cleanup_fixtures()
+
+    def test_summary_default(self) -> None:
+        result = self.runner.invoke(
+            analyze,
+            ["registry", "--registry-dir", str(self.registry_dir)],
+        )
+        self.assertEqual(result.exit_code, 0, result.output)
+        self.assertIn("Registry Report", result.output)
+        self.assertIn("Packages:", result.output)
+        self.assertIn("Enriched:", result.output)
+        self.assertIn("By type:", result.output)
+
+    def test_detail_flag(self) -> None:
+        result = self.runner.invoke(
+            analyze,
+            ["registry", "--detail", "--registry-dir", str(self.registry_dir)],
+        )
+        self.assertEqual(result.exit_code, 0, result.output)
+        self.assertIn("Repository hosting", result.output)
+
+    def test_verbose_flag(self) -> None:
+        result = self.runner.invoke(
+            analyze,
+            [
+                "registry",
+                "--detail",
+                "-v",
+                "--registry-dir",
+                str(self.registry_dir),
+            ],
+        )
+        self.assertEqual(result.exit_code, 0, result.output)
+        # Verbose includes quality warnings section or unenriched section.
+        # Our test data has all enriched, so look for verbose-specific output.
+        self.assertIn("Registry Report", result.output)
+
+    def test_export_markdown(self) -> None:
+        result = self.runner.invoke(
+            analyze,
+            [
+                "registry",
+                "--export-markdown",
+                "--registry-dir",
+                str(self.registry_dir),
+            ],
+        )
+        self.assertEqual(result.exit_code, 0, result.output)
+        self.assertTrue(result.output.startswith("# Registry Report"))
+        self.assertIn("|", result.output)
+
+    def test_export_markdown_to_file(self) -> None:
+        import tempfile as tf
+
+        with tf.NamedTemporaryFile(suffix=".md", delete=False) as f:
+            outpath = f.name
+        try:
+            result = self.runner.invoke(
+                analyze,
+                [
+                    "registry",
+                    "--export-markdown",
+                    "-o",
+                    outpath,
+                    "--registry-dir",
+                    str(self.registry_dir),
+                ],
+            )
+            self.assertEqual(result.exit_code, 0, result.output)
+            self.assertIn("Report written to", result.output)
+            content = Path(outpath).read_text(encoding="utf-8")
+            self.assertTrue(content.startswith("# Registry Report"))
+        finally:
+            Path(outpath).unlink(missing_ok=True)
+
+    def test_python_version_filter(self) -> None:
+        result = self.runner.invoke(
+            analyze,
+            [
+                "registry",
+                "--python-version",
+                "3.15",
+                "--registry-dir",
+                str(self.registry_dir),
+            ],
+        )
+        self.assertEqual(result.exit_code, 0, result.output)
+        self.assertIn("3.15", result.output)
+
+    def test_where_filter(self) -> None:
+        result = self.runner.invoke(
+            analyze,
+            [
+                "registry",
+                "--where",
+                "extension_type=pure",
+                "--registry-dir",
+                str(self.registry_dir),
+            ],
+        )
+        self.assertEqual(result.exit_code, 0, result.output)
+
+    def test_table_format_compat(self) -> None:
+        result = self.runner.invoke(
+            analyze,
+            [
+                "registry",
+                "--format",
+                "table",
+                "--registry-dir",
+                str(self.registry_dir),
+            ],
+        )
+        self.assertEqual(result.exit_code, 0, result.output)
+
+    def test_counts_alias(self) -> None:
+        result = self.runner.invoke(
+            analyze,
+            [
+                "registry",
+                "--format",
+                "counts",
+                "--registry-dir",
+                str(self.registry_dir),
+            ],
+        )
+        self.assertEqual(result.exit_code, 0, result.output)
+        self.assertIn("Registry Report", result.output)
 
 
 class TestCommitAnnotation(unittest.TestCase):
