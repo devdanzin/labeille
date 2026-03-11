@@ -68,6 +68,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Remove 3 unnecessary private re-exports (`_EXTRAS_RE`, `_SELF_INSTALL_RE`, `_TAG_PATTERNS`) from `runner.py`.
 - Move `dataclass_from_dict` imports from method bodies to module level across 9 files.
 - Deduplicate `extract_minor_version`: move canonical implementation to `io_utils.py`, delegate from `runner.py` and `analyze.py`.
+- Remove deprecated `extract_python_minor_version` wrapper from `runner.py`; callers in `cli.py` and `compat_cli.py` now use `io_utils.extract_minor_version` directly.
 - Delegate `format_signal_name` in `formatting.py` to `crash.signal_name` instead of duplicating signal conversion logic.
 - Replace inline JSON write in `bench/tracking.py` with `write_meta_json`.
 - Guard `_read_lines` call sites in `registry_ops.py` against `OSError`/`UnicodeDecodeError` to prevent batch operations from crashing on corrupt files.

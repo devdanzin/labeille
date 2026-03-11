@@ -65,7 +65,7 @@ class TestSurveyCommand(unittest.TestCase):
         self.assertNotEqual(result.exit_code, 0)
 
     @patch("labeille.runner.validate_target_python", return_value="3.15.0a5")
-    @patch("labeille.runner.extract_python_minor_version", return_value="3.15")
+    @patch("labeille.io_utils.extract_minor_version", return_value="3.15")
     @patch("labeille.compat.resolve_compat_inputs", return_value=[])
     def test_no_packages_found(
         self,
@@ -84,7 +84,7 @@ class TestSurveyCommand(unittest.TestCase):
 
     @patch("labeille.compat.run_compat_survey")
     @patch("labeille.compat.resolve_compat_inputs")
-    @patch("labeille.runner.extract_python_minor_version", return_value="3.15")
+    @patch("labeille.io_utils.extract_minor_version", return_value="3.15")
     @patch("labeille.runner.validate_target_python", return_value="3.15.0a5")
     def test_runs_survey(
         self,

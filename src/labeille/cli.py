@@ -322,7 +322,7 @@ def run_cmd(
     install_from: str,
 ) -> None:
     """Run test suites against a JIT-enabled Python build and detect crashes."""
-    from labeille.io_utils import generate_run_id
+    from labeille.io_utils import extract_minor_version, generate_run_id
     from labeille.registry import default_registry_dir
 
     if registry_dir is None:
@@ -330,7 +330,6 @@ def run_cmd(
 
     from labeille.runner import (
         RunnerConfig,
-        extract_python_minor_version,
         run_all,
         validate_target_python,
     )
@@ -413,7 +412,7 @@ def run_cmd(
         skip_extensions=skip_extensions,
         skip_completed=skip_completed,
         force_run=force_run,
-        target_python_version=extract_python_minor_version(python_version),
+        target_python_version=extract_minor_version(python_version),
         stop_after_crash=stop_after_crash,
         env_overrides=env_overrides,
         dry_run=dry_run,
