@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from labeille.io_utils import load_json_file, load_jsonl, utc_now_iso
+from labeille.io_utils import dataclass_from_dict, load_json_file, load_jsonl, utc_now_iso
 from labeille.registry import Index, PackageEntry
 
 
@@ -42,22 +42,7 @@ class RunMeta:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> RunMeta:
         """Create a RunMeta from a JSON-loaded dict, tolerating missing keys."""
-        return cls(
-            run_id=data.get("run_id", ""),
-            started_at=data.get("started_at", ""),
-            finished_at=data.get("finished_at", ""),
-            target_python=data.get("target_python", ""),
-            python_version=data.get("python_version", ""),
-            jit_enabled=data.get("jit_enabled", False),
-            hostname=data.get("hostname", ""),
-            platform=data.get("platform", ""),
-            packages_tested=data.get("packages_tested", 0),
-            packages_skipped=data.get("packages_skipped", 0),
-            crashes_found=data.get("crashes_found", 0),
-            total_duration_seconds=data.get("total_duration_seconds", 0.0),
-            cli_args=data.get("cli_args", []),
-            env_overrides=data.get("env_overrides", {}),
-        )
+        return dataclass_from_dict(cls, data)
 
 
 @dataclass
@@ -88,28 +73,7 @@ class PackageResult:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> PackageResult:
         """Create a PackageResult from a JSON-loaded dict."""
-        return cls(
-            package=data.get("package", ""),
-            repo=data.get("repo"),
-            package_version=data.get("package_version"),
-            git_revision=data.get("git_revision"),
-            status=data.get("status", "error"),
-            exit_code=data.get("exit_code", -1),
-            signal=data.get("signal"),
-            crash_signature=data.get("crash_signature"),
-            duration_seconds=data.get("duration_seconds", 0.0),
-            install_duration_seconds=data.get("install_duration_seconds", 0.0),
-            test_command=data.get("test_command", ""),
-            timeout_hit=data.get("timeout_hit", False),
-            stderr_tail=data.get("stderr_tail", ""),
-            installed_dependencies=data.get("installed_dependencies", {}),
-            error_message=data.get("error_message"),
-            requested_revision=data.get("requested_revision"),
-            install_from=data.get("install_from", ""),
-            sdist_version=data.get("sdist_version"),
-            sdist_tag_matched=data.get("sdist_tag_matched"),
-            timestamp=data.get("timestamp", ""),
-        )
+        return dataclass_from_dict(cls, data)
 
 
 class RunData:
