@@ -11,7 +11,13 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Literal
 
-from labeille.io_utils import dataclass_from_dict, load_json_file, load_jsonl, utc_now_iso
+from labeille.io_utils import (
+    dataclass_from_dict,
+    extract_minor_version,
+    load_json_file,
+    load_jsonl,
+    utc_now_iso,
+)
 from labeille.registry import Index, PackageEntry
 
 
@@ -133,16 +139,6 @@ class RunData:
         if not results_file.exists():
             return []
         return load_jsonl(results_file, PackageResult.from_dict)
-
-
-def extract_minor_version(version_string: str) -> str:
-    """Extract major.minor from a full Python version string.
-
-    Delegates to :func:`labeille.io_utils.extract_minor_version`.
-    """
-    from labeille.io_utils import extract_minor_version as _extract
-
-    return _extract(version_string)
 
 
 class ResultsStore:
