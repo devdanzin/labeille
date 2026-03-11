@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING
 import click
 
 if TYPE_CHECKING:
+    from labeille.runner import RunnerConfig
     from labeille.scan_deps import ScanResult
 
 from labeille import __version__
@@ -159,6 +160,127 @@ def resolve(
     click.echo(f"Failed:            {summary.failed}")
     if dry_run:
         click.echo(f"Skipped (dry-run): {summary.skipped}")
+
+
+def _build_run_config(  # noqa: PLR0913
+    *,
+    target_python: Path,
+    python_version: str,
+    registry_dir: Path,
+    results_dir: Path,
+    top_n: int | None,
+    packages_csv: str | None,
+    skip_extensions: bool,
+    skip_completed: bool,
+    force_run: bool,
+    stop_after_crash: int | None,
+    timeout: int,
+    env_pairs: tuple[str, ...],
+    run_id: str | None,
+    dry_run: bool,
+    verbose: bool,
+    quiet: bool,
+    keep_work_dirs: bool,
+    refresh_venvs: bool,
+    repos_dir: Path | None,
+    venvs_dir: Path | None,
+    extra_deps: str | None,
+    test_command_override: str | None,
+    test_command_suffix: str | None,
+    repo_overrides_raw: tuple[str, ...],
+    clone_depth: int | None,
+    no_shallow: bool,
+    work_dir: Path | None,
+    workers: int,
+    installer: str,
+    install_from: str,
+) -> RunnerConfig:
+    """Validate CLI inputs and build a RunnerConfig."""
+    from labeille.io_utils import extract_minor_version, generate_run_id
+    from labeille.runner import RunnerConfig, parse_package_specs, parse_repo_overrides
+
+    env_overrides = parse_env_pairs(env_pairs)
+
+    # Parse packages filter (supports name@revision syntax).
+    packages_filter: list[str] | None = None
+    revision_overrides: dict[str, str] = {}
+    if packages_csv:
+        packages_filter, revision_overrides = parse_package_specs(packages_csv)
+        if not packages_filter:
+            packages_filter = None
+
+    # Resolve clone depth: --no-shallow wins, then --clone-depth.
+    effective_clone_depth: int | None = None
+    if no_shallow:
+        effective_clone_depth = 0
+    elif clone_depth is not None:
+        effective_clone_depth = clone_depth
+
+    # Warn if both test command override and suffix are set.
+    if test_command_override and test_command_suffix:
+        click.echo(
+            "Warning: --test-command-override is set, --test-command-suffix will be ignored.",
+            err=True,
+        )
+
+    # Parse repo overrides.
+    try:
+        repo_overrides = parse_repo_overrides(repo_overrides_raw)
+    except ValueError as exc:
+        raise click.UsageError(str(exc)) from exc
+
+    # Generate run ID.
+    if run_id is None:
+        run_id = generate_run_id("run")
+
+    # --work-dir sets both --repos-dir and --venvs-dir as defaults.
+    if work_dir is not None:
+        if repos_dir is None:
+            repos_dir = work_dir / "repos"
+        if venvs_dir is None:
+            venvs_dir = work_dir / "venvs"
+
+    # Warn when only one of --repos-dir / --venvs-dir is set: the other
+    # directory will use a temporary path and be cleaned up after the run.
+    if (repos_dir is None) != (venvs_dir is None):
+        missing = "--venvs-dir" if venvs_dir is None else "--repos-dir"
+        click.echo(
+            f"Warning: {missing} is not set; those directories will be temporary.",
+            err=True,
+        )
+
+    return RunnerConfig(
+        target_python=target_python,
+        registry_dir=registry_dir,
+        results_dir=results_dir,
+        run_id=run_id,
+        timeout=timeout,
+        top_n=top_n,
+        packages_filter=packages_filter,
+        skip_extensions=skip_extensions,
+        skip_completed=skip_completed,
+        force_run=force_run,
+        target_python_version=extract_minor_version(python_version),
+        stop_after_crash=stop_after_crash,
+        env_overrides=env_overrides,
+        dry_run=dry_run,
+        verbose=verbose,
+        quiet=quiet,
+        keep_work_dirs=keep_work_dirs,
+        refresh_venvs=refresh_venvs,
+        workers=workers,
+        repos_dir=repos_dir,
+        venvs_dir=venvs_dir,
+        cli_args=sys.argv[1:],
+        clone_depth_override=effective_clone_depth,
+        revision_overrides=revision_overrides,
+        extra_deps=parse_csv_list(extra_deps),
+        test_command_override=test_command_override,
+        test_command_suffix=test_command_suffix,
+        repo_overrides=repo_overrides,
+        installer=installer,  # type: ignore[arg-type]  # Click Choice returns str
+        install_from=install_from,  # type: ignore[arg-type]  # Click Choice returns str
+    )
 
 
 @main.command("run")
@@ -360,23 +482,17 @@ def run_cmd(
     install_from: str,
 ) -> None:
     """Run test suites against a JIT-enabled Python build and detect crashes."""
-    from labeille.io_utils import extract_minor_version, generate_run_id
     from labeille.registry import default_registry_dir
-
-    if registry_dir is None:
-        registry_dir = default_registry_dir()
-
-    from labeille.runner import (
-        RunnerConfig,
-        run_all,
-        validate_target_python,
-    )
+    from labeille.runner import run_all, validate_target_python
     from labeille.summary import format_summary
 
     setup_logging(verbose=verbose, quiet=quiet, log_file=log_file)
 
     if workers < 1:
         raise click.UsageError("--workers must be at least 1")
+
+    if registry_dir is None:
+        registry_dir = default_registry_dir()
 
     # Validate target python up front.
     try:
@@ -385,94 +501,40 @@ def run_cmd(
         raise click.ClickException(str(exc)) from exc
     click.echo(f"Target Python: {python_version}")
 
-    env_overrides = parse_env_pairs(env_pairs)
-
-    # Parse packages filter (supports name@revision syntax).
-    packages_filter: list[str] | None = None
-    revision_overrides: dict[str, str] = {}
-    if packages_csv:
-        from labeille.runner import parse_package_specs
-
-        packages_filter, revision_overrides = parse_package_specs(packages_csv)
-        if not packages_filter:
-            packages_filter = None
-
-    # Resolve clone depth: --no-shallow wins, then --clone-depth.
-    effective_clone_depth: int | None = None
-    if no_shallow:
-        effective_clone_depth = 0
-    elif clone_depth is not None:
-        effective_clone_depth = clone_depth
-
-    # Warn if both test command override and suffix are set.
-    if test_command_override and test_command_suffix:
-        click.echo(
-            "Warning: --test-command-override is set, --test-command-suffix will be ignored.",
-            err=True,
-        )
-
-    # Parse repo overrides.
-    from labeille.runner import parse_repo_overrides
-
-    try:
-        repo_overrides = parse_repo_overrides(repo_overrides_raw)
-    except ValueError as exc:
-        raise click.UsageError(str(exc)) from exc
-
-    # Generate run ID.
-    if run_id is None:
-        run_id = generate_run_id("run")
-
-    # --work-dir sets both --repos-dir and --venvs-dir as defaults.
-    if work_dir is not None:
-        if repos_dir is None:
-            repos_dir = work_dir / "repos"
-        if venvs_dir is None:
-            venvs_dir = work_dir / "venvs"
-
-    # Warn when only one of --repos-dir / --venvs-dir is set: the other
-    # directory will use a temporary path and be cleaned up after the run.
-    if (repos_dir is None) != (venvs_dir is None):
-        missing = "--venvs-dir" if venvs_dir is None else "--repos-dir"
-        click.echo(
-            f"Warning: {missing} is not set; those directories will be temporary.",
-            err=True,
-        )
-
-    config = RunnerConfig(
+    config = _build_run_config(
         target_python=target_python,
+        python_version=python_version,
         registry_dir=registry_dir,
         results_dir=results_dir,
-        run_id=run_id,
-        timeout=timeout,
         top_n=top_n,
-        packages_filter=packages_filter,
+        packages_csv=packages_csv,
         skip_extensions=skip_extensions,
         skip_completed=skip_completed,
         force_run=force_run,
-        target_python_version=extract_minor_version(python_version),
         stop_after_crash=stop_after_crash,
-        env_overrides=env_overrides,
+        timeout=timeout,
+        env_pairs=env_pairs,
+        run_id=run_id,
         dry_run=dry_run,
         verbose=verbose,
         quiet=quiet,
         keep_work_dirs=keep_work_dirs,
         refresh_venvs=refresh_venvs,
-        workers=workers,
         repos_dir=repos_dir,
         venvs_dir=venvs_dir,
-        cli_args=sys.argv[1:],
-        clone_depth_override=effective_clone_depth,
-        revision_overrides=revision_overrides,
-        extra_deps=parse_csv_list(extra_deps),
+        extra_deps=extra_deps,
         test_command_override=test_command_override,
         test_command_suffix=test_command_suffix,
-        repo_overrides=repo_overrides,
-        installer=installer,  # type: ignore[arg-type]  # Click Choice returns str
-        install_from=install_from,  # type: ignore[arg-type]  # Click Choice returns str
+        repo_overrides_raw=repo_overrides_raw,
+        clone_depth=clone_depth,
+        no_shallow=no_shallow,
+        work_dir=work_dir,
+        workers=workers,
+        installer=installer,
+        install_from=install_from,
     )
 
-    click.echo(f"Run ID: {run_id}")
+    click.echo(f"Run ID: {config.run_id}")
     if dry_run:
         click.echo("(dry-run mode — no tests will be executed)")
 
