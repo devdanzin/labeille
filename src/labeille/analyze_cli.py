@@ -26,10 +26,10 @@ from labeille.analyze import (
     build_reproduce_command,
     categorize_install_errors,
     compare_runs,
-    extract_minor_version,
     generate_registry_report,
     result_detail,
 )
+from labeille.io_utils import extract_minor_version
 from labeille.formatting import (
     format_duration,
     format_histogram,
