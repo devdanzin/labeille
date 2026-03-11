@@ -262,6 +262,36 @@ def has_monotonic_trend(
 # ---------------------------------------------------------------------------
 
 
+def _make_anomaly(
+    package: str,
+    condition: str,
+    anomaly_type: Literal["high_cv", "bimodal", "outlier_heavy", "status_mixed", "trend"],
+    severity: Literal["info", "warning", "error"],
+    metric_value: float,
+    threshold: float,
+    description: str,
+    recommendation: str,
+) -> PackageAnomaly:
+    """Create a PackageAnomaly with the given fields."""
+    return PackageAnomaly(
+        package=package,
+        condition=condition,
+        anomaly_type=anomaly_type,
+        severity=severity,
+        metric_value=metric_value,
+        threshold=threshold,
+        description=description,
+        recommendation=recommendation,
+    )
+
+
+_HIGH_CV_RECOMMENDATION = (
+    "Investigate test suite for non-determinism (network calls, "
+    "random seeds, disk I/O). Consider adding "
+    "'--test-command-suffix \"-p no:randomly\"' or pinning seeds."
+)
+
+
 def detect_condition_anomalies(
     package: str,
     condition: str,
@@ -310,14 +340,14 @@ def detect_condition_anomalies(
         status_counts = {s: statuses.count(s) for s in unique_statuses}
         parts = ", ".join(f"{count} '{s}'" for s, count in sorted(status_counts.items()))
         anomalies.append(
-            PackageAnomaly(
-                package=package,
-                condition=condition,
+            _make_anomaly(
+                package,
+                condition,
                 anomaly_type="status_mixed",
                 severity="error",
                 metric_value=float(len(unique_statuses)),
                 threshold=1.0,
-                description=(f"{len(measured)} iterations have mixed statuses: {parts}."),
+                description=f"{len(measured)} iterations have mixed statuses: {parts}.",
                 recommendation=(
                     "Test suite has intermittent failures. Fix or exclude "
                     "this package from benchmarking."
@@ -330,9 +360,9 @@ def detect_condition_anomalies(
         cv = cond_result.wall_time_stats.cv
         if cv > cv_error_threshold:
             anomalies.append(
-                PackageAnomaly(
-                    package=package,
-                    condition=condition,
+                _make_anomaly(
+                    package,
+                    condition,
                     anomaly_type="high_cv",
                     severity="error",
                     metric_value=cv,
@@ -341,18 +371,14 @@ def detect_condition_anomalies(
                         f"Wall time CV is {cv * 100:.1f}% "
                         f"(threshold: {cv_error_threshold * 100:.0f}%)."
                     ),
-                    recommendation=(
-                        "Investigate test suite for non-determinism (network calls, "
-                        "random seeds, disk I/O). Consider adding "
-                        "'--test-command-suffix \"-p no:randomly\"' or pinning seeds."
-                    ),
+                    recommendation=_HIGH_CV_RECOMMENDATION,
                 )
             )
         elif cv > cv_warning_threshold:
             anomalies.append(
-                PackageAnomaly(
-                    package=package,
-                    condition=condition,
+                _make_anomaly(
+                    package,
+                    condition,
                     anomaly_type="high_cv",
                     severity="warning",
                     metric_value=cv,
@@ -361,20 +387,16 @@ def detect_condition_anomalies(
                         f"Wall time CV is {cv * 100:.1f}% "
                         f"(threshold: {cv_warning_threshold * 100:.0f}%)."
                     ),
-                    recommendation=(
-                        "Investigate test suite for non-determinism (network calls, "
-                        "random seeds, disk I/O). Consider adding "
-                        "'--test-command-suffix \"-p no:randomly\"' or pinning seeds."
-                    ),
+                    recommendation=_HIGH_CV_RECOMMENDATION,
                 )
             )
 
     # 3. bimodal
     if is_bimodal(wall_times, gap_factor=gap_factor):
         anomalies.append(
-            PackageAnomaly(
-                package=package,
-                condition=condition,
+            _make_anomaly(
+                package,
+                condition,
                 anomaly_type="bimodal",
                 severity="warning",
                 metric_value=0.0,
@@ -394,9 +416,9 @@ def detect_condition_anomalies(
     outlier_fraction = n_outliers / n_measured if n_measured else 0.0
     if outlier_fraction > outlier_fraction_threshold:
         anomalies.append(
-            PackageAnomaly(
-                package=package,
-                condition=condition,
+            _make_anomaly(
+                package,
+                condition,
                 anomaly_type="outlier_heavy",
                 severity="info",
                 metric_value=outlier_fraction,
@@ -416,45 +438,38 @@ def detect_condition_anomalies(
     has_trend, rho = has_monotonic_trend(wall_times, correlation_threshold=trend_threshold)
     if has_trend:
         if rho > 0:
-            anomalies.append(
-                PackageAnomaly(
-                    package=package,
-                    condition=condition,
-                    anomaly_type="trend",
-                    severity="warning",
-                    metric_value=rho,
-                    threshold=trend_threshold,
-                    description=(
-                        f"Wall times show increasing trend "
-                        f"(\u03c1={rho:.2f}), suggesting memory leak "
-                        f"or growing state."
-                    ),
-                    recommendation=(
-                        "Increase warmup iterations or investigate "
-                        "growing resource usage across iterations."
-                    ),
-                )
+            desc = (
+                f"Wall times show increasing trend "
+                f"(\u03c1={rho:.2f}), suggesting memory leak or growing state."
             )
+            rec = (
+                "Increase warmup iterations or investigate "
+                "growing resource usage across iterations."
+            )
+            severity: Literal["info", "warning", "error"] = "warning"
         else:
-            anomalies.append(
-                PackageAnomaly(
-                    package=package,
-                    condition=condition,
-                    anomaly_type="trend",
-                    severity="info",
-                    metric_value=rho,
-                    threshold=trend_threshold,
-                    description=(
-                        f"Wall times show decreasing trend "
-                        f"(\u03c1={rho:.2f}), suggesting warmup effects "
-                        f"not captured by warmup iterations."
-                    ),
-                    recommendation=(
-                        "Increase warmup iterations to ensure the "
-                        "system reaches steady state before measuring."
-                    ),
-                )
+            desc = (
+                f"Wall times show decreasing trend "
+                f"(\u03c1={rho:.2f}), suggesting warmup effects "
+                f"not captured by warmup iterations."
             )
+            rec = (
+                "Increase warmup iterations to ensure the "
+                "system reaches steady state before measuring."
+            )
+            severity = "info"
+        anomalies.append(
+            _make_anomaly(
+                package,
+                condition,
+                anomaly_type="trend",
+                severity=severity,
+                metric_value=rho,
+                threshold=trend_threshold,
+                description=desc,
+                recommendation=rec,
+            )
+        )
 
     return anomalies
 
