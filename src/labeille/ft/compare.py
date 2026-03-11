@@ -15,6 +15,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from labeille.ft.results import FTPackageResult, FTRunSummary
+
 
 @dataclass
 class PackageTransition:
@@ -94,8 +96,8 @@ class FTComparisonResult:
 
 
 def compare_ft_runs(
-    results_a: list[Any],
-    results_b: list[Any],
+    results_a: list[FTPackageResult],
+    results_b: list[FTPackageResult],
     *,
     label_a: str = "run_a",
     label_b: str = "run_b",
@@ -114,8 +116,6 @@ def compare_ft_runs(
     Returns:
         FTComparisonResult with all transitions and statistics.
     """
-    from labeille.ft.results import FTRunSummary
-
     comp = FTComparisonResult(label_a=label_a, label_b=label_b)
 
     # Index results by package name.
@@ -193,7 +193,7 @@ def compare_ft_runs(
     return comp
 
 
-def _classify_transition(ra: Any, rb: Any) -> str:
+def _classify_transition(ra: FTPackageResult, rb: FTPackageResult) -> str:
     """Classify a transition as improvement, regression, or unchanged.
 
     Uses category severity and pass rate to determine direction.
@@ -220,7 +220,7 @@ def _classify_transition(ra: Any, rb: Any) -> str:
     return "regression"
 
 
-def _describe_transition(ra: Any, rb: Any, direction: str) -> str:
+def _describe_transition(ra: FTPackageResult, rb: FTPackageResult, direction: str) -> str:
     """Generate a human-readable description of a transition."""
     parts = [f"{ra.category.value} → {rb.category.value}"]
 

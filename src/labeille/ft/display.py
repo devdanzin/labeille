@@ -9,7 +9,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from labeille.ft.results import FailureCategory
+from labeille.ft.analysis import FlakinessProfile, TriageEntry
+from labeille.ft.compare import FTComparisonResult
+from labeille.ft.results import FailureCategory, FTPackageResult
 
 
 def format_compatibility_summary(
@@ -99,7 +101,7 @@ def format_compatibility_summary(
 
 
 def format_package_table(
-    results: list[Any],
+    results: list[FTPackageResult],
     *,
     sort_by: str = "category",
     max_rows: int | None = None,
@@ -183,7 +185,7 @@ def format_package_table(
 
 
 def format_triage_list(
-    triage: list[Any],
+    triage: list[TriageEntry],
     *,
     max_entries: int = 20,
 ) -> str:
@@ -198,8 +200,6 @@ def format_triage_list(
          3. aiohttp        ~ intermittent (score: 35)  severity:intermittent
          ...
     """
-    from labeille.ft.results import FailureCategory
-
     lines = ["Investigation Priority", "──────────────────────"]
 
     for i, entry in enumerate(triage[:max_entries], 1):
@@ -216,7 +216,7 @@ def format_triage_list(
     return "\n".join(lines)
 
 
-def format_flakiness_profile(profile: Any) -> str:
+def format_flakiness_profile(profile: FlakinessProfile) -> str:
     """Format a single flakiness profile for display.
 
     Output::
@@ -268,7 +268,7 @@ def format_flakiness_profile(profile: Any) -> str:
 
 
 def format_ft_comparison(
-    comp: Any,
+    comp: FTComparisonResult,
     *,
     label_a: str = "",
     label_b: str = "",

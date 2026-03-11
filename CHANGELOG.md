@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Extract `run_in_process_group()` into `io_utils.py` as a shared subprocess lifecycle utility, used by both `runner.py` and `bench/timing.py`.
 - `bench/results.py` `append_package_result` now uses shared `append_jsonl` instead of raw `open()`.
 - Replace `RepoHostStats`, `InstallComplexity`, `CompatBlockers` dataclasses with `dict[str, int]` counters on `RegistryReport`, eliminating `getattr`/`setattr` usage.
+- Replace `Any` type annotations with concrete types in `ft/export.py`, `ft/compare.py`, `ft/display.py`.
 
 ### Fixed
 - Type `pkg: Any` parameters as `PackageEntry` in `bench/runner.py` and `ft/runner.py` for type safety.
