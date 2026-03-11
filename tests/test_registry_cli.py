@@ -542,7 +542,7 @@ class TestMigrateCli(unittest.TestCase):
             ["migrate", "--registry-dir", str(self.registry)],
         )
         self.assertNotEqual(result.exit_code, 0)
-        self.assertIn("missing MIGRATION_NAME", result.output)
+        self.assertIn("Missing MIGRATION_NAME", result.output)
 
     def test_unknown_migration(self) -> None:
         result = self.runner.invoke(
@@ -550,7 +550,7 @@ class TestMigrateCli(unittest.TestCase):
             ["migrate", "nonexistent_migration", "--registry-dir", str(self.registry)],
         )
         self.assertNotEqual(result.exit_code, 0)
-        self.assertIn("unknown migration", result.output)
+        self.assertIn("Unknown migration", result.output)
 
 
 class TestSyncCli(unittest.TestCase):

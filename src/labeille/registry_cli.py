@@ -282,8 +282,7 @@ def remove_field_cmd(
     registry_dir = _auto_detect_registry(registry_dir)
 
     if field_name in PROTECTED_FIELDS:
-        click.echo(f"Error: '{field_name}' is a protected field and cannot be removed.")
-        sys.exit(1)
+        raise click.ClickException(f"'{field_name}' is a protected field and cannot be removed.")
 
     filters = _parse_filters(where_exprs)
     packages_list = parse_csv_list(packages_csv) or None
@@ -531,8 +530,9 @@ def remove_index_field_cmd(
     registry_dir = _auto_detect_registry(registry_dir)
 
     if field_name in PROTECTED_INDEX_FIELDS:
-        click.echo(f"Error: '{field_name}' is a protected index field and cannot be removed.")
-        sys.exit(1)
+        raise click.ClickException(
+            f"'{field_name}' is a protected index field and cannot be removed."
+        )
 
     result = remove_index_field_op(registry_dir, field_name, dry_run=not apply)
 
@@ -592,24 +592,22 @@ def migrate_cmd(
         return
 
     if migration_name is None:
-        click.echo("Error: missing MIGRATION_NAME. Use --list to see available migrations.")
-        sys.exit(1)
+        raise click.ClickException(
+            "Missing MIGRATION_NAME. Use --list to see available migrations."
+        )
 
     migration = get_migration(migration_name)
     if migration is None:
-        click.echo(f"Error: unknown migration '{migration_name}'.")
         available = list_migrations()
-        if available:
-            click.echo("Available migrations:")
-            for m in available:
-                click.echo(f"  {m.name}")
-        sys.exit(1)
+        names = ", ".join(m.name for m in available) if available else "none"
+        raise click.ClickException(f"Unknown migration '{migration_name}'. Available: {names}")
 
     if has_been_applied(registry_dir, migration_name):
         date = get_applied_date(registry_dir, migration_name)
-        click.echo(f"Error: migration '{migration_name}' was already applied on {date}.")
-        click.echo("To re-run, manually remove the entry from registry/migrations.log.")
-        sys.exit(1)
+        raise click.ClickException(
+            f"Migration '{migration_name}' was already applied on {date}. "
+            f"To re-run, manually remove the entry from registry/migrations.log."
+        )
 
     result = execute_migration(migration, registry_dir, dry_run=not apply)
 
@@ -690,25 +688,24 @@ def sync_cmd(
                 timeout=120,
             )
         except subprocess.TimeoutExpired:
-            click.echo("Pull timed out after 120 seconds.", err=True)
-            sys.exit(1)
+            raise click.ClickException("Pull timed out after 120 seconds.")
         if result.returncode != 0:
-            click.echo(f"Pull failed (exit {result.returncode}).", err=True)
+            detail = ""
             if not verbose and result.stderr:
-                click.echo(result.stderr.strip(), err=True)
-            click.echo(f"Try: cd {target} && git pull --rebase", err=True)
-            sys.exit(1)
+                detail = f"\n{result.stderr.strip()}"
+            raise click.ClickException(
+                f"Pull failed (exit {result.returncode}).{detail}\n"
+                f"Try: cd {target} && git pull --rebase"
+            )
         click.echo("Registry updated.")
     elif target.exists() and any(target.iterdir()):
         # Directory exists but isn't a git repo.
-        click.echo(
+        raise click.ClickException(
             f"Directory {target} exists but is not a git repository.\n"
             f"If this is a manually managed registry, use --registry-dir "
             f"to point labeille at it.\n"
-            f"To use laruche, remove {target} and re-run this command.",
-            err=True,
+            f"To use laruche, remove {target} and re-run this command."
         )
-        sys.exit(1)
     else:
         # Fresh clone.
         click.echo(f"Cloning laruche registry into {target}...")
@@ -721,11 +718,10 @@ def sync_cmd(
                 timeout=120,
             )
         except subprocess.TimeoutExpired:
-            click.echo("Clone timed out after 120 seconds.", err=True)
-            sys.exit(1)
+            raise click.ClickException("Clone timed out after 120 seconds.")
         if result.returncode != 0:
-            click.echo(f"Clone failed (exit {result.returncode}).", err=True)
+            detail = ""
             if not verbose and result.stderr:
-                click.echo(result.stderr.strip(), err=True)
-            sys.exit(1)
+                detail = f"\n{result.stderr.strip()}"
+            raise click.ClickException(f"Clone failed (exit {result.returncode}).{detail}")
         click.echo(f"Registry cloned to {target}.")
