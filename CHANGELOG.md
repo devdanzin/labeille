@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Enhanced
+- Extract `_make_anomaly` helper in `bench/anomaly.py` to deduplicate 9 identical `PackageAnomaly` constructions in `detect_condition_anomalies`.
 - `bench run` and `ft run` now use shared `setup_logging()` for consistent log formatting.
 - Simplify `_run_package_inner` in `runner.py` by extracting 4 helper functions: `_align_sdist_version`, `_setup_venv`, `_install_in_venv`, `_check_import`.
 - Split `_check_import_and_extras` into `_check_import` and `_install_extra_deps` for single-responsibility.
