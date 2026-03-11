@@ -35,11 +35,17 @@ ASAN_OPTIONS=detect_leaks=0 PYTHON_JIT=0 .venv/bin/python -m unittest discover t
 - Click CLI framework — Click 8.3+ (no `mix_stderr` in CliRunner)
 
 ## Architecture
-- `cli.py` — Click CLI entry point with `resolve`, `run`, `scan-deps`, `registry`, and `analyze` subcommands
+- `cli.py` — Click CLI entry point with `resolve`, `run`, `scan-deps`, `bisect`, `registry`, `analyze`, `bench`, `ft`, and `compat` subcommands
+- `cli_utils.py` — Shared Click helpers (parse_csv_list, parse_env_pairs)
 - `resolve.py` — PyPI metadata fetching, repo URL extraction, registry building
 - `runner.py` — Clone repos, create venvs, run test suites, detect crashes
+- `runner_models.py` — Runner data models (RunnerConfig, PackageResult, RunSummary)
+- `repo_ops.py` — Git clone, checkout, sdist install operations
 - `crash.py` — Crash detection from exit codes and stderr patterns
 - `classifier.py` — Pure Python vs C extension classification from wheel tags
+- `bisect.py` — Git bisection to find crash-introducing commits
+- `compat.py` — C extension compatibility survey (build, classify failures)
+- `compat_cli.py` — Compat CLI subcommands (survey, compare, report)
 - `registry.py` — YAML registry I/O (reads from laruche registry or custom path)
 - `registry_cli.py` — Batch registry management CLI (add/remove/rename/set fields, validate, migrate)
 - `migrations.py` — Registry migration framework (named transformations with logging and dry-run)
@@ -51,12 +57,17 @@ ASAN_OPTIONS=detect_leaks=0 PYTHON_JIT=0 .venv/bin/python -m unittest discover t
 - `scan_deps.py` — AST-based test dependency scanner
 - `import_map.py` — Import name to pip package mapping (100+ entries)
 - `yaml_lines.py` — Line-level YAML manipulation preserving formatting
+- `io_utils.py` — Shared I/O utilities (atomic writes, JSON/YAML loading, process groups)
 - `logging.py` — Structured logging setup
+- `bench/` — Benchmarking subsystem (runner, config, results, stats, compare, display, export, anomaly, tracking, trends, timing, cache, constraints, system)
+- `bench_cli.py` — Benchmark CLI subcommands (run, compare, export, track)
+- `ft/` — Free-threading subsystem (runner, results, analysis, compare, display, export, compat)
+- `ft_cli.py` — Free-threading CLI subcommands (run, compare, export, compat)
 
 ## Testing notes
 - Integration tests mock `fetch_pypi_metadata` to avoid network calls
 - Runner tests mock `subprocess.run` and `clone_repo` extensively
-- 546 tests total across 15 test files
+- 2068 tests total across 48 test files
 
 ## Enriching packages
 
