@@ -452,7 +452,7 @@ def get_installed_packages(
             packages = json.loads(proc.stdout)
             return {p["name"]: p["version"] for p in packages}
     except (subprocess.TimeoutExpired, json.JSONDecodeError, KeyError, OSError) as exc:
-        log.info("Could not list installed packages: %s", exc)
+        log.warning("Could not list installed packages: %s", exc)
     return {}
 
 

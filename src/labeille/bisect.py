@@ -368,17 +368,20 @@ def run_bisect(config: BisectConfig) -> BisectResult:
     try:
         # Clone at full depth (bisect needs the full history).
         log.info("Cloning %s (full depth) for bisect...", config.package)
-        if repo_dir.exists():
-            subprocess.run(
-                ["git", "fetch", "origin"],
-                capture_output=True,
-                text=True,
-                cwd=str(repo_dir),
-                timeout=120,
-                check=True,
-            )
-        else:
-            _clone_full(repo_url, repo_dir)
+        try:
+            if repo_dir.exists():
+                subprocess.run(
+                    ["git", "fetch", "origin"],
+                    capture_output=True,
+                    text=True,
+                    cwd=str(repo_dir),
+                    timeout=120,
+                    check=True,
+                )
+            else:
+                _clone_full(repo_url, repo_dir)
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as exc:
+            raise ValueError(f"Failed to clone/fetch {repo_url}: {exc}") from exc
 
         # Resolve symbolic refs to full hashes.
         good_hash = _resolve_rev(repo_dir, config.good_rev)

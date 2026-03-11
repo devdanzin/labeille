@@ -255,8 +255,8 @@ def list_series(tracking_dir: Path) -> list[TrackingSeries]:
         try:
             series = load_series(entry)
             result.append(series)
-        except (ValueError, FileNotFoundError):
-            log.warning("Skipping malformed series in %s", entry)
+        except (ValueError, FileNotFoundError) as exc:
+            log.warning("Skipping malformed series in %s: %s", entry, exc)
             skipped += 1
     if skipped:
         log.warning("Skipped %d malformed series", skipped)

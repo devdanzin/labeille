@@ -54,6 +54,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Deduplicate `extract_minor_version`: move canonical implementation to `io_utils.py`, delegate from `runner.py` and `analyze.py`.
 - Delegate `format_signal_name` in `formatting.py` to `crash.signal_name` instead of duplicating signal conversion logic.
 - Replace inline JSON write in `bench/tracking.py` with `write_meta_json`.
+- Guard `_read_lines` call sites in `registry_ops.py` against `OSError`/`UnicodeDecodeError` to prevent batch operations from crashing on corrupt files.
+- Promote `list_installed_packages` error log from `info` to `warning` in `runner.py`.
+- Promote `iter_jsonl` per-line error log from `debug` to `warning` in `io_utils.py`.
+- Guard build log `write_text` in `compat.py` against `OSError` to prevent filesystem errors from aborting runs.
+- Catch `CalledProcessError` and `TimeoutExpired` from git clone/fetch in `bisect.py` to provide clear error messages.
+- Include exception details in malformed series warning in `bench/tracking.py`.
 
 ### Tests
 - Add 26 tests for `bench track` subcommands: init, add, show, pin, unpin, list, trend, alert.
