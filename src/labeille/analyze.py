@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from labeille.io_utils import dataclass_from_dict, load_json_file, load_jsonl, utc_now_iso
 from labeille.registry import Index, PackageEntry
@@ -53,7 +53,9 @@ class PackageResult:
     repo: str | None = None
     package_version: str | None = None
     git_revision: str | None = None
-    status: str = "error"
+    status: Literal[
+        "pass", "fail", "crash", "timeout", "install_error", "clone_error", "error"
+    ] = "error"
     exit_code: int = -1
     signal: int | None = None
     crash_signature: str | None = None

@@ -10,6 +10,7 @@ import statistics as _stats
 from dataclasses import dataclass, field
 
 from labeille.bench.results import (
+    BenchConditionResult,
     BenchMeta,
     BenchPackageResult,
 )
@@ -346,7 +347,7 @@ def compare_per_test(
 
     # Collect per-test call durations across measured iterations.
     def _collect_call_durations(
-        cond: Any,
+        cond: BenchConditionResult,
     ) -> dict[str, list[float]]:
         durations: dict[str, list[float]] = {}
         for it in cond.measured_iterations:

@@ -24,6 +24,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Use `append_jsonl()` in `migrations.py` instead of raw `open()`/`json.dumps` for pattern consistency.
 
 ### Fixed
+- Replace `ProgressCallback = Any` with `Callable[[BenchProgress], None] | None` in `bench/runner.py`.
+- Replace `list[Any]` with `list[PackageEntry]` in `bench/runner.py` `_run_sequential` and `_run_interleaved`.
+- Replace `cond: Any` with `BenchConditionResult` in `bench/compare.py` `_collect_call_durations`.
+- Replace `Any` return/param types with `BenchConfig` in `bench_cli.py` `_build_base_config` and `_apply_config_overrides`.
+- Add `Literal` types for `BisectStep.status`, `BisectConfig.installer`, `PackageAnomaly.anomaly_type`/`severity`, `ValidationError.severity`, `BenchConfig.installer`, and `analyze.PackageResult.status`.
 - Type `pkg: Any` parameters as `PackageEntry` in `bench/runner.py` and `ft/runner.py` for type safety.
 - Fix `IndexEntry.package` attribute access (should be `.name`) in `ft/runner.py:_select_packages`.
 - Add missing `encoding="utf-8"` to `bench_cli.py` export `write_text()` call.

@@ -12,9 +12,12 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import click
+
+if TYPE_CHECKING:
+    from labeille.bench.config import BenchConfig
 
 from labeille.bench.results import BenchMeta, BenchPackageResult
 from labeille.cli_utils import parse_csv_list
@@ -31,7 +34,7 @@ def bench() -> None:
 # ---------------------------------------------------------------------------
 
 
-def _build_base_config(ctx: click.Context) -> Any:
+def _build_base_config(ctx: click.Context) -> BenchConfig:
     """Build a BenchConfig from Click context parameters.
 
     Creates the initial config from either a YAML profile or CLI defaults,
@@ -109,7 +112,7 @@ def _build_base_config(ctx: click.Context) -> Any:
     return config
 
 
-def _apply_config_overrides(config: Any, ctx: click.Context) -> Any:
+def _apply_config_overrides(config: BenchConfig, ctx: click.Context) -> BenchConfig:
     """Apply shared CLI overrides and finalize a BenchConfig.
 
     Handles test overrides, env vars, adaptive settings, resource

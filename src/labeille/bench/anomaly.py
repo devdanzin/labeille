@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Literal
 
 from labeille.io_utils import dataclass_from_dict
 
@@ -34,9 +34,8 @@ class PackageAnomaly:
 
     package: str
     condition: str
-    anomaly_type: str
-    # One of: "high_cv", "bimodal", "outlier_heavy", "status_mixed", "trend"
-    severity: str  # "info", "warning", "error"
+    anomaly_type: Literal["high_cv", "bimodal", "outlier_heavy", "status_mixed", "trend"]
+    severity: Literal["info", "warning", "error"]
     metric_value: float  # The value that triggered the anomaly
     threshold: float  # The threshold it exceeded
     description: str  # Human-readable explanation

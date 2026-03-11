@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from labeille.bench.constraints import ResourceConstraints
 from labeille.bench.results import ConditionDef
@@ -85,7 +85,7 @@ class BenchConfig:
     run_dangerously_as_root: bool = False  # Allow running as root (for containers)
 
     # Installer backend
-    installer: str = "auto"
+    installer: Literal["auto", "uv", "pip"] = "auto"
 
     # CLI provenance
     cli_args: list[str] = field(default_factory=list)
@@ -124,7 +124,7 @@ class ValidationError:
 
     field: str
     message: str
-    severity: str = "error"  # "error" or "warning"
+    severity: Literal["error", "warning"] = "error"
 
 
 def validate_config(config: BenchConfig) -> list[ValidationError]:
