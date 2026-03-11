@@ -31,11 +31,11 @@ def bench() -> None:
 # ---------------------------------------------------------------------------
 
 
-def _build_bench_config(params: dict[str, Any]) -> Any:
-    """Build a BenchConfig from CLI parameters.
+def _build_base_config(ctx: click.Context) -> Any:
+    """Build a BenchConfig from Click context parameters.
 
-    Accepts the full ``locals()`` dict from ``run()``.  Returns a fully
-    resolved ``BenchConfig`` ready for ``BenchRunner``.
+    Creates the initial config from either a YAML profile or CLI defaults,
+    then applies inline conditions.
     """
     from labeille.bench.config import (
         BenchConfig,
@@ -43,78 +43,48 @@ def _build_bench_config(params: dict[str, Any]) -> Any:
         load_profile,
         parse_inline_condition,
     )
-    from labeille.bench.runner import quick_config
     from labeille.registry import default_registry_dir
 
-    # Unpack parameters.
-    profile_path: Path | None = params["profile_path"]
-    inline_conditions: tuple[str, ...] = params["inline_conditions"]
-    target_python: Path | None = params["target_python"]
-    iterations: int | None = params["iterations"]
-    warmup: int | None = params["warmup"]
-    timeout: int | None = params["timeout"]
-    alternate: bool | None = params["alternate"]
-    interleave: bool = params["interleave"]
-    packages: str | None = params["packages"]
-    top_n: int | None = params["top_n"]
-    extra_deps: str | None = params["extra_deps"]
-    test_command_suffix: str | None = params["test_command_suffix"]
-    registry_dir: Path | None = params["registry_dir"]
-    repos_dir: Path | None = params["repos_dir"]
-    venvs_dir: Path | None = params["venvs_dir"]
-    work_dir: Path | None = params["work_dir"]
-    results_dir: Path = params["results_dir"]
-    name: str | None = params["name"]
-    check_stability: bool = params["check_stability"]
-    wait_for_stability: bool = params["wait_for_stability"]
-    adaptive: bool = params["adaptive"]
-    adaptive_threshold: float | None = params["adaptive_threshold"]
-    adaptive_min_iterations: int | None = params["adaptive_min_iterations"]
-    quick: bool = params["quick"]
-    per_test_timing: bool = params["per_test_timing"]
-    memory_limit: int | None = params["memory_limit"]
-    cpu_affinity: str | None = params["cpu_affinity"]
-    cpu_time_limit: int | None = params["cpu_time_limit"]
-    drop_caches: bool = params["drop_caches"]
-    warm_vs_cold: bool = params["warm_vs_cold"]
-    run_dangerously_as_root: bool = params["run_dangerously_as_root"]
-    installer: str = params["installer"]
-    env_pairs: tuple[str, ...] = params["env_pairs"]
-
+    p = ctx.params
+    registry_dir: Path | None = p["registry_dir"]
     if registry_dir is None:
         registry_dir = default_registry_dir()
 
-    # Build CLI overrides for profile merging.
-    cli_overrides: dict[str, object] = {
-        "target_python": str(target_python) if target_python else None,
-        "iterations": iterations,
-        "warmup": warmup,
-        "timeout": timeout,
-        "registry_dir": registry_dir,
-        "repos_dir": repos_dir or (work_dir and work_dir / "repos"),
-        "venvs_dir": venvs_dir or (work_dir and work_dir / "venvs"),
-        "results_dir": results_dir,
-        "name": name,
-        "check_stability": check_stability,
-        "wait_for_stability": wait_for_stability,
-        "alternate": alternate,
-        "interleave": interleave,
-        "packages_filter": parse_csv_list(packages) or None,
-        "top_n": top_n,
-        "adaptive": adaptive or None,
-        "adaptive_threshold": adaptive_threshold,
-        "adaptive_min_iterations": adaptive_min_iterations,
-    }
+    repos_dir: Path | None = p["repos_dir"]
+    venvs_dir: Path | None = p["venvs_dir"]
+    work_dir: Path | None = p["work_dir"]
+    target_python: Path | None = p["target_python"]
+    packages: str | None = p["packages"]
 
-    if profile_path:
-        profile_data = load_profile(profile_path)
+    if p["profile_path"]:
+        cli_overrides: dict[str, object] = {
+            "target_python": str(target_python) if target_python else None,
+            "iterations": p["iterations"],
+            "warmup": p["warmup"],
+            "timeout": p["timeout"],
+            "registry_dir": registry_dir,
+            "repos_dir": repos_dir or (work_dir and work_dir / "repos"),
+            "venvs_dir": venvs_dir or (work_dir and work_dir / "venvs"),
+            "results_dir": p["results_dir"],
+            "name": p["name"],
+            "check_stability": p["check_stability"],
+            "wait_for_stability": p["wait_for_stability"],
+            "alternate": p["alternate"],
+            "interleave": p["interleave"],
+            "packages_filter": parse_csv_list(packages) or None,
+            "top_n": p["top_n"],
+            "adaptive": p["adaptive"] or None,
+            "adaptive_threshold": p["adaptive_threshold"],
+            "adaptive_min_iterations": p["adaptive_min_iterations"],
+        }
+        profile_data = load_profile(p["profile_path"])
         config = config_from_profile(profile_data, cli_overrides=cli_overrides)
     else:
         config = BenchConfig(
-            name=name or "",
-            iterations=iterations or 5,
-            warmup=warmup if warmup is not None else 1,
-            timeout=timeout or 600,
+            name=p["name"] or "",
+            iterations=p["iterations"] or 5,
+            warmup=p["warmup"] if p["warmup"] is not None else 1,
+            timeout=p["timeout"] or 600,
             default_target_python=str(target_python) if target_python else "",
             registry_dir=registry_dir,
         )
@@ -126,56 +96,67 @@ def _build_bench_config(params: dict[str, Any]) -> Any:
             config.venvs_dir = venvs_dir
         elif work_dir:
             config.venvs_dir = work_dir / "venvs"
-        config.results_dir = results_dir
+        config.results_dir = p["results_dir"]
         if packages:
             config.packages_filter = parse_csv_list(packages)
-        if top_n:
-            config.top_n = top_n
+        if p["top_n"]:
+            config.top_n = p["top_n"]
 
-    # Add inline conditions.
-    for spec in inline_conditions:
+    for spec in p["inline_conditions"]:
         cond = parse_inline_condition(spec)
         config.conditions[cond.name] = cond
 
-    # Apply shared options.
-    if extra_deps:
-        config.default_extra_deps = parse_csv_list(extra_deps)
-    if test_command_suffix:
-        config.default_test_command_suffix = test_command_suffix
+    return config
 
-    # Parse env vars.
-    for pair in env_pairs:
+
+def _apply_config_overrides(config: Any, ctx: click.Context) -> Any:
+    """Apply shared CLI overrides and finalize a BenchConfig.
+
+    Handles test overrides, env vars, adaptive settings, resource
+    constraints, and quick mode.
+    """
+    from labeille.bench.runner import quick_config
+
+    p = ctx.params
+
+    if p["extra_deps"]:
+        config.default_extra_deps = parse_csv_list(p["extra_deps"])
+    if p["test_command_suffix"]:
+        config.default_test_command_suffix = p["test_command_suffix"]
+
+    for pair in p["env_pairs"]:
         if "=" in pair:
             k, v = pair.split("=", 1)
             config.default_env[k] = v
 
-    config.installer = installer
-    if adaptive:
+    config.installer = p["installer"]
+    if p["adaptive"]:
         config.adaptive = True
-    if adaptive_threshold is not None:
-        config.adaptive_threshold = adaptive_threshold
-    if adaptive_min_iterations is not None:
-        config.adaptive_min_iterations = adaptive_min_iterations
-    config.check_stability = check_stability
-    config.wait_for_stability = wait_for_stability
-    config.per_test_timing = per_test_timing
-    config.drop_caches = drop_caches or warm_vs_cold  # warm-vs-cold implies drop-caches
-    config.warm_vs_cold = warm_vs_cold
-    config.run_dangerously_as_root = run_dangerously_as_root
+    if p["adaptive_threshold"] is not None:
+        config.adaptive_threshold = p["adaptive_threshold"]
+    if p["adaptive_min_iterations"] is not None:
+        config.adaptive_min_iterations = p["adaptive_min_iterations"]
+    config.check_stability = p["check_stability"]
+    config.wait_for_stability = p["wait_for_stability"]
+    config.per_test_timing = p["per_test_timing"]
+    config.drop_caches = p["drop_caches"] or p["warm_vs_cold"]
+    config.warm_vs_cold = p["warm_vs_cold"]
+    config.run_dangerously_as_root = p["run_dangerously_as_root"]
 
-    if memory_limit or cpu_affinity or cpu_time_limit:
+    if p["memory_limit"] or p["cpu_affinity"] or p["cpu_time_limit"]:
         from labeille.bench.constraints import ResourceConstraints
 
+        cpu_affinity: str | None = p["cpu_affinity"]
         affinity_list = [int(c.strip()) for c in cpu_affinity.split(",")] if cpu_affinity else None
         config.default_constraints = ResourceConstraints(
-            memory_limit_mb=memory_limit,
+            memory_limit_mb=p["memory_limit"],
             cpu_affinity=affinity_list,
-            cpu_time_limit_s=cpu_time_limit,
+            cpu_time_limit_s=p["cpu_time_limit"],
         )
 
     config.cli_args = sys.argv[1:]
 
-    if quick:
+    if p["quick"]:
         config = quick_config(config)
 
     return config
@@ -398,51 +379,8 @@ def _build_bench_config(params: dict[str, Any]) -> Any:
     help="Package installer backend. 'auto' uses uv if available.",
 )
 @click.option("-v", "--verbose", is_flag=True, default=False)
-def run(  # noqa: PLR0913
-    # Profile and conditions
-    profile_path: Path | None,
-    inline_conditions: tuple[str, ...],
-    # Execution
-    target_python: Path | None,
-    iterations: int | None,
-    warmup: int | None,
-    timeout: int | None,
-    alternate: bool | None,
-    interleave: bool,
-    # Package selection
-    packages: str | None,
-    top_n: int | None,
-    # Test overrides
-    extra_deps: str | None,
-    test_command_suffix: str | None,
-    env_pairs: tuple[str, ...],
-    # Paths
-    registry_dir: Path | None,
-    repos_dir: Path | None,
-    venvs_dir: Path | None,
-    work_dir: Path | None,
-    results_dir: Path,
-    # Run identity and modes
-    name: str | None,
-    quick: bool,
-    # Stability
-    check_stability: bool,
-    wait_for_stability: bool,
-    # Adaptive convergence
-    adaptive: bool,
-    adaptive_threshold: float | None,
-    adaptive_min_iterations: int | None,
-    # Advanced: timing, resources, caches
-    per_test_timing: bool,
-    memory_limit: int | None,
-    cpu_affinity: str | None,
-    cpu_time_limit: int | None,
-    drop_caches: bool,
-    warm_vs_cold: bool,
-    run_dangerously_as_root: bool,
-    installer: str,
-    verbose: bool,
-) -> None:
+@click.pass_context
+def run(ctx: click.Context, /, **_kwargs: Any) -> None:
     """Run a benchmark across packages under specified conditions.
 
     Use --profile for a YAML profile or --condition for inline
@@ -463,9 +401,10 @@ def run(  # noqa: PLR0913
         # Quick mode for development
         labeille bench run --profile bench-jit.yaml --quick
     """
-    setup_logging(verbose=verbose)
+    setup_logging(verbose=ctx.params["verbose"])
 
-    config = _build_bench_config(locals())
+    config = _build_base_config(ctx)
+    config = _apply_config_overrides(config, ctx)
 
     from labeille.bench.runner import BenchRunner
 
