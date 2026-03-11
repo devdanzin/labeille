@@ -70,6 +70,24 @@ def safe_load_yaml(path: Path) -> dict[str, Any] | None:
     return data
 
 
+def load_yaml_strict(path: Path) -> dict[str, Any]:
+    """Load a YAML file, raising on parse errors.
+
+    Complement to :func:`safe_load_yaml` for callers that need an exception
+    rather than a ``None`` return on malformed input.
+
+    Raises:
+        ValueError: If the file contains invalid YAML or is not a mapping.
+    """
+    try:
+        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except yaml.YAMLError as exc:
+        raise ValueError(f"Invalid YAML in {path.name}: {exc}") from exc
+    if not isinstance(data, dict):
+        raise ValueError(f"Expected YAML mapping in {path.name}, got {type(data).__name__}")
+    return data
+
+
 def write_meta_json(path: Path, data: dict[str, Any]) -> None:
     """Write a JSON metadata file atomically.
 

@@ -29,7 +29,14 @@ from labeille.bench.constraints import ResourceConstraints
 from labeille.bench.stats import DescriptiveStats, describe, detect_outliers
 from labeille.bench.system import PythonProfile, SystemProfile
 from labeille.bench.timing import PerTestTimings
-from labeille.io_utils import append_jsonl, load_json_file, load_jsonl, write_meta_json
+from labeille.io_utils import (
+    append_jsonl,
+    atomic_write_text,
+    dataclass_from_dict,
+    load_json_file,
+    load_jsonl,
+    write_meta_json,
+)
 from labeille.logging import get_logger
 
 log = get_logger("bench.results")
@@ -91,9 +98,7 @@ class BenchIteration:
     def from_dict(cls, data: dict[str, Any]) -> BenchIteration:
         """Deserialize from a dict, ignoring unknown fields."""
         per_test_data = data.pop("per_test_timings", None)
-        known = {f.name for f in cls.__dataclass_fields__.values()}
-        filtered = {k: v for k, v in data.items() if k in known}
-        instance = cls(**filtered)
+        instance = dataclass_from_dict(cls, data)
         if per_test_data is not None:
             instance.per_test_timings = PerTestTimings.from_dict(per_test_data)
         return instance
@@ -232,15 +237,6 @@ class BenchPackageResult:
         for name, cond_data in data.get("conditions", {}).items():
             result.conditions[name] = BenchConditionResult.from_dict(cond_data)
         return result
-
-    def to_jsonl_line(self) -> str:
-        """Serialize to a single JSONL line."""
-        return json.dumps(self.to_dict(), separators=(",", ":"))
-
-    @classmethod
-    def from_jsonl_line(cls, line: str) -> BenchPackageResult:
-        """Deserialize from a single JSONL line."""
-        return cls.from_dict(json.loads(line))
 
 
 # ---------------------------------------------------------------------------
@@ -396,9 +392,8 @@ def save_bench_run(
     log.info("Wrote %s", meta_path)
 
     results_path = output_dir / "bench_results.jsonl"
-    with open(results_path, "w", encoding="utf-8") as f:
-        for result in results:
-            f.write(result.to_jsonl_line() + "\n")
+    content = "".join(json.dumps(r.to_dict()) + "\n" for r in results)
+    atomic_write_text(results_path, content)
     log.info("Wrote %d package results to %s", len(results), results_path)
 
 

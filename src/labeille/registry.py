@@ -17,7 +17,7 @@ from typing import Any, Literal
 
 import yaml
 
-from labeille.io_utils import atomic_write_text, utc_now_iso
+from labeille.io_utils import atomic_write_text, load_yaml_strict, utc_now_iso
 from labeille.logging import get_logger
 
 log = get_logger("registry")
@@ -245,11 +245,9 @@ def load_index(registry_path: Path) -> Index:
     if not index_file.exists():
         return Index()
     try:
-        data = yaml.safe_load(index_file.read_text(encoding="utf-8"))
-    except yaml.YAMLError as exc:
+        data = load_yaml_strict(index_file)
+    except ValueError as exc:
         raise RegistrySchemaError(f"Malformed index.yaml: {exc}") from exc
-    if not isinstance(data, dict):
-        return Index()
     packages = [_dict_to_index_entry(p) for p in data.get("packages", []) if isinstance(p, dict)]
     return Index(last_updated=data.get("last_updated", ""), packages=packages)
 
@@ -321,11 +319,9 @@ def load_package(name: str, registry_path: Path) -> PackageEntry:
     """
     p = package_path(name, registry_path)
     try:
-        data = yaml.safe_load(p.read_text(encoding="utf-8"))
-    except yaml.YAMLError as exc:
-        raise RegistrySchemaError(f"Malformed YAML in {p.name}: {exc}") from exc
-    if not isinstance(data, dict):
-        return PackageEntry(package=name)
+        data = load_yaml_strict(p)
+    except ValueError as exc:
+        raise RegistrySchemaError(str(exc)) from exc
     return _dict_to_package(data)
 
 

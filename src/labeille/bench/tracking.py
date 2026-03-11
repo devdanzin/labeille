@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import Any
 
 from labeille.bench.results import BenchMeta, BenchPackageResult, load_bench_run
-from labeille.io_utils import dataclass_from_dict, utc_now_iso
+from labeille.io_utils import dataclass_from_dict, load_json_file, utc_now_iso
 from labeille.logging import get_logger
 
 log = get_logger("bench.tracking")
@@ -202,13 +202,8 @@ def load_series(series_dir: Path) -> TrackingSeries:
     if not tracking_file.exists():
         raise FileNotFoundError(f"Series not found: no tracking.json in {series_dir}")
 
-    text = tracking_file.read_text(encoding="utf-8")
-    try:
-        data = json.loads(text)
-    except json.JSONDecodeError as exc:
-        raise ValueError(f"Malformed tracking.json in {series_dir}: {exc}") from exc
-
-    if not isinstance(data, dict) or "series_id" not in data:
+    data = load_json_file(tracking_file)
+    if "series_id" not in data:
         raise ValueError(f"Invalid tracking.json in {series_dir}: missing series_id")
 
     return TrackingSeries.from_dict(data)

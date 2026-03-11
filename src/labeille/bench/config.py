@@ -16,7 +16,7 @@ from typing import Any
 
 from labeille.bench.constraints import ResourceConstraints
 from labeille.bench.results import ConditionDef
-from labeille.io_utils import generate_run_id
+from labeille.io_utils import generate_run_id, load_yaml_strict
 
 
 # ---------------------------------------------------------------------------
@@ -309,27 +309,10 @@ def load_profile(profile_path: Path) -> dict[str, Any]:
     Returns:
         The parsed YAML as a dict.
     """
-    try:
-        import yaml
-    except ImportError as exc:
-        raise ImportError(
-            "PyYAML is required for loading benchmark profiles. "
-            "Install it with: pip install pyyaml"
-        ) from exc
-
     if not profile_path.exists():
         raise FileNotFoundError(f"Profile not found: {profile_path}")
 
-    text = profile_path.read_text(encoding="utf-8")
-    try:
-        data = yaml.safe_load(text)
-    except yaml.YAMLError as exc:
-        raise ValueError(f"Invalid YAML in profile {profile_path}: {exc}") from exc
-
-    if not isinstance(data, dict):
-        raise ValueError(f"Profile must be a YAML mapping, got {type(data).__name__}")
-
-    return data
+    return load_yaml_strict(profile_path)
 
 
 def config_from_profile(
