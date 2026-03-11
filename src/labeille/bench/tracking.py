@@ -201,7 +201,7 @@ def load_series(series_dir: Path) -> TrackingSeries:
     """
     tracking_file = series_dir / "tracking.json"
     if not tracking_file.exists():
-        raise FileNotFoundError(f"No tracking.json found in {series_dir}")
+        raise FileNotFoundError(f"Series not found: no tracking.json in {series_dir}")
 
     text = tracking_file.read_text(encoding="utf-8")
     try:

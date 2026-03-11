@@ -41,6 +41,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Add `from None` to exception chains in `bench_cli.py` for cleaner tracebacks.
 - Include exception details in connection error log in `resolve.py`.
 - Guard rename in `shield_source_dir` finally block against missing source file.
+- Add `load_json_file` utility to `io_utils.py` and guard 5 unprotected `json.loads` call sites against `JSONDecodeError`.
+- Add `JSONDecodeError` to exception handling in `bench/system.py` Python profile probe.
+- Add `KeyError` handling for missing probe output fields in `ft/compat.py`.
+- Include exception details in schema.yaml parse warning in `registry.py`.
+- Catch `ValueError` from malformed `tracking.json` in `bench_cli.py` track commands.
 
 ### Tests
 - Add 26 tests for `bench track` subcommands: init, add, show, pin, unpin, list, trend, alert.

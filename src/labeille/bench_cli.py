@@ -861,8 +861,8 @@ def track_show(series_name: str, last_n: int | None, tracking_dir: Path) -> None
     series_dir = tracking_dir / series_name
     try:
         series = load_series(series_dir)
-    except FileNotFoundError:
-        raise click.ClickException(f"Series '{series_name}' not found.") from None
+    except (FileNotFoundError, ValueError) as exc:
+        raise click.ClickException(str(exc)) from None
 
     click.echo(f"Series: {series.series_id}")
     if series.description:
@@ -1000,8 +1000,8 @@ def track_trend(
     series_dir = tracking_dir / series_name
     try:
         series = load_series(series_dir)
-    except FileNotFoundError:
-        raise click.ClickException(f"Series '{series_name}' not found.") from None
+    except (FileNotFoundError, ValueError) as exc:
+        raise click.ClickException(str(exc)) from None
 
     trend = analyze_series_trends(
         series,
@@ -1050,8 +1050,8 @@ def track_alert(
     series_dir = tracking_dir / series_name
     try:
         series = load_series(series_dir)
-    except FileNotFoundError:
-        raise click.ClickException(f"Series '{series_name}' not found.") from None
+    except (FileNotFoundError, ValueError) as exc:
+        raise click.ClickException(str(exc)) from None
 
     trend = analyze_series_trends(series, series_dir, condition=condition)
 

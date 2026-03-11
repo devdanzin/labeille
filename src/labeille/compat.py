@@ -8,7 +8,6 @@ the labeille registry.
 
 from __future__ import annotations
 
-import json
 import re
 import subprocess
 import tempfile
@@ -23,6 +22,7 @@ from labeille.crash import detect_crash
 from labeille.io_utils import (
     append_jsonl,
     generate_run_id,
+    load_json_file,
     load_jsonl,
     utc_now_iso,
     write_meta_json,
@@ -954,7 +954,7 @@ def load_compat_survey(survey_dir: Path) -> CompatSurvey:
     meta_path = survey_dir / "compat_meta.json"
     if not meta_path.exists():
         raise FileNotFoundError(f"compat_meta.json not found in {survey_dir}")
-    meta = CompatMeta.from_dict(json.loads(meta_path.read_text(encoding="utf-8")))
+    meta = CompatMeta.from_dict(load_json_file(meta_path))
 
     jsonl_path = survey_dir / "compat_results.jsonl"
     results: list[CompatResult] = []
