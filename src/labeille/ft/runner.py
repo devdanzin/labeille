@@ -557,7 +557,7 @@ def _clone_and_align_ft(
     except (subprocess.TimeoutExpired, OSError) as exc:
         log.debug("Could not capture git revision for %s: %s", pkg.package, exc)
 
-    import_name = getattr(pkg, "import_name", None) or pkg.package.replace("-", "_")
+    import_name = pkg.import_name or pkg.package.replace("-", "_")
     source_layout = "unknown"
 
     if config.install_from == "sdist":
@@ -887,7 +887,7 @@ def run_package_ft(
                     pkg.package,
                     venv_python=venv_python,
                     repo_dir=repo_dir if config.install_from != "sdist" else None,
-                    import_name=getattr(pkg, "import_name", None),
+                    import_name=pkg.import_name,
                     env=env,
                 )
                 result.extension_compat = compat.to_dict()

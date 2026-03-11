@@ -610,7 +610,7 @@ class BenchRunner:
         setup: dict[str, Any] = {}
 
         # Clone the repo.
-        if not getattr(pkg, "repo", None):
+        if not pkg.repo:
             log.warning("Package '%s' has no repo URL, skipping", pkg.package)
             return None
 
@@ -670,9 +670,7 @@ class BenchRunner:
                 resolve_env(cond, self.config.default_env),
                 venv_dir,
             )
-            install_cmd = (
-                cond.install_command or getattr(pkg, "install_command", None) or "pip install -e ."
-            )
+            install_cmd = cond.install_command or pkg.install_command or "pip install -e ."
 
             install_start = time.monotonic()
             try:
@@ -740,7 +738,7 @@ class BenchRunner:
         venv_path = venvs[cond.name]
 
         # Resolve the test command.
-        registry_cmd = getattr(pkg, "test_command", None)
+        registry_cmd = pkg.test_command or None
         test_cmd = resolve_test_command(
             registry_cmd,
             cond,
@@ -750,7 +748,7 @@ class BenchRunner:
         # Per-test timing: modify command if enabled.
         per_test_enabled = False
         if self.config.per_test_timing:
-            test_framework = getattr(pkg, "test_framework", "") or ""
+            test_framework = pkg.test_framework or ""
             test_cmd, per_test_enabled = prepare_per_test_command(test_cmd, test_framework)
 
         # Apply resource constraints.

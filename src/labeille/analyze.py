@@ -779,8 +779,8 @@ def _compute_status_changes(old_run: RunData, new_run: RunData) -> list[StatusCh
                     new_status=r.status,
                     old_detail=result_detail(old_r),
                     new_detail=result_detail(r),
-                    old_commit=getattr(old_r, "git_revision", None),
-                    new_commit=getattr(r, "git_revision", None),
+                    old_commit=old_r.git_revision,
+                    new_commit=r.git_revision,
                 )
             )
 
@@ -940,8 +940,8 @@ def compare_runs(
         if ra is None or rb is None:
             continue  # shouldn't happen, but satisfies type checker
 
-        commit_a = getattr(ra, "git_revision", None)
-        commit_b = getattr(rb, "git_revision", None)
+        commit_a = ra.git_revision
+        commit_b = rb.git_revision
 
         result.package_details.append(
             PackageComparison(
