@@ -322,8 +322,7 @@ def run_cmd(
     install_from: str,
 ) -> None:
     """Run test suites against a JIT-enabled Python build and detect crashes."""
-    from datetime import datetime, timezone
-
+    from labeille.io_utils import generate_run_id
     from labeille.registry import default_registry_dir
 
     if registry_dir is None:
@@ -385,7 +384,7 @@ def run_cmd(
 
     # Generate run ID.
     if run_id is None:
-        run_id = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H-%M-%S")
+        run_id = generate_run_id("run")
 
     # --work-dir sets both --repos-dir and --venvs-dir as defaults.
     if work_dir is not None:

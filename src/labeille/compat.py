@@ -16,12 +16,17 @@ import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
 from labeille.crash import detect_crash
-from labeille.io_utils import append_jsonl, load_jsonl, utc_now_iso, write_meta_json
+from labeille.io_utils import (
+    append_jsonl,
+    generate_run_id,
+    load_jsonl,
+    utc_now_iso,
+    write_meta_json,
+)
 from labeille.logging import get_logger
 from labeille.runner import (
     InstallerBackend,
@@ -889,7 +894,7 @@ def run_compat_survey(
     installer = resolve_installer(installer_preference)
     patterns = get_patterns(extra_patterns_file)
 
-    survey_id = f"compat-{datetime.now(timezone.utc).strftime('%Y%m%d-%H%M%S')}"
+    survey_id = generate_run_id("compat")
     survey_dir = output_dir / survey_id
     survey_dir.mkdir(parents=True, exist_ok=True)
     (survey_dir / "build_logs").mkdir()

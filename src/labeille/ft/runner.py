@@ -32,7 +32,7 @@ from labeille.ft.results import (
     append_ft_result,
     save_ft_run,
 )
-from labeille.io_utils import kill_process_group, utc_now_iso
+from labeille.io_utils import generate_run_id, kill_process_group, utc_now_iso
 from labeille.logging import get_logger
 from labeille.resolve import fetch_pypi_metadata
 from labeille.runner import (
@@ -985,7 +985,7 @@ def run_ft(config: FTRunConfig) -> list[FTPackageResult]:
         for warn in stability.warnings:
             log.warning("Stability: %s", warn)
 
-    run_id = time.strftime("ft_%Y%m%d_%H%M%S")
+    run_id = generate_run_id("ft")
     output_dir = config.results_dir / run_id
     output_dir.mkdir(parents=True, exist_ok=True)
 
