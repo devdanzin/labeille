@@ -189,5 +189,101 @@ class TestFtRunTrustFtWheels(unittest.TestCase):
         self.assertIn("--trust-ft-wheels-any-version", result.output)
 
 
+class TestFtCompare(unittest.TestCase):
+    def test_compare_two_runs(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            run_a = Path(tmp) / "run_a"
+            run_b = Path(tmp) / "run_b"
+            run_a.mkdir()
+            run_b.mkdir()
+            _write_mock_run(run_a)
+            _write_mock_run(run_b)
+            runner = CliRunner()
+            result = runner.invoke(main, ["ft", "compare", str(run_a), str(run_b)])
+            self.assertEqual(result.exit_code, 0, result.output)
+
+    def test_compare_nonexistent_dir(self) -> None:
+        runner = CliRunner()
+        result = runner.invoke(main, ["ft", "compare", "/no/a", "/no/b"])
+        self.assertNotEqual(result.exit_code, 0)
+
+    def test_compare_help(self) -> None:
+        runner = CliRunner()
+        result = runner.invoke(main, ["ft", "compare", "--help"])
+        self.assertEqual(result.exit_code, 0)
+        self.assertIn("RUN_A", result.output)
+        self.assertIn("RUN_B", result.output)
+
+
+class TestFtReport(unittest.TestCase):
+    def test_report_markdown(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            _write_mock_run(Path(tmpdir))
+            runner = CliRunner()
+            result = runner.invoke(main, ["ft", "report", tmpdir])
+            self.assertEqual(result.exit_code, 0, result.output)
+            self.assertIn("Compatibility Report", result.output)
+            self.assertIn("numpy", result.output)
+
+    def test_report_text_format(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            _write_mock_run(Path(tmpdir))
+            runner = CliRunner()
+            result = runner.invoke(main, ["ft", "report", "--format", "text", tmpdir])
+            self.assertEqual(result.exit_code, 0, result.output)
+
+    def test_report_to_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            _write_mock_run(Path(tmpdir))
+            outfile = Path(tmpdir) / "report.md"
+            runner = CliRunner()
+            result = runner.invoke(main, ["ft", "report", "--output", str(outfile), tmpdir])
+            self.assertEqual(result.exit_code, 0, result.output)
+            self.assertTrue(outfile.exists())
+            content = outfile.read_text(encoding="utf-8")
+            self.assertIn("Compatibility Report", content)
+
+    def test_report_nonexistent_dir(self) -> None:
+        runner = CliRunner()
+        result = runner.invoke(main, ["ft", "report", "/nonexistent"])
+        self.assertNotEqual(result.exit_code, 0)
+
+
+class TestFtExport(unittest.TestCase):
+    def test_export_csv(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            _write_mock_run(Path(tmpdir))
+            runner = CliRunner()
+            result = runner.invoke(main, ["ft", "export", tmpdir])
+            self.assertEqual(result.exit_code, 0, result.output)
+            # CSV output should have header and data rows.
+            lines = result.output.strip().split("\n")
+            self.assertGreaterEqual(len(lines), 2)
+
+    def test_export_json(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            _write_mock_run(Path(tmpdir))
+            runner = CliRunner()
+            result = runner.invoke(main, ["ft", "export", "--format", "json", tmpdir])
+            self.assertEqual(result.exit_code, 0, result.output)
+            data = json.loads(result.output)
+            self.assertIsInstance(data, list)
+            self.assertGreaterEqual(len(data), 1)
+
+    def test_export_to_file(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            _write_mock_run(Path(tmpdir))
+            outfile = Path(tmpdir) / "export.csv"
+            runner = CliRunner()
+            result = runner.invoke(main, ["ft", "export", "--output", str(outfile), tmpdir])
+            self.assertEqual(result.exit_code, 0, result.output)
+            self.assertTrue(outfile.exists())
+
+    def test_export_nonexistent_dir(self) -> None:
+        runner = CliRunner()
+        result = runner.invoke(main, ["ft", "export", "/nonexistent"])
+        self.assertNotEqual(result.exit_code, 0)
+
+
 if __name__ == "__main__":
     unittest.main()
