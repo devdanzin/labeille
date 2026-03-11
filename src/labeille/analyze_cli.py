@@ -364,10 +364,9 @@ def format_registry_detail(report: RegistryReport) -> str:
     lines: list[str] = [format_registry_summary(report), ""]
 
     # Compatibility blockers.
-    blockers = report.compat_blockers
     blocker_items: list[tuple[str, int]] = []
     for field_name, label in _BLOCKER_LABELS.items():
-        count = getattr(blockers, field_name)
+        count = report.compat_blockers.get(field_name, 0)
         if count > 0:
             blocker_items.append((label, count))
     if blocker_items:
@@ -377,14 +376,16 @@ def format_registry_detail(report: RegistryReport) -> str:
         lines.append("")
 
     # Repository hosting.
-    rh = report.repo_hosts
+    _HOST_LABELS = [
+        ("github", "GitHub"),
+        ("gitlab", "GitLab"),
+        ("bitbucket", "Bitbucket"),
+        ("codeberg", "Codeberg"),
+        ("no_repo", "No repo URL"),
+        ("other", "Other"),
+    ]
     host_items: list[tuple[str, int]] = [
-        ("GitHub", rh.github),
-        ("GitLab", rh.gitlab),
-        ("Bitbucket", rh.bitbucket),
-        ("Codeberg", rh.codeberg),
-        ("No repo URL", rh.no_repo),
-        ("Other", rh.other),
+        (label, report.repo_hosts.get(key, 0)) for key, label in _HOST_LABELS
     ]
     host_items = [(lb, ct) for lb, ct in host_items if ct > 0]
     if host_items:
@@ -394,22 +395,25 @@ def format_registry_detail(report: RegistryReport) -> str:
         lines.append("")
 
     # Install complexity.
+    _INSTALL_LABELS = [
+        ("simple_editable", "Simple editable"),
+        ("editable_with_extras", "Editable + extras"),
+        ("multi_step", "Multi-step"),
+        ("custom", "Custom"),
+    ]
     if report.active > 0:
-        ic = report.install_complexity
         install_items: list[tuple[str, int]] = [
-            ("Simple editable", ic.simple_editable),
-            ("Editable + extras", ic.editable_with_extras),
-            ("Multi-step", ic.multi_step),
-            ("Custom", ic.custom),
+            (label, report.install_complexity.get(key, 0)) for key, label in _INSTALL_LABELS
         ]
         lines.append(f"Install complexity ({report.active:,} active):")
         for label, count in install_items:
             if count > 0:
                 lines.append(f"  {label:<20s} {count:>5,}  ({_pct(count, report.active).strip()})")
-        if ic.has_git_fetch_tags > 0:
+        git_fetch_tags = report.install_complexity.get("has_git_fetch_tags", 0)
+        if git_fetch_tags > 0:
             lines.append(
-                f"  {'setuptools-scm fix':<20s} {ic.has_git_fetch_tags:>5,}  "
-                f"({_pct(ic.has_git_fetch_tags, report.active).strip()})"
+                f"  {'setuptools-scm fix':<20s} {git_fetch_tags:>5,}  "
+                f"({_pct(git_fetch_tags, report.active).strip()})"
             )
         lines.append("")
 
@@ -453,9 +457,9 @@ def format_registry_verbose(report: RegistryReport) -> str:
         lines.append("")
 
     # Per-blocker package lists.
-    if report.compat_blockers.packages_by_blocker:
+    if report.packages_by_blocker:
         lines.append("Packages by blocker:")
-        for blocker_key, pkg_list in sorted(report.compat_blockers.packages_by_blocker.items()):
+        for blocker_key, pkg_list in sorted(report.packages_by_blocker.items()):
             label = _BLOCKER_LABELS.get(blocker_key, blocker_key)
             lines.append(f"  {label} ({len(pkg_list)}):")
             display_pkgs = pkg_list[:20]
@@ -532,17 +536,17 @@ def export_registry_report_md(report: RegistryReport) -> str:
         lines.append("")
 
     # Compatibility blockers.
-    blocker_items: list[tuple[str, int]] = []
+    blocker_items_md: list[tuple[str, int]] = []
     for field_name, label in _BLOCKER_LABELS.items():
-        count = getattr(report.compat_blockers, field_name)
+        count = report.compat_blockers.get(field_name, 0)
         if count > 0:
-            blocker_items.append((label, count))
-    if blocker_items:
+            blocker_items_md.append((label, count))
+    if blocker_items_md:
         lines.append("## Compatibility Blockers")
         lines.append("")
         lines.append("| Technology | Packages |")
         lines.append("|-----------|--------:|")
-        for label, count in sorted(blocker_items, key=lambda x: -x[1]):
+        for label, count in sorted(blocker_items_md, key=lambda x: -x[1]):
             lines.append(f"| {label} | {count:,} |")
         lines.append("")
 
@@ -566,41 +570,45 @@ def export_registry_report_md(report: RegistryReport) -> str:
         lines.append("")
 
     # Repository hosting.
-    rh = report.repo_hosts
-    host_items: list[tuple[str, int]] = [
-        ("GitHub", rh.github),
-        ("GitLab", rh.gitlab),
-        ("Bitbucket", rh.bitbucket),
-        ("Codeberg", rh.codeberg),
-        ("No repo URL", rh.no_repo),
-        ("Other", rh.other),
+    _HOST_LABELS_MD = [
+        ("github", "GitHub"),
+        ("gitlab", "GitLab"),
+        ("bitbucket", "Bitbucket"),
+        ("codeberg", "Codeberg"),
+        ("no_repo", "No repo URL"),
+        ("other", "Other"),
     ]
-    host_items = [(lb, ct) for lb, ct in host_items if ct > 0]
-    if host_items:
+    host_items_md: list[tuple[str, int]] = [
+        (label, report.repo_hosts.get(key, 0)) for key, label in _HOST_LABELS_MD
+    ]
+    host_items_md = [(lb, ct) for lb, ct in host_items_md if ct > 0]
+    if host_items_md:
         lines.append("## Repository Hosting")
         lines.append("")
         lines.append("| Host | Count | Percentage |")
         lines.append("|------|------:|-----------:|")
-        for label, count in host_items:
+        for label, count in host_items_md:
             lines.append(f"| {label} | {count:,} | {_pct(count, report.total).strip()} |")
         lines.append("")
 
     # Install complexity.
+    _INSTALL_LABELS_MD = [
+        ("simple_editable", "Simple editable"),
+        ("editable_with_extras", "Editable + extras"),
+        ("multi_step", "Multi-step"),
+        ("custom", "Custom"),
+    ]
     if report.active > 0:
-        ic = report.install_complexity
-        install_items: list[tuple[str, int]] = [
-            ("Simple editable", ic.simple_editable),
-            ("Editable + extras", ic.editable_with_extras),
-            ("Multi-step", ic.multi_step),
-            ("Custom", ic.custom),
+        install_items_md: list[tuple[str, int]] = [
+            (label, report.install_complexity.get(key, 0)) for key, label in _INSTALL_LABELS_MD
         ]
-        install_items = [(lb, ct) for lb, ct in install_items if ct > 0]
-        if install_items:
+        install_items_md = [(lb, ct) for lb, ct in install_items_md if ct > 0]
+        if install_items_md:
             lines.append("## Install Complexity")
             lines.append("")
             lines.append("| Type | Count | % of Active |")
             lines.append("|------|------:|------------:|")
-            for label, count in install_items:
+            for label, count in install_items_md:
                 lines.append(f"| {label} | {count:,} | {_pct(count, report.active).strip()} |")
             lines.append("")
 
