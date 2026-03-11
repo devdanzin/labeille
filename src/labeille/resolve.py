@@ -292,13 +292,13 @@ def fetch_pypi_metadata(
         else:
             resp = requests.get(url, timeout=timeout, headers={"User-Agent": _USER_AGENT})
     except requests.ConnectionError as exc:
-        log.error("Connection error fetching %s: %s", package_name, exc)
+        log.error("Connection error fetching %s: %s", package_name, exc, exc_info=True)
         return None
     except requests.Timeout:
-        log.error("Timeout fetching %s", package_name)
+        log.error("Timeout fetching %s", package_name, exc_info=True)
         return None
     except requests.RequestException as exc:
-        log.error("Request error fetching %s: %s", package_name, exc)
+        log.error("Request error fetching %s: %s", package_name, exc, exc_info=True)
         return None
 
     if resp.status_code == 404:
@@ -315,7 +315,7 @@ def fetch_pypi_metadata(
         data: dict[str, Any] = resp.json()
         return data
     except (ValueError, requests.JSONDecodeError):
-        log.error("Invalid JSON response for %s", package_name)
+        log.error("Invalid JSON response for %s", package_name, exc_info=True)
         return None
 
 

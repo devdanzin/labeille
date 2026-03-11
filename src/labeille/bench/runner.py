@@ -629,7 +629,7 @@ class BenchRunner:
             else:
                 raise OSError(f"No repo URL for {pkg.package}")
         except (OSError, subprocess.SubprocessError) as exc:
-            log.error("Failed to clone %s: %s", pkg.package, exc)
+            log.error("Failed to clone %s: %s", pkg.package, exc, exc_info=True)
             return None
         setup["clone_duration"] = time.monotonic() - clone_start
         setup["repo_dir"] = repo_dir
@@ -660,6 +660,7 @@ class BenchRunner:
                     pkg.package,
                     cond_name,
                     exc,
+                    exc_info=True,
                 )
                 return None
             setup[f"venv_{cond_name}"] = time.monotonic() - venv_start
@@ -693,7 +694,9 @@ class BenchRunner:
                     )
                     return None
             except (OSError, subprocess.SubprocessError) as exc:
-                log.error("Install failed for %s/%s: %s", pkg.package, cond_name, exc)
+                log.error(
+                    "Install failed for %s/%s: %s", pkg.package, cond_name, exc, exc_info=True
+                )
                 return None
             setup[f"install_{cond_name}"] = time.monotonic() - install_start
 

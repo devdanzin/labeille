@@ -170,7 +170,7 @@ def save_crash_stderr(run_dir: Path, package_name: str, stderr: str) -> None:
         crash_file.parent.mkdir(parents=True, exist_ok=True)
         crash_file.write_text(stderr, encoding="utf-8")
     except OSError as exc:
-        log.error("Could not save crash stderr for %s: %s", package_name, exc)
+        log.error("Could not save crash stderr for %s: %s", package_name, exc, exc_info=True)
 
 
 # ---------------------------------------------------------------------------
@@ -656,7 +656,7 @@ def _ensure_repo(
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as exc:
             result.status = "clone_error"
             result.error_message = f"Clone failed: {exc}"
-            log.error("Clone failed for %s: %s", pkg.package, exc)
+            log.error("Clone failed for %s: %s", pkg.package, exc, exc_info=True)
             return False
 
     clone_dur = round(time.monotonic() - clone_start, 2)
@@ -716,13 +716,13 @@ def _run_install(
         result.status = "install_error"
         result.error_message = f"Install timed out{label}"
         result.install_duration_seconds = round(time.monotonic() - install_start, 2)
-        log.error("Install timed out for %s%s", pkg.package, label)
+        log.error("Install timed out for %s%s", pkg.package, label, exc_info=True)
         return None
     except OSError as exc:
         result.status = "install_error"
         result.error_message = f"Install failed{label}: {exc}"
         result.install_duration_seconds = round(time.monotonic() - install_start, 2)
-        log.error("Install failed for %s%s: %s", pkg.package, label, exc)
+        log.error("Install failed for %s%s: %s", pkg.package, label, exc, exc_info=True)
         return None
 
     result.install_duration_seconds = round(time.monotonic() - install_start, 2)
@@ -848,7 +848,7 @@ def _setup_venv(
         except (subprocess.CalledProcessError, OSError) as exc:
             result.status = "error"
             result.error_message = f"Venv creation failed: {exc}"
-            log.error("Venv creation failed for %s: %s", pkg.package, exc)
+            log.error("Venv creation failed for %s: %s", pkg.package, exc, exc_info=True)
             return None
         log.debug("Venv created for %s in %.2fs", pkg.package, time.monotonic() - venv_start)
 
@@ -968,12 +968,12 @@ def _check_import(
         except subprocess.TimeoutExpired:
             result.status = "install_error"
             result.error_message = "Package installed but import timed out"
-            log.error("Import check timed out for %s", pkg.package)
+            log.error("Import check timed out for %s", pkg.package, exc_info=True)
             return False
         except OSError as exc:
             result.status = "install_error"
             result.error_message = f"Import check OSError: {exc}"
-            log.error("Import check failed for %s: %s", pkg.package, exc)
+            log.error("Import check failed for %s: %s", pkg.package, exc, exc_info=True)
             return False
 
     return True

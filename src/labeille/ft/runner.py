@@ -537,7 +537,7 @@ def _clone_and_align_ft(
         else:
             raise OSError(f"No repo URL for {pkg.package}")
     except (OSError, subprocess.SubprocessError) as exc:
-        log.error("Failed to clone/pull %s: %s", pkg.package, exc)
+        log.error("Failed to clone/pull %s: %s", pkg.package, exc, exc_info=True)
         result.install_ok = False
         result.install_error = f"Clone failed: {exc}"
         result.categorize()
@@ -616,7 +616,7 @@ def _create_venv_and_install_ft(
     try:
         create_venv(config.target_python, venv_dir)
     except (OSError, subprocess.SubprocessError) as exc:
-        log.error("Venv creation failed for %s: %s", pkg.package, exc)
+        log.error("Venv creation failed for %s: %s", pkg.package, exc, exc_info=True)
         result.install_ok = False
         result.install_error = f"Venv creation failed: {exc}"
         result.categorize()
