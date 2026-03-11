@@ -205,7 +205,12 @@ def execute_migration(
     results: list[MigrationResult] = []
 
     for f in files:
-        raw = yaml.safe_load(f.read_text(encoding="utf-8"))
+        try:
+            raw = yaml.safe_load(f.read_text(encoding="utf-8"))
+        except yaml.YAMLError as exc:
+            log.warning("Skipping %s: malformed YAML: %s", f.name, exc)
+            skipped_count += 1
+            continue
         if not isinstance(raw, dict):
             skipped_count += 1
             continue
