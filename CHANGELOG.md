@@ -34,6 +34,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Extension probe script now reports `walk_error` and `skipped_modules` instead of silently passing.
 - Guard all `yaml.safe_load` call sites against `YAMLError`: add `safe_load_yaml` utility to `io_utils.py`, protect `registry.py`, `registry_ops.py`, `analyze_cli.py`, `migrations.py`, and `bench/config.py`.
 - Add 120-second timeout to git subprocess calls in `registry sync` to prevent indefinite hangs.
+- Add `ignore_errors=True` to `shutil.rmtree` in venv refresh to prevent cleanup failures masking results.
+- Log `PermissionError` at WARNING in `kill_process_group` instead of silently ignoring.
+- Add `from None` to exception chains in `bench_cli.py` for cleaner tracebacks.
+- Include exception details in connection error log in `resolve.py`.
+- Guard rename in `shield_source_dir` finally block against missing source file.
 
 ### Tests
 - Add 26 tests for `bench track` subcommands: init, add, show, pin, unpin, list, trend, alert.

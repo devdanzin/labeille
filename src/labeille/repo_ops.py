@@ -372,7 +372,8 @@ def shield_source_dir(
     try:
         yield
     finally:
-        shield_path.rename(src_path)
+        if shield_path.exists():
+            shield_path.rename(src_path)
 
 
 _SELF_INSTALL_RE = re.compile(
