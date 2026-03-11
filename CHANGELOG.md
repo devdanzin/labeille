@@ -79,6 +79,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Add `test_cli_utils.py` with 14 tests for `parse_env_pairs` and `parse_csv_list`.
 - Add 12 behavioral tests for `ft compare`, `ft report`, and `ft export` CLI commands.
 
+### Documentation
+- Update CLAUDE.md: fix stale test count (546 → 2068) and add 13 missing modules to architecture section.
+
 ### Added
 - `labeille analyze registry` now generates a comprehensive three-tier report: summary (default), detailed (`--detail`), and verbose (`--detail --verbose`).
 - `--export-markdown` flag for `analyze registry` generates a Markdown document suitable for inclusion in a repository.
