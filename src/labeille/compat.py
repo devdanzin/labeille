@@ -140,25 +140,25 @@ class CompatResult:
         return d
 
     @classmethod
-    def from_dict(cls, d: dict[str, Any]) -> CompatResult:
+    def from_dict(cls, data: dict[str, Any]) -> CompatResult:
         """Deserialize from JSONL dict."""
-        matches = [ErrorMatch(**m) for m in d.get("error_matches", [])]
+        matches = [ErrorMatch(**m) for m in data.get("error_matches", [])]
         return cls(
-            package=d["package"],
-            status=d["status"],
-            exit_code=d.get("exit_code"),
-            duration_seconds=d.get("duration_seconds", 0.0),
+            package=data["package"],
+            status=data["status"],
+            exit_code=data.get("exit_code"),
+            duration_seconds=data.get("duration_seconds", 0.0),
             error_matches=matches,
-            primary_category=d.get("primary_category", ""),
-            primary_subcategory=d.get("primary_subcategory", ""),
-            primary_description=d.get("primary_description", ""),
-            import_error=d.get("import_error", ""),
-            crash_signature=d.get("crash_signature", ""),
-            extension_type=d.get("extension_type", "unknown"),
-            source=d.get("source", ""),
-            from_mode=d.get("from_mode", ""),
-            repo_url=d.get("repo_url"),
-            installer_used=d.get("installer_used", ""),
+            primary_category=data.get("primary_category", ""),
+            primary_subcategory=data.get("primary_subcategory", ""),
+            primary_description=data.get("primary_description", ""),
+            import_error=data.get("import_error", ""),
+            crash_signature=data.get("crash_signature", ""),
+            extension_type=data.get("extension_type", "unknown"),
+            source=data.get("source", ""),
+            from_mode=data.get("from_mode", ""),
+            repo_url=data.get("repo_url"),
+            installer_used=data.get("installer_used", ""),
         )
 
 
@@ -195,19 +195,19 @@ class CompatMeta:
         return d
 
     @classmethod
-    def from_dict(cls, d: dict[str, Any]) -> CompatMeta:
+    def from_dict(cls, data: dict[str, Any]) -> CompatMeta:
         """Deserialize from a dict loaded from JSON."""
         return cls(
-            survey_id=d["survey_id"],
-            target_python=d["target_python"],
-            python_version=d["python_version"],
-            from_mode=d["from_mode"],
-            no_binary_all=d.get("no_binary_all", False),
-            started_at=d["started_at"],
-            finished_at=d.get("finished_at", ""),
-            total_packages=d.get("total_packages", 0),
-            installer_preference=d.get("installer_preference", "auto"),
-            extra_patterns_file=d.get("extra_patterns_file"),
+            survey_id=data["survey_id"],
+            target_python=data["target_python"],
+            python_version=data["python_version"],
+            from_mode=data["from_mode"],
+            no_binary_all=data.get("no_binary_all", False),
+            started_at=data["started_at"],
+            finished_at=data.get("finished_at", ""),
+            total_packages=data.get("total_packages", 0),
+            installer_preference=data.get("installer_preference", "auto"),
+            extra_patterns_file=data.get("extra_patterns_file"),
         )
 
 
@@ -781,7 +781,7 @@ def _survey_package(
             except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as exc:
                 result.status = "clone_error"
                 result.duration_seconds = round(time.monotonic() - start, 2)
-                log.debug("Clone failed for %s: %s", pkg.name, exc)
+                log.warning("Clone failed for %s: %s", pkg.name, exc)
                 return result
             install_cmd = pkg.install_command or "pip install -e ."
             cwd = repo_dir
@@ -807,7 +807,7 @@ def _survey_package(
         except (subprocess.CalledProcessError, OSError) as exc:
             result.status = "build_fail"
             result.duration_seconds = round(time.monotonic() - start, 2)
-            log.debug("Build exception for %s: %s", pkg.name, exc)
+            log.warning("Build exception for %s: %s", pkg.name, exc)
             return result
 
         # Save build logs.

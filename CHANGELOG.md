@@ -18,6 +18,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Fix `IndexEntry.package` attribute access (should be `.name`) in `ft/runner.py:_select_packages`.
 - Add missing `encoding="utf-8"` to `bench_cli.py` export `write_text()` call.
 - Import check `OSError` now sets `install_error` status instead of silently continuing.
+- Raise compat survey clone/build failure log levels from `debug` to `warning` for visibility.
+- Rename `from_dict` parameter `d` → `data` in `CompatResult` and `CompatMeta` for consistency.
 
 ### Tests
 - Add 26 tests for `bench track` subcommands: init, add, show, pin, unpin, list, trend, alert.
