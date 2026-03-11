@@ -936,64 +936,78 @@ def _install_in_venv(
     return venv_python, installer
 
 
-def _check_import_and_extras(
+def _check_import(
     pkg: PackageEntry,
     config: RunnerConfig,
     result: PackageResult,
     venv_python: Path,
     repo_dir: Path,
     env: dict[str, str],
-    per_pkg_timeout: int,
-    installer: InstallerBackend,
     import_name: str,
     source_layout: str,
     venv_existed: bool,
 ) -> bool:
-    """Run import check and install extra deps. Returns False if import fails."""
+    """Verify the package can be imported. Returns False on failure."""
+    if venv_existed:
+        return True
+
     _shield = (
         shield_source_dir(repo_dir, import_name, source_layout)
         if config.install_from == "sdist"
         else nullcontext()
     )
     with _shield:
-        if not venv_existed:
-            log.info("Checking import for %s: import %s", pkg.package, import_name)
-            try:
-                import_proc = check_import(venv_python, import_name, env)
-                if import_proc.returncode != 0:
-                    result.status = "install_error"
-                    stderr_msg = import_proc.stderr.strip()[-200:] if import_proc.stderr else ""
-                    result.error_message = f"Package installed but import failed: {stderr_msg}"
-                    log.error("Import check failed for %s: %s", pkg.package, result.error_message)
-                    return False
-            except subprocess.TimeoutExpired:
-                result.status = "install_error"
-                result.error_message = "Package installed but import timed out"
-                log.error("Import check timed out for %s", pkg.package)
-                return False
-            except OSError as exc:
-                result.status = "install_error"
-                result.error_message = f"Import check OSError: {exc}"
-                log.error("Import check failed for %s: %s", pkg.package, exc)
-                return False
-
-    if config.extra_deps and not venv_existed:
-        extra_cmd = f"pip install {' '.join(config.extra_deps)}"
-        log.info("Installing extra deps for %s: %s", pkg.package, extra_cmd)
+        log.info("Checking import for %s: import %s", pkg.package, import_name)
         try:
-            extra_proc = install_package(
-                venv_python, extra_cmd, repo_dir, env, per_pkg_timeout, installer
-            )
-            if extra_proc.returncode != 0:
-                log.warning(
-                    "Extra deps install failed for %s (exit %d, non-fatal)",
-                    pkg.package,
-                    extra_proc.returncode,
-                )
-        except (subprocess.TimeoutExpired, OSError) as exc:
-            log.warning("Failed to install extra deps for %s: %s", pkg.package, exc)
+            import_proc = check_import(venv_python, import_name, env)
+            if import_proc.returncode != 0:
+                result.status = "install_error"
+                stderr_msg = import_proc.stderr.strip()[-200:] if import_proc.stderr else ""
+                result.error_message = f"Package installed but import failed: {stderr_msg}"
+                log.error("Import check failed for %s: %s", pkg.package, result.error_message)
+                return False
+        except subprocess.TimeoutExpired:
+            result.status = "install_error"
+            result.error_message = "Package installed but import timed out"
+            log.error("Import check timed out for %s", pkg.package)
+            return False
+        except OSError as exc:
+            result.status = "install_error"
+            result.error_message = f"Import check OSError: {exc}"
+            log.error("Import check failed for %s: %s", pkg.package, exc)
+            return False
 
     return True
+
+
+def _install_extra_deps(
+    pkg: PackageEntry,
+    config: RunnerConfig,
+    venv_python: Path,
+    repo_dir: Path,
+    env: dict[str, str],
+    per_pkg_timeout: int,
+    installer: InstallerBackend,
+    venv_existed: bool,
+) -> None:
+    """Install extra dependencies into the venv (non-fatal on failure)."""
+    if not config.extra_deps or venv_existed:
+        return
+
+    extra_cmd = f"pip install {' '.join(config.extra_deps)}"
+    log.info("Installing extra deps for %s: %s", pkg.package, extra_cmd)
+    try:
+        extra_proc = install_package(
+            venv_python, extra_cmd, repo_dir, env, per_pkg_timeout, installer
+        )
+        if extra_proc.returncode != 0:
+            log.warning(
+                "Extra deps install failed for %s (exit %d, non-fatal)",
+                pkg.package,
+                extra_proc.returncode,
+            )
+    except (subprocess.TimeoutExpired, OSError) as exc:
+        log.warning("Failed to install extra deps for %s: %s", pkg.package, exc)
 
 
 def _run_package_inner(
@@ -1060,21 +1074,31 @@ def _run_package_inner(
         return result
     venv_python, installer = install_out
 
-    # --- Import check and extra deps ---
-    if not _check_import_and_extras(
+    # --- Import check ---
+    if not _check_import(
         pkg,
         config,
         result,
         venv_python,
         repo_dir,
         env,
-        per_pkg_timeout,
-        installer,
         import_name,
         source_layout,
         venv_existed,
     ):
         return result
+
+    # --- Extra deps ---
+    _install_extra_deps(
+        pkg,
+        config,
+        venv_python,
+        repo_dir,
+        env,
+        per_pkg_timeout,
+        installer,
+        venv_existed,
+    )
 
     # --- Collect installed packages ---
     result.installed_dependencies = get_installed_packages(venv_python, env, installer)
