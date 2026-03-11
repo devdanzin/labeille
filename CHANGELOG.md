@@ -46,6 +46,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Add `KeyError` handling for missing probe output fields in `ft/compat.py`.
 - Include exception details in schema.yaml parse warning in `registry.py`.
 - Catch `ValueError` from malformed `tracking.json` in `bench_cli.py` track commands.
+- Surface skipped-package counts in `ft/runner.py`, `bench/runner.py`, and `bench/tracking.py` so users know when results are incomplete.
 
 ### Tests
 - Add 26 tests for `bench track` subcommands: init, add, show, pin, unpin, list, trend, alert.

@@ -317,15 +317,20 @@ class BenchRunner:
             names = [n for n in names if n not in skip_set]
 
         # Load each package.
+        skipped = 0
         for name in sorted(names):
             if name not in index_names:
                 log.warning("Package '%s' not in registry, skipping", name)
+                skipped += 1
                 continue
             try:
                 entry = load_package(name, self.config.registry_dir)
                 packages.append(entry)
             except (OSError, ValueError, KeyError) as exc:
                 log.warning("Failed to load package '%s': %s", name, exc)
+                skipped += 1
+        if skipped:
+            log.warning("Skipped %d package(s) due to load errors", skipped)
 
         # Apply top_n.
         if self.config.top_n and len(packages) > self.config.top_n:
