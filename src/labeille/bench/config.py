@@ -10,13 +10,13 @@ Handles:
 
 from __future__ import annotations
 
-import time
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 from labeille.bench.constraints import ResourceConstraints
 from labeille.bench.results import ConditionDef
+from labeille.io_utils import generate_run_id
 
 
 # ---------------------------------------------------------------------------
@@ -92,7 +92,7 @@ class BenchConfig:
 
     def __post_init__(self) -> None:
         if not self.bench_id:
-            self.bench_id = f"bench_{time.strftime('%Y%m%d_%H%M%S')}"
+            self.bench_id = generate_run_id("bench")
 
     @property
     def total_iterations(self) -> int:

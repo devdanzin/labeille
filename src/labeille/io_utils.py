@@ -18,6 +18,14 @@ log = get_logger("io_utils")
 T = TypeVar("T")
 
 
+def generate_run_id(prefix: str) -> str:
+    """Generate a UTC-timestamped run ID with a consistent format.
+
+    Format: ``{prefix}_{YYYYMMDD}_{HHMMSS}`` (always UTC).
+    """
+    return f"{prefix}_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}"
+
+
 def atomic_write_text(path: Path, content: str, *, encoding: str = "utf-8") -> None:
     """Write content to a file atomically using a temp file and os.replace.
 
