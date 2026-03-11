@@ -9,11 +9,12 @@ from __future__ import annotations
 import csv
 import io
 import json
-from typing import Any
+from labeille.ft.analysis import FTAnalysisReport, analyze_ft_run
+from labeille.ft.results import FailureCategory, FTPackageResult, FTRunMeta, FTRunSummary
 
 
 def export_csv(
-    results: list[Any],
+    results: list[FTPackageResult],
 ) -> str:
     """Export results as CSV with one row per package.
 
@@ -80,7 +81,7 @@ def export_csv(
 
 
 def export_json(
-    results: list[Any],
+    results: list[FTPackageResult],
     *,
     indent: int = 2,
 ) -> str:
@@ -95,8 +96,8 @@ def export_json(
 
 
 def generate_report(
-    meta: Any,
-    results: list[Any],
+    meta: FTRunMeta,
+    results: list[FTPackageResult],
     *,
     format: str = "markdown",
 ) -> str:
@@ -113,9 +114,6 @@ def generate_report(
     Returns:
         The formatted report as a string.
     """
-    from labeille.ft.analysis import analyze_ft_run
-    from labeille.ft.results import FTRunSummary
-
     summary = FTRunSummary.compute(results)
     analysis = analyze_ft_run(results)
 
@@ -148,7 +146,7 @@ def generate_report(
     return "\n".join(lines)
 
 
-def _report_header_md(meta: Any, summary: Any) -> list[str]:
+def _report_header_md(meta: FTRunMeta, summary: FTRunSummary) -> list[str]:
     lines = [
         "# Free-Threading Compatibility Report",
         "",
@@ -182,7 +180,7 @@ def _report_header_md(meta: Any, summary: Any) -> list[str]:
     return lines
 
 
-def _report_summary_table_md(summary: Any) -> list[str]:
+def _report_summary_table_md(summary: FTRunSummary) -> list[str]:
     lines = [
         "## Summary",
         "",
@@ -216,8 +214,7 @@ def _report_summary_table_md(summary: Any) -> list[str]:
     return lines
 
 
-def _report_crashes_md(results: list[Any]) -> list[str]:
-    from labeille.ft.results import FailureCategory
+def _report_crashes_md(results: list[FTPackageResult]) -> list[str]:
 
     crash_pkgs = [r for r in results if r.category == FailureCategory.CRASH]
     if not crash_pkgs:
@@ -242,8 +239,7 @@ def _report_crashes_md(results: list[Any]) -> list[str]:
     return lines
 
 
-def _report_deadlocks_md(results: list[Any]) -> list[str]:
-    from labeille.ft.results import FailureCategory
+def _report_deadlocks_md(results: list[FTPackageResult]) -> list[str]:
 
     deadlock_pkgs = [r for r in results if r.category == FailureCategory.DEADLOCK]
     if not deadlock_pkgs:
@@ -270,8 +266,9 @@ def _report_deadlocks_md(results: list[Any]) -> list[str]:
     return lines
 
 
-def _report_intermittent_md(results: list[Any], analysis: Any) -> list[str]:
-    from labeille.ft.results import FailureCategory
+def _report_intermittent_md(
+    results: list[FTPackageResult], analysis: FTAnalysisReport
+) -> list[str]:
 
     intermittent = [r for r in results if r.category == FailureCategory.INTERMITTENT]
     if not intermittent:
@@ -301,7 +298,7 @@ def _report_intermittent_md(results: list[Any], analysis: Any) -> list[str]:
     return lines
 
 
-def _report_tsan_md(results: list[Any]) -> list[str]:
+def _report_tsan_md(results: list[FTPackageResult]) -> list[str]:
     tsan_pkgs = [r for r in results if r.tsan_warning_iterations > 0]
     if not tsan_pkgs:
         return []
@@ -326,7 +323,7 @@ def _report_tsan_md(results: list[Any]) -> list[str]:
     return lines
 
 
-def _report_extensions_md(results: list[Any]) -> list[str]:
+def _report_extensions_md(results: list[FTPackageResult]) -> list[str]:
     ext_pkgs = [
         r
         for r in results
@@ -343,7 +340,7 @@ def _report_extensions_md(results: list[Any]) -> list[str]:
     ]
 
     for r in sorted(ext_pkgs, key=lambda r: r.package):
-        ext = r.extension_compat
+        ext = r.extension_compat or {}
         fallback = "Yes" if ext.get("gil_fallback_active") else "No"
         scan = ext.get("source_scan", {})
         if scan and scan.get("declarations"):
@@ -357,7 +354,7 @@ def _report_extensions_md(results: list[Any]) -> list[str]:
     return lines
 
 
-def _report_footer_md(meta: Any) -> list[str]:
+def _report_footer_md(meta: FTRunMeta) -> list[str]:
     lines = [
         "---",
         "",
