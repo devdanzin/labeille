@@ -247,6 +247,7 @@ def list_series(tracking_dir: Path) -> list[TrackingSeries]:
         return []
 
     result: list[TrackingSeries] = []
+    skipped = 0
     for entry in sorted(tracking_dir.iterdir()):
         if not entry.is_dir():
             continue
@@ -258,6 +259,9 @@ def list_series(tracking_dir: Path) -> list[TrackingSeries]:
             result.append(series)
         except (ValueError, FileNotFoundError):
             log.warning("Skipping malformed series in %s", entry)
+            skipped += 1
+    if skipped:
+        log.warning("Skipped %d malformed series", skipped)
 
     return result
 

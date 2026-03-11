@@ -1090,6 +1090,7 @@ def _select_packages(index: Index, config: FTRunConfig) -> list[PackageEntry]:
 
     # Load full PackageEntry objects for enriched packages.
     packages = []
+    skipped = 0
     for entry in index.packages:
         if not entry.enriched:
             continue
@@ -1100,6 +1101,9 @@ def _select_packages(index: Index, config: FTRunConfig) -> list[PackageEntry]:
             packages.append(pkg)
         except (OSError, ValueError, KeyError) as exc:
             log.warning("Could not load package %s, skipping: %s", entry.name, exc)
+            skipped += 1
+    if skipped:
+        log.warning("Skipped %d package(s) due to load errors", skipped)
 
     if config.packages_filter:
         names = set(config.packages_filter)
