@@ -6,6 +6,8 @@ from pathlib import Path
 
 import click
 
+from labeille.cli_utils import parse_csv_list
+
 
 @click.group()
 def ft() -> None:
@@ -195,16 +197,14 @@ def run(
         iterations=iterations,
         timeout=timeout,
         stall_threshold=stall_threshold,
-        packages_filter=(
-            [p.strip() for p in packages.split(",") if p.strip()] if packages else None
-        ),
+        packages_filter=parse_csv_list(packages) or None,
         top_n=top_n,
         registry_dir=registry_dir,
         repos_dir=repos_dir,
         venvs_dir=venvs_dir,
         results_dir=results_dir,
         env_overrides=env_overrides,
-        extra_deps=([d.strip() for d in extra_deps.split(",") if d.strip()] if extra_deps else []),
+        extra_deps=parse_csv_list(extra_deps),
         test_command_suffix=test_command_suffix,
         test_command_override=test_command_override,
         detect_extensions=detect_extensions,

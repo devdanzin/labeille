@@ -13,6 +13,7 @@ from pathlib import Path
 
 import click
 
+from labeille.cli_utils import parse_csv_list
 from labeille.logging import setup_logging
 
 
@@ -174,7 +175,7 @@ def survey(
     # Parse inline packages.
     package_names: list[str] | None = None
     if packages_csv:
-        package_names = [p.strip() for p in packages_csv.split(",") if p.strip()]
+        package_names = parse_csv_list(packages_csv)
 
     # Extract minor version for skip_versions filtering.
     from labeille.runner import extract_python_minor_version

@@ -12,6 +12,7 @@ from pathlib import Path
 
 import click
 
+from labeille.cli_utils import parse_csv_list
 from labeille.registry_ops import (
     PROTECTED_FIELDS,
     PROTECTED_INDEX_FIELDS,
@@ -219,9 +220,7 @@ def add_field_cmd(
     """Add a new field to package YAML files."""
     registry_dir = _auto_detect_registry(registry_dir)
     filters = _parse_filters(where_exprs)
-    packages_list = (
-        [p.strip() for p in packages_csv.split(",") if p.strip()] if packages_csv else None
-    )
+    packages_list = parse_csv_list(packages_csv) or None
 
     parsed_default = parse_default_value(default_value, field_type)
     value_text = format_yaml_value(parsed_default, field_type)
@@ -287,9 +286,7 @@ def remove_field_cmd(
         sys.exit(1)
 
     filters = _parse_filters(where_exprs)
-    packages_list = (
-        [p.strip() for p in packages_csv.split(",") if p.strip()] if packages_csv else None
-    )
+    packages_list = parse_csv_list(packages_csv) or None
 
     result = batch_remove_field(
         registry_dir,
@@ -340,9 +337,7 @@ def rename_field_cmd(
     """Rename a field in package YAML files."""
     registry_dir = _auto_detect_registry(registry_dir)
     filters = _parse_filters(where_exprs)
-    packages_list = (
-        [p.strip() for p in packages_csv.split(",") if p.strip()] if packages_csv else None
-    )
+    packages_list = parse_csv_list(packages_csv) or None
 
     result = batch_rename_field(
         registry_dir,
@@ -406,9 +401,7 @@ def set_field_cmd(
     """Set a field to a specific value on matching packages."""
     registry_dir = _auto_detect_registry(registry_dir)
     filters = _parse_filters(where_exprs)
-    packages_list = (
-        [p.strip() for p in packages_csv.split(",") if p.strip()] if packages_csv else None
-    )
+    packages_list = parse_csv_list(packages_csv) or None
 
     if not select_all and not filters and not packages_list:
         raise click.UsageError(
@@ -455,9 +448,7 @@ def validate_cmd(
     """Check YAML files against the PackageEntry schema."""
     registry_dir = _auto_detect_registry(registry_dir)
     filters = _parse_filters(where_exprs)
-    packages_list = (
-        [p.strip() for p in packages_csv.split(",") if p.strip()] if packages_csv else None
-    )
+    packages_list = parse_csv_list(packages_csv) or None
 
     from labeille.registry_ops import _list_package_files, _filter_files
 
