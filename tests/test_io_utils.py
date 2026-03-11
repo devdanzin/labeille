@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 import json
+import subprocess
 import tempfile
 import unittest
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from labeille.io_utils import (
     append_jsonl,
@@ -17,8 +18,10 @@ from labeille.io_utils import (
     extract_minor_version,
     generate_run_id,
     iter_jsonl,
+    kill_process_group,
     load_jsonl,
     load_yaml_strict,
+    run_in_process_group,
     safe_load_yaml,
     utc_now_iso,
     write_meta_json,
@@ -451,6 +454,166 @@ class TestWriteMetaJson(unittest.TestCase):
             data = json.loads(p.read_text(encoding="utf-8"))
             self.assertNotIn("old", data)
             self.assertIn("new", data)
+
+
+class TestKillProcessGroup(unittest.TestCase):
+    """Tests for kill_process_group."""
+
+    @patch("labeille.io_utils.os.killpg")
+    @patch("labeille.io_utils.os.getpgid", return_value=12345)
+    def test_kills_process_group(self, mock_getpgid: MagicMock, mock_killpg: MagicMock) -> None:
+        import signal
+
+        kill_process_group(999)
+        mock_getpgid.assert_called_once_with(999)
+        mock_killpg.assert_called_once_with(12345, signal.SIGKILL)
+
+    @patch("labeille.io_utils.os.getpgid", side_effect=ProcessLookupError)
+    def test_silently_ignores_already_exited(self, mock_getpgid: MagicMock) -> None:
+        kill_process_group(999)  # Should not raise.
+
+    @patch("labeille.io_utils.os.killpg", side_effect=PermissionError("not allowed"))
+    @patch("labeille.io_utils.os.getpgid", return_value=12345)
+    def test_logs_warning_on_permission_error(
+        self, mock_getpgid: MagicMock, mock_killpg: MagicMock
+    ) -> None:
+        kill_process_group(999)  # Should not raise, just log.
+
+    @patch("labeille.io_utils.os.killpg", side_effect=OSError("generic"))
+    @patch("labeille.io_utils.os.getpgid", return_value=12345)
+    def test_logs_warning_on_oserror(
+        self, mock_getpgid: MagicMock, mock_killpg: MagicMock
+    ) -> None:
+        kill_process_group(999)  # Should not raise, just log.
+
+
+class TestRunInProcessGroup(unittest.TestCase):
+    """Tests for run_in_process_group."""
+
+    @patch("labeille.io_utils.subprocess.Popen")
+    def test_successful_command_returns_completed_process(self, mock_popen: MagicMock) -> None:
+        mock_proc = MagicMock()
+        mock_proc.communicate.return_value = ("output", "errors")
+        mock_proc.returncode = 0
+        mock_proc.args = ["echo", "hello"]
+        mock_popen.return_value = mock_proc
+
+        result = run_in_process_group(["echo", "hello"], timeout=10)
+
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, "output")
+        self.assertEqual(result.stderr, "errors")
+        mock_popen.assert_called_once_with(
+            ["echo", "hello"],
+            shell=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            cwd=None,
+            env=None,
+            start_new_session=True,
+        )
+
+    @patch("labeille.io_utils.subprocess.Popen")
+    def test_shell_string_command(self, mock_popen: MagicMock) -> None:
+        mock_proc = MagicMock()
+        mock_proc.communicate.return_value = ("out", "err")
+        mock_proc.returncode = 0
+        mock_proc.args = "echo hello"
+        mock_popen.return_value = mock_proc
+
+        run_in_process_group("echo hello", timeout=10)
+
+        mock_popen.assert_called_once_with(
+            "echo hello",
+            shell=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            cwd=None,
+            env=None,
+            start_new_session=True,
+        )
+
+    @patch("labeille.io_utils.subprocess.Popen")
+    def test_passes_cwd_and_env(self, mock_popen: MagicMock) -> None:
+        mock_proc = MagicMock()
+        mock_proc.communicate.return_value = ("", "")
+        mock_proc.returncode = 0
+        mock_proc.args = ["cmd"]
+        mock_popen.return_value = mock_proc
+
+        run_in_process_group(["cmd"], cwd="/some/path", env={"KEY": "VAL"}, timeout=10)
+
+        call_kwargs = mock_popen.call_args[1]
+        self.assertEqual(call_kwargs["cwd"], "/some/path")
+        self.assertEqual(call_kwargs["env"], {"KEY": "VAL"})
+
+    @patch("labeille.io_utils.kill_process_group")
+    @patch("labeille.io_utils.subprocess.Popen")
+    def test_timeout_kills_process_group_and_raises(
+        self, mock_popen: MagicMock, mock_kill: MagicMock
+    ) -> None:
+        mock_proc = MagicMock()
+        mock_proc.pid = 42
+        mock_proc.communicate.side_effect = [
+            subprocess.TimeoutExpired("cmd", 10),
+            ("partial", "err"),
+        ]
+        mock_popen.return_value = mock_proc
+
+        with self.assertRaises(subprocess.TimeoutExpired) as ctx:
+            run_in_process_group(["cmd"], timeout=10)
+
+        mock_kill.assert_called_once_with(42)
+        self.assertEqual(ctx.exception.output, "partial")
+        self.assertEqual(ctx.exception.stderr, "err")
+
+    @patch("labeille.io_utils.kill_process_group")
+    @patch("labeille.io_utils.subprocess.Popen")
+    def test_timeout_fallback_to_proc_kill(
+        self, mock_popen: MagicMock, mock_kill: MagicMock
+    ) -> None:
+        mock_proc = MagicMock()
+        mock_proc.pid = 42
+        mock_proc.communicate.side_effect = [
+            subprocess.TimeoutExpired("cmd", 10),
+            subprocess.TimeoutExpired("cmd", 5),
+            ("final", "final_err"),
+        ]
+        mock_popen.return_value = mock_proc
+
+        with self.assertRaises(subprocess.TimeoutExpired):
+            run_in_process_group(["cmd"], timeout=10)
+
+        mock_kill.assert_called_once_with(42)
+        mock_proc.kill.assert_called_once()
+
+    @patch("labeille.io_utils.subprocess.Popen")
+    def test_nonzero_returncode_returned(self, mock_popen: MagicMock) -> None:
+        mock_proc = MagicMock()
+        mock_proc.communicate.return_value = ("", "error msg")
+        mock_proc.returncode = 1
+        mock_proc.args = ["failing"]
+        mock_popen.return_value = mock_proc
+
+        result = run_in_process_group(["failing"], timeout=10)
+
+        self.assertEqual(result.returncode, 1)
+        self.assertEqual(result.stderr, "error msg")
+
+    @patch("labeille.io_utils.subprocess.Popen")
+    def test_path_cwd_converted_to_string(self, mock_popen: MagicMock) -> None:
+        mock_proc = MagicMock()
+        mock_proc.communicate.return_value = ("", "")
+        mock_proc.returncode = 0
+        mock_proc.args = ["cmd"]
+        mock_popen.return_value = mock_proc
+
+        run_in_process_group(["cmd"], cwd=Path("/tmp/test"), timeout=10)
+
+        call_kwargs = mock_popen.call_args[1]
+        self.assertEqual(call_kwargs["cwd"], "/tmp/test")
 
 
 if __name__ == "__main__":
