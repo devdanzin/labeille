@@ -131,8 +131,10 @@ def kill_process_group(pid: int) -> None:
     try:
         pgid = os.getpgid(pid)
         os.killpg(pgid, signal.SIGKILL)
-    except (ProcessLookupError, PermissionError, OSError):
+    except ProcessLookupError:
         pass
+    except (PermissionError, OSError) as exc:
+        log.warning("Could not kill process group for PID %d: %s", pid, exc)
 
 
 def run_in_process_group(

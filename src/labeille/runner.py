@@ -833,7 +833,7 @@ def _setup_venv(
 
     if venv_existed and config.refresh_venvs:
         log.info("Refreshing venv for %s at %s", pkg.package, venv_dir)
-        shutil.rmtree(venv_dir)
+        shutil.rmtree(venv_dir, ignore_errors=True)
         venv_existed = False
 
     installer = resolve_installer(config.installer)

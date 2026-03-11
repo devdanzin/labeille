@@ -290,8 +290,8 @@ def fetch_pypi_metadata(
             resp = session.get(url, timeout=timeout, headers={"User-Agent": _USER_AGENT})
         else:
             resp = requests.get(url, timeout=timeout, headers={"User-Agent": _USER_AGENT})
-    except requests.ConnectionError:
-        log.error("Connection error fetching %s", package_name)
+    except requests.ConnectionError as exc:
+        log.error("Connection error fetching %s: %s", package_name, exc)
         return None
     except requests.Timeout:
         log.error("Timeout fetching %s", package_name)
