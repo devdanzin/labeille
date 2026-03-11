@@ -1209,9 +1209,9 @@ class TestGenerateRegistryReport(unittest.TestCase):
         pkg_none.repo = None
         packages.append(pkg_none)
         report = generate_registry_report(packages)
-        self.assertEqual(report.repo_hosts.github, 1)
-        self.assertEqual(report.repo_hosts.gitlab, 1)
-        self.assertEqual(report.repo_hosts.no_repo, 1)
+        self.assertEqual(report.repo_hosts.get("github", 0), 1)
+        self.assertEqual(report.repo_hosts.get("gitlab", 0), 1)
+        self.assertEqual(report.repo_hosts.get("no_repo", 0), 1)
 
     def test_report_install_complexity(self) -> None:
         packages = [
@@ -1221,10 +1221,10 @@ class TestGenerateRegistryReport(unittest.TestCase):
             _make_pkg("d", install_command="make install"),
         ]
         report = generate_registry_report(packages)
-        self.assertEqual(report.install_complexity.simple_editable, 1)
-        self.assertEqual(report.install_complexity.editable_with_extras, 1)
-        self.assertEqual(report.install_complexity.multi_step, 1)
-        self.assertEqual(report.install_complexity.custom, 1)
+        self.assertEqual(report.install_complexity.get("simple_editable", 0), 1)
+        self.assertEqual(report.install_complexity.get("editable_with_extras", 0), 1)
+        self.assertEqual(report.install_complexity.get("multi_step", 0), 1)
+        self.assertEqual(report.install_complexity.get("custom", 0), 1)
 
     def test_report_install_git_fetch_tags(self) -> None:
         packages = [
@@ -1234,8 +1234,8 @@ class TestGenerateRegistryReport(unittest.TestCase):
             ),
         ]
         report = generate_registry_report(packages)
-        self.assertEqual(report.install_complexity.has_git_fetch_tags, 1)
-        self.assertEqual(report.install_complexity.multi_step, 1)
+        self.assertEqual(report.install_complexity.get("has_git_fetch_tags", 0), 1)
+        self.assertEqual(report.install_complexity.get("multi_step", 0), 1)
 
     def test_report_compat_blockers(self) -> None:
         packages = [
@@ -1244,9 +1244,9 @@ class TestGenerateRegistryReport(unittest.TestCase):
             _make_pkg("c", skip=True, skip_reason="meson build error"),
         ]
         report = generate_registry_report(packages)
-        self.assertEqual(report.compat_blockers.pyo3_rust, 1)
-        self.assertEqual(report.compat_blockers.cython, 1)
-        self.assertEqual(report.compat_blockers.meson, 1)
+        self.assertEqual(report.compat_blockers.get("pyo3_rust", 0), 1)
+        self.assertEqual(report.compat_blockers.get("cython", 0), 1)
+        self.assertEqual(report.compat_blockers.get("meson", 0), 1)
 
     def test_report_compat_blockers_dedup(self) -> None:
         """Package with same blocker in skip_reason and skip_versions counted once."""
@@ -1259,7 +1259,7 @@ class TestGenerateRegistryReport(unittest.TestCase):
             ),
         ]
         report = generate_registry_report(packages)
-        self.assertEqual(report.compat_blockers.pyo3_rust, 1)
+        self.assertEqual(report.compat_blockers.get("pyo3_rust", 0), 1)
 
     def test_report_compat_blockers_package_lists(self) -> None:
         packages = [
@@ -1267,8 +1267,8 @@ class TestGenerateRegistryReport(unittest.TestCase):
             _make_pkg("orjson", skip=True, skip_reason="maturin/Rust"),
         ]
         report = generate_registry_report(packages, collect_package_lists=True)
-        self.assertIn("pyo3_rust", report.compat_blockers.packages_by_blocker)
-        names = report.compat_blockers.packages_by_blocker["pyo3_rust"]
+        self.assertIn("pyo3_rust", report.packages_by_blocker)
+        names = report.packages_by_blocker["pyo3_rust"]
         self.assertIn("cryptography", names)
         self.assertIn("orjson", names)
 

@@ -311,45 +311,6 @@ class VersionAnalysis:
 
 
 @dataclass
-class RepoHostStats:
-    """Distribution of repository hosting."""
-
-    github: int = 0
-    gitlab: int = 0
-    bitbucket: int = 0
-    codeberg: int = 0
-    other: int = 0
-    no_repo: int = 0
-
-
-@dataclass
-class InstallComplexity:
-    """Install command complexity classification."""
-
-    simple_editable: int = 0
-    editable_with_extras: int = 0
-    multi_step: int = 0
-    custom: int = 0
-    has_git_fetch_tags: int = 0
-
-
-@dataclass
-class CompatBlockers:
-    """Known compatibility blockers from skip reasons."""
-
-    pyo3_rust: int = 0
-    cython: int = 0
-    meson: int = 0
-    cmake: int = 0
-    fortran: int = 0
-    c_api_removed: int = 0
-    no_python_support: int = 0
-    other_build: int = 0
-
-    packages_by_blocker: dict[str, list[str]] = field(default_factory=dict)
-
-
-@dataclass
 class DownloadTierCoverage:
     """Coverage of top-downloaded packages."""
 
@@ -372,9 +333,10 @@ class RegistryReport:
     by_extension_type: dict[str, tuple[int, int]] = field(default_factory=dict)
     by_skip_category: dict[str, int] = field(default_factory=dict)
     per_version: list[VersionAnalysis] = field(default_factory=list)
-    repo_hosts: RepoHostStats = field(default_factory=RepoHostStats)
-    install_complexity: InstallComplexity = field(default_factory=InstallComplexity)
-    compat_blockers: CompatBlockers = field(default_factory=CompatBlockers)
+    repo_hosts: dict[str, int] = field(default_factory=dict)
+    install_complexity: dict[str, int] = field(default_factory=dict)
+    compat_blockers: dict[str, int] = field(default_factory=dict)
+    packages_by_blocker: dict[str, list[str]] = field(default_factory=dict)
     by_test_framework: dict[str, int] = field(default_factory=dict)
     download_tiers: DownloadTierCoverage = field(default_factory=DownloadTierCoverage)
     notable: dict[str, int] = field(default_factory=dict)
@@ -530,20 +492,20 @@ def _accumulate_package_stats(report: RegistryReport, pkg: PackageEntry) -> None
 
     # Repo host.
     host = _classify_repo_host(pkg.repo)
-    current = getattr(report.repo_hosts, host)
-    setattr(report.repo_hosts, host, current + 1)
+    report.repo_hosts[host] = report.repo_hosts.get(host, 0) + 1
 
     # Install complexity (active only).
     if not is_skipped:
         complexity = _classify_install_complexity(pkg.install_command)
-        current_val = getattr(report.install_complexity, complexity)
-        setattr(report.install_complexity, complexity, current_val + 1)
+        report.install_complexity[complexity] = report.install_complexity.get(complexity, 0) + 1
         if (
             pkg.install_command
             and "git fetch" in pkg.install_command
             and "--tags" in pkg.install_command
         ):
-            report.install_complexity.has_git_fetch_tags += 1
+            report.install_complexity["has_git_fetch_tags"] = (
+                report.install_complexity.get("has_git_fetch_tags", 0) + 1
+            )
 
     # Test framework (active only).
     if not is_skipped:
@@ -570,7 +532,7 @@ def _accumulate_package_stats(report: RegistryReport, pkg: PackageEntry) -> None
 
 def _analyze_compat_blockers(
     packages: list[PackageEntry],
-    blockers: CompatBlockers,
+    report: RegistryReport,
     *,
     collect_package_lists: bool = False,
 ) -> None:
@@ -587,10 +549,9 @@ def _analyze_compat_blockers(
             blocker = _classify_compat_blocker(reason)
             if blocker and blocker not in seen:
                 seen.add(blocker)
-                current_val = getattr(blockers, blocker)
-                setattr(blockers, blocker, current_val + 1)
+                report.compat_blockers[blocker] = report.compat_blockers.get(blocker, 0) + 1
                 if collect_package_lists:
-                    blockers.packages_by_blocker.setdefault(blocker, []).append(pkg.package)
+                    report.packages_by_blocker.setdefault(blocker, []).append(pkg.package)
 
 
 def _analyze_per_version(
@@ -688,9 +649,7 @@ def generate_registry_report(
             globally_skipped.add(pkg.package)
         _accumulate_package_stats(report, pkg)
 
-    _analyze_compat_blockers(
-        packages, report.compat_blockers, collect_package_lists=collect_package_lists
-    )
+    _analyze_compat_blockers(packages, report, collect_package_lists=collect_package_lists)
     report.per_version = _analyze_per_version(
         packages, target_python_versions, version_skipped, globally_skipped
     )
