@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import Any
 
 from labeille.bench.results import BenchMeta, BenchPackageResult
+from labeille.io_utils import dataclass_from_dict
 from labeille.bench.tracking import (
     TrackingRunEntry,
     TrackingSeries,
@@ -89,8 +90,6 @@ class PackageTrend:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> PackageTrend:
         """Deserialize from a dict, ignoring unknown fields."""
-        from labeille.io_utils import dataclass_from_dict
-
         return dataclass_from_dict(cls, data)
 
 
@@ -129,8 +128,6 @@ class RegressionAlert:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> RegressionAlert:
         """Deserialize from a dict, ignoring unknown fields."""
-        from labeille.io_utils import dataclass_from_dict
-
         return dataclass_from_dict(cls, data)
 
 

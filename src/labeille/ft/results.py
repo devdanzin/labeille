@@ -22,6 +22,7 @@ from typing import Any, Literal
 from labeille.io_utils import (
     append_jsonl,
     atomic_write_text,
+    dataclass_from_dict,
     load_json_file,
     load_jsonl,
     write_meta_json,
@@ -149,8 +150,6 @@ class IterationOutcome:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> IterationOutcome:
-        from labeille.io_utils import dataclass_from_dict
-
         return dataclass_from_dict(cls, data)
 
 
@@ -414,8 +413,6 @@ class FTRunMeta:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> FTRunMeta:
-        from labeille.io_utils import dataclass_from_dict
-
         return dataclass_from_dict(cls, data)
 
 
@@ -505,8 +502,6 @@ class FTRunSummary:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> FTRunSummary:
-        from labeille.io_utils import dataclass_from_dict
-
         return dataclass_from_dict(cls, data)
 
 

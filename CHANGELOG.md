@@ -49,6 +49,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Surface skipped-package counts in `ft/runner.py`, `bench/runner.py`, and `bench/tracking.py` so users know when results are incomplete.
 - Extract `dataclass_from_dict` utility to `io_utils.py` and deduplicate 13 identical `from_dict` implementations across `bench/` and `ft/` modules.
 - Use `atomic_write_text` for `ft/results.py` JSONL output and `runner.py` summary file to prevent corruption on interruption.
+- Remove 3 unnecessary private re-exports (`_EXTRAS_RE`, `_SELF_INSTALL_RE`, `_TAG_PATTERNS`) from `runner.py`.
+- Move `dataclass_from_dict` imports from method bodies to module level across 9 files.
+- Deduplicate `extract_minor_version`: move canonical implementation to `io_utils.py`, delegate from `runner.py` and `analyze.py`.
+- Delegate `format_signal_name` in `formatting.py` to `crash.signal_name` instead of duplicating signal conversion logic.
+- Replace inline JSON write in `bench/tracking.py` with `write_meta_json`.
 
 ### Tests
 - Add 26 tests for `bench track` subcommands: init, add, show, pin, unpin, list, trend, alert.

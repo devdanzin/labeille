@@ -17,7 +17,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from labeille.io_utils import run_in_process_group
+from labeille.io_utils import dataclass_from_dict, run_in_process_group
 from labeille.logging import get_logger
 
 log = get_logger("bench.timing")
@@ -257,8 +257,6 @@ class TestTiming:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> TestTiming:
         """Deserialize from a dict, ignoring unknown fields."""
-        from labeille.io_utils import dataclass_from_dict
-
         return dataclass_from_dict(cls, data)
 
 

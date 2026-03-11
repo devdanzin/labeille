@@ -108,6 +108,25 @@ def dataclass_from_dict(cls: type[T], data: dict[str, Any]) -> T:
     return cls(**{k: v for k, v in data.items() if k in known})
 
 
+def extract_minor_version(version_string: str) -> str:
+    """Extract ``major.minor`` from a full Python version string.
+
+    For example, ``"3.15.0a5+ (heads/main:abc1234)"`` returns ``"3.15"``.
+    Returns the original string if parsing fails.
+    """
+    parts = version_string.strip().split(".")
+    if len(parts) >= 2:
+        minor = ""
+        for ch in parts[1]:
+            if ch.isdigit():
+                minor += ch
+            else:
+                break
+        if parts[0].isdigit() and minor:
+            return f"{parts[0]}.{minor}"
+    return version_string
+
+
 def iter_jsonl(
     path: Path,
     deserialize: Callable[[dict[str, Any]], T],
