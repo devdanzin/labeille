@@ -11,6 +11,7 @@ import tempfile
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Literal
 
 from labeille.crash import detect_crash
 from labeille.logging import get_logger
@@ -48,7 +49,7 @@ class BisectConfig:
     env_overrides: dict[str, str] = field(default_factory=dict)
     work_dir: Path | None = None
     verbose: bool = False
-    installer: str = "auto"
+    installer: Literal["auto", "uv", "pip"] = "auto"
 
 
 @dataclass
@@ -57,7 +58,7 @@ class BisectStep:
 
     commit: str
     commit_short: str
-    status: str  # "good", "bad", "skip"
+    status: Literal["good", "bad", "skip"]
     detail: str = ""
     crash_signature: str | None = None
     duration_seconds: float = 0.0

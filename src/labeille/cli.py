@@ -735,7 +735,7 @@ def bisect_cmd(
         env_overrides=env_overrides,
         work_dir=work_dir,
         verbose=verbose,
-        installer=installer,
+        installer=installer,  # type: ignore[arg-type]  # Click Choice returns str
     )
 
     click.echo(f"Bisecting {package}: good={good_rev} bad={bad_rev}")

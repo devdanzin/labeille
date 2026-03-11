@@ -23,6 +23,7 @@ import subprocess
 import time
 from dataclasses import dataclass
 from pathlib import Path
+from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, Literal
 
 if TYPE_CHECKING:
@@ -122,7 +123,7 @@ class BenchProgress:
 
 
 # Type alias for the progress callback.
-ProgressCallback = Any  # Callable[[BenchProgress], None] | None
+ProgressCallback = Callable[[BenchProgress], None] | None
 
 
 # ---------------------------------------------------------------------------
@@ -146,7 +147,9 @@ class BenchRunner:
         progress_callback: ProgressCallback = None,
     ) -> None:
         self.config = config
-        self.progress: Any = progress_callback or self._default_progress
+        self.progress: Callable[[BenchProgress], None] = (
+            progress_callback or self._default_progress
+        )
         self._meta: BenchMeta | None = None
         self._results: list[BenchPackageResult] = []
 
@@ -340,7 +343,7 @@ class BenchRunner:
 
     def _run_sequential(
         self,
-        packages: list[Any],
+        packages: list[PackageEntry],
         results_path: Path,
     ) -> list[BenchPackageResult]:
         """Run benchmarks sequentially: all iterations of one package
@@ -360,7 +363,7 @@ class BenchRunner:
 
     def _run_interleaved(
         self,
-        packages: list[Any],
+        packages: list[PackageEntry],
         results_path: Path,
     ) -> list[BenchPackageResult]:
         """Run benchmarks interleaved: iteration 1 of all packages,
