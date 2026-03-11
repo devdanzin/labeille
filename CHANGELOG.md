@@ -33,6 +33,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Add warning logs for silent failures in `runner.py` (JIT check), `scan_deps.py` (dir scan), and `bisect.py` (deps install).
 - Extension probe script now reports `walk_error` and `skipped_modules` instead of silently passing.
 - Guard all `yaml.safe_load` call sites against `YAMLError`: add `safe_load_yaml` utility to `io_utils.py`, protect `registry.py`, `registry_ops.py`, `analyze_cli.py`, `migrations.py`, and `bench/config.py`.
+- Add 120-second timeout to git subprocess calls in `registry sync` to prevent indefinite hangs.
 
 ### Tests
 - Add 26 tests for `bench track` subcommands: init, add, show, pin, unpin, list, trend, alert.

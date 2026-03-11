@@ -87,6 +87,26 @@ class TestSyncCmd(unittest.TestCase):
         self.assertNotEqual(result.exit_code, 0)
         self.assertIn("Pull failed", result.output)
 
+    @unittest.mock.patch("subprocess.run")
+    def test_clone_timeout(self, mock_run: unittest.mock.MagicMock) -> None:
+        import subprocess
+
+        mock_run.side_effect = subprocess.TimeoutExpired(["git", "clone"], 120)
+        result = self.runner.invoke(registry, ["sync", "--registry-dir", str(self.target)])
+        self.assertNotEqual(result.exit_code, 0)
+        self.assertIn("timed out", result.output)
+
+    @unittest.mock.patch("subprocess.run")
+    def test_pull_timeout(self, mock_run: unittest.mock.MagicMock) -> None:
+        import subprocess
+
+        self.target.mkdir(parents=True)
+        (self.target / ".git").mkdir()
+        mock_run.side_effect = subprocess.TimeoutExpired(["git", "pull"], 120)
+        result = self.runner.invoke(registry, ["sync", "--registry-dir", str(self.target)])
+        self.assertNotEqual(result.exit_code, 0)
+        self.assertIn("timed out", result.output)
+
 
 if __name__ == "__main__":
     unittest.main()

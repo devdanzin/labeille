@@ -682,11 +682,16 @@ def sync_cmd(
     if (target / ".git").is_dir():
         # Existing clone — pull.
         click.echo(f"Updating registry at {target}...")
-        result = subprocess.run(
-            ["git", "-C", str(target), "pull", "--ff-only"],
-            capture_output=not verbose,
-            text=True,
-        )
+        try:
+            result = subprocess.run(
+                ["git", "-C", str(target), "pull", "--ff-only"],
+                capture_output=not verbose,
+                text=True,
+                timeout=120,
+            )
+        except subprocess.TimeoutExpired:
+            click.echo("Pull timed out after 120 seconds.", err=True)
+            sys.exit(1)
         if result.returncode != 0:
             click.echo(f"Pull failed (exit {result.returncode}).", err=True)
             if not verbose and result.stderr:
@@ -708,11 +713,16 @@ def sync_cmd(
         # Fresh clone.
         click.echo(f"Cloning laruche registry into {target}...")
         target.parent.mkdir(parents=True, exist_ok=True)
-        result = subprocess.run(
-            ["git", "clone", url, str(target)],
-            capture_output=not verbose,
-            text=True,
-        )
+        try:
+            result = subprocess.run(
+                ["git", "clone", url, str(target)],
+                capture_output=not verbose,
+                text=True,
+                timeout=120,
+            )
+        except subprocess.TimeoutExpired:
+            click.echo("Clone timed out after 120 seconds.", err=True)
+            sys.exit(1)
         if result.returncode != 0:
             click.echo(f"Clone failed (exit {result.returncode}).", err=True)
             if not verbose and result.stderr:
