@@ -95,6 +95,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Add 12 behavioral tests for `ft compare`, `ft report`, and `ft export` CLI commands.
 - Add `test_repo_ops.py` with 31 tests for `clone_repo`, `pull_repo`, `checkout_revision`, `parse_package_specs`, and `parse_repo_overrides`.
 - Add 35 tests to `test_io_utils.py` for `load_yaml_strict`, `iter_jsonl`, `load_jsonl`, `append_jsonl`, `dataclass_from_dict`, `extract_minor_version`, `generate_run_id`, and `write_meta_json`.
+- Add 11 tests for `kill_process_group` and `run_in_process_group` covering process group kills, timeout handling, and fallback to `proc.kill()`.
 
 ### Documentation
 - Update CLAUDE.md: fix stale test count (546 → 2068) and add 13 missing modules to architecture section.
