@@ -556,7 +556,7 @@ class TestMigrateCLI(unittest.TestCase):
             ["migrate", "nonexistent-migration", "--registry-dir", str(self.registry_dir)],
         )
         self.assertNotEqual(result.exit_code, 0)
-        self.assertIn("unknown migration", result.output)
+        self.assertIn("Unknown migration", result.output)
 
     def test_migrate_no_name_no_list(self) -> None:
         result = self.runner.invoke(
