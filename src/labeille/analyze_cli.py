@@ -207,14 +207,18 @@ def _load_all_packages(
     filters: list[FieldFilter] = [parse_where(e) for e in where_exprs]
     packages: list[PackageEntry] = []
 
-    import yaml
+    from labeille.io_utils import safe_load_yaml
 
     for f in sorted(packages_dir.glob("*.yaml")):
         if filters:
-            raw = yaml.safe_load(f.read_text(encoding="utf-8"))
-            if not isinstance(raw, dict) or not matches(raw, filters):
+            raw = safe_load_yaml(f)
+            if raw is None or not matches(raw, filters):
                 continue
-        pkg = load_package(f.stem, registry_dir)
+        try:
+            pkg = load_package(f.stem, registry_dir)
+        except (OSError, ValueError, KeyError) as exc:
+            click.echo(f"Warning: skipping {f.stem}: {exc}", err=True)
+            continue
         packages.append(pkg)
 
     return packages

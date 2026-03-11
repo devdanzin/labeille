@@ -321,7 +321,10 @@ def load_profile(profile_path: Path) -> dict[str, Any]:
         raise FileNotFoundError(f"Profile not found: {profile_path}")
 
     text = profile_path.read_text(encoding="utf-8")
-    data = yaml.safe_load(text)
+    try:
+        data = yaml.safe_load(text)
+    except yaml.YAMLError as exc:
+        raise ValueError(f"Invalid YAML in profile {profile_path}: {exc}") from exc
 
     if not isinstance(data, dict):
         raise ValueError(f"Profile must be a YAML mapping, got {type(data).__name__}")

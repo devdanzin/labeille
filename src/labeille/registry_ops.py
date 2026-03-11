@@ -12,6 +12,7 @@ from typing import Any, get_type_hints
 
 import yaml
 
+from labeille.io_utils import safe_load_yaml
 from labeille.registry import (
     IndexEntry,
     PackageEntry,
@@ -189,8 +190,8 @@ def _filter_files(
     if filters:
         filtered = []
         for f in result:
-            data = yaml.safe_load(f.read_text(encoding="utf-8"))
-            if isinstance(data, dict) and matches(data, filters):
+            data = safe_load_yaml(f)
+            if data is not None and matches(data, filters):
                 filtered.append(f)
         result = filtered
 
@@ -472,7 +473,11 @@ def batch_set_field(
     for f in files:
         lines = _read_lines(f)
         # Parse for filtering and type detection only.
-        raw = yaml.safe_load("".join(lines))
+        try:
+            raw = yaml.safe_load("".join(lines))
+        except yaml.YAMLError as exc:
+            errors.append(f"{f.name}: malformed YAML: {exc}")
+            continue
         if not isinstance(raw, dict):
             errors.append(f"{f.name}: invalid YAML")
             continue
@@ -597,7 +602,11 @@ def validate_registry(
     issues: list[ValidationIssue] = []
 
     for f in files:
-        raw = yaml.safe_load(f.read_text(encoding="utf-8"))
+        try:
+            raw = yaml.safe_load(f.read_text(encoding="utf-8"))
+        except yaml.YAMLError as exc:
+            issues.append(ValidationIssue(f.name, "error", f"malformed YAML: {exc}"))
+            continue
         if not isinstance(raw, dict):
             issues.append(ValidationIssue(f.name, "error", "file does not contain a YAML mapping"))
             continue

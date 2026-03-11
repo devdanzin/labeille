@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch
 
-from labeille.io_utils import atomic_write_text, utc_now_iso
+from labeille.io_utils import atomic_write_text, safe_load_yaml, utc_now_iso
 
 
 class TestAtomicWriteText(unittest.TestCase):
@@ -87,6 +87,45 @@ class TestUtcNowIso(unittest.TestCase):
         result = utc_now_iso()
         # Should not contain a dot (microsecond separator)
         self.assertNotIn(".", result)
+
+
+class TestSafeLoadYaml(unittest.TestCase):
+    """Tests for safe_load_yaml."""
+
+    def test_valid_yaml(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / "test.yaml"
+            p.write_text("key: value\n", encoding="utf-8")
+            result = safe_load_yaml(p)
+            self.assertEqual(result, {"key": "value"})
+
+    def test_malformed_yaml_returns_none(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / "bad.yaml"
+            p.write_text(":\n  - :\n    bad: [unterminated\n", encoding="utf-8")
+            result = safe_load_yaml(p)
+            self.assertIsNone(result)
+
+    def test_non_dict_returns_none(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / "list.yaml"
+            p.write_text("- item1\n- item2\n", encoding="utf-8")
+            result = safe_load_yaml(p)
+            self.assertIsNone(result)
+
+    def test_empty_file_returns_none(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / "empty.yaml"
+            p.write_text("", encoding="utf-8")
+            result = safe_load_yaml(p)
+            self.assertIsNone(result)
+
+    def test_scalar_yaml_returns_none(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / "scalar.yaml"
+            p.write_text("just a string\n", encoding="utf-8")
+            result = safe_load_yaml(p)
+            self.assertIsNone(result)
 
 
 if __name__ == "__main__":

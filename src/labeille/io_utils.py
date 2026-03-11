@@ -11,6 +11,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterator, TypeVar
 
+import yaml
+
 from labeille.logging import get_logger
 
 log = get_logger("io_utils")
@@ -48,6 +50,24 @@ def atomic_write_text(path: Path, content: str, *, encoding: str = "utf-8") -> N
 def utc_now_iso() -> str:
     """Return the current UTC time as an ISO 8601 string with Z suffix."""
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def safe_load_yaml(path: Path) -> dict[str, Any] | None:
+    """Load a YAML file, returning ``None`` on parse errors.
+
+    Catches ``yaml.YAMLError`` and logs a warning so that a single
+    malformed file does not crash batch operations.  Returns ``None``
+    if the file cannot be parsed or does not contain a YAML mapping.
+    """
+    try:
+        data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except yaml.YAMLError as exc:
+        log.warning("Skipping %s: malformed YAML: %s", path.name, exc)
+        return None
+    if not isinstance(data, dict):
+        log.warning("Skipping %s: expected YAML mapping, got %s", path.name, type(data).__name__)
+        return None
+    return data
 
 
 def write_meta_json(path: Path, data: dict[str, Any]) -> None:

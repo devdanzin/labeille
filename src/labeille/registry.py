@@ -244,7 +244,10 @@ def load_index(registry_path: Path) -> Index:
     index_file = registry_path / "index.yaml"
     if not index_file.exists():
         return Index()
-    data = yaml.safe_load(index_file.read_text(encoding="utf-8"))
+    try:
+        data = yaml.safe_load(index_file.read_text(encoding="utf-8"))
+    except yaml.YAMLError as exc:
+        raise RegistrySchemaError(f"Malformed index.yaml: {exc}") from exc
     if not isinstance(data, dict):
         return Index()
     packages = [_dict_to_index_entry(p) for p in data.get("packages", []) if isinstance(p, dict)]
@@ -314,9 +317,13 @@ def load_package(name: str, registry_path: Path) -> PackageEntry:
 
     Raises:
         FileNotFoundError: If the package YAML file does not exist.
+        RegistrySchemaError: If the YAML is malformed.
     """
     p = package_path(name, registry_path)
-    data = yaml.safe_load(p.read_text(encoding="utf-8"))
+    try:
+        data = yaml.safe_load(p.read_text(encoding="utf-8"))
+    except yaml.YAMLError as exc:
+        raise RegistrySchemaError(f"Malformed YAML in {p.name}: {exc}") from exc
     if not isinstance(data, dict):
         return PackageEntry(package=name)
     return _dict_to_package(data)

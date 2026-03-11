@@ -178,6 +178,15 @@ class TestPackageIO(unittest.TestCase):
         self.assertIsNone(loaded.import_name)
         self.assertEqual(loaded.skip_versions, {})
 
+    def test_load_malformed_yaml_raises(self) -> None:
+        import labeille.registry
+
+        p = self.registry / "packages" / "badpkg.yaml"
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(":\n  bad: [unterminated\n", encoding="utf-8")
+        with self.assertRaises(labeille.registry.RegistrySchemaError):
+            load_package("badpkg", self.registry)
+
 
 class TestIndexIO(unittest.TestCase):
     def setUp(self) -> None:
@@ -237,6 +246,14 @@ class TestIndexIO(unittest.TestCase):
             self.assertEqual(got.extension_type, orig.extension_type)
             self.assertEqual(got.enriched, orig.enriched)
             self.assertEqual(got.skip, orig.skip)
+
+    def test_load_malformed_index_raises(self) -> None:
+        import labeille.registry
+
+        index_file = self.registry / "index.yaml"
+        index_file.write_text(":\n  bad: [unterminated\n", encoding="utf-8")
+        with self.assertRaises(labeille.registry.RegistrySchemaError):
+            load_index(self.registry)
 
 
 class TestIndexSorting(unittest.TestCase):
