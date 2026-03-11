@@ -219,7 +219,7 @@ def format_summary(
 
     # Run header
     parts.append("")
-    install_from = getattr(config, "install_from", "source")
+    install_from = config.install_from or "source"
     parts.append(
         _format_run_header(
             config.run_id, python_version, jit_enabled, total_duration, install_from
