@@ -330,10 +330,13 @@ def probe_gil_fallback(
         compat.import_ok = False
     except json.JSONDecodeError as exc:
         compat.probe_error = f"Probe output not valid JSON: {exc}"
+        compat.import_ok = False
     except KeyError as exc:
         compat.probe_error = f"Probe output missing field: {exc}"
+        compat.import_ok = False
     except (FileNotFoundError, OSError) as exc:
         compat.probe_error = f"Could not run probe: {exc}"
+        compat.import_ok = False
 
     return compat
 

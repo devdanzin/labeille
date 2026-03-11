@@ -70,6 +70,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Use `atomic_write_text` for `bench/results.py` JSONL batch write and remove unused `to_jsonl_line`/`from_jsonl_line` methods.
 - Use `dataclass_from_dict` in `BenchIteration.from_dict` instead of inline field-filtering reimplementation.
 - Use `load_json_file` in `bench/tracking.py` `load_series` instead of inline JSON parsing.
+- Add `exc_info=True` to 14 `log.error()` calls inside `except` blocks across `runner.py`, `resolve.py`, `bench/runner.py`, and `ft/runner.py` to preserve tracebacks for debugging.
+- Explicitly set `import_ok = False` in `ft/compat.py` `JSONDecodeError`, `KeyError`, and `OSError` handlers for robustness.
 
 ### Tests
 - Add 26 tests for `bench track` subcommands: init, add, show, pin, unpin, list, trend, alert.
