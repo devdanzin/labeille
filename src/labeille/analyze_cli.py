@@ -486,143 +486,126 @@ def format_registry_verbose(report: RegistryReport) -> str:
     return "\n".join(lines)
 
 
+def _md_table(heading: str, headers: list[str], rows: list[list[str]]) -> list[str]:
+    """Build a Markdown table section with heading, header row, and data rows."""
+    if not rows:
+        return []
+    lines = [f"## {heading}", ""]
+    sep = [":--" if i == 0 else "--:" for i in range(len(headers))]
+    lines.append("| " + " | ".join(headers) + " |")
+    lines.append("|" + "|".join(sep) + "|")
+    for row in rows:
+        lines.append("| " + " | ".join(row) + " |")
+    lines.append("")
+    return lines
+
+
 def export_registry_report_md(report: RegistryReport) -> str:
     """Export the registry report as a Markdown document."""
-    lines: list[str] = []
-    lines.append("# Registry Report")
-    lines.append("")
-    lines.append(f"Generated: {report.generated_at}")
+    lines: list[str] = ["# Registry Report", "", f"Generated: {report.generated_at}"]
     if report.filter_description:
         lines.append(f"Filter: {report.filter_description}")
     lines.append("")
 
-    # Overview table.
-    lines.append("## Overview")
-    lines.append("")
-    lines.append("| Metric | Count | Percentage |")
-    lines.append("|--------|------:|------------|")
-    lines.append(f"| Total packages | {report.total:,} | \u2014 |")
-    lines.append(f"| Active | {report.active:,} | {_pct(report.active, report.total).strip()} |")
-    lines.append(
-        f"| Skipped | {report.skipped:,} | {_pct(report.skipped, report.total).strip()} |"
-    )
     enr = report.enrichment
-    lines.append(f"| Enriched | {enr.enriched:,} | {_pct(enr.enriched, enr.total).strip()} |")
-    lines.append("")
+    lines += _md_table(
+        "Overview",
+        ["Metric", "Count", "Percentage"],
+        [
+            ["Total packages", f"{report.total:,}", "\u2014"],
+            ["Active", f"{report.active:,}", _pct(report.active, report.total).strip()],
+            ["Skipped", f"{report.skipped:,}", _pct(report.skipped, report.total).strip()],
+            ["Enriched", f"{enr.enriched:,}", _pct(enr.enriched, enr.total).strip()],
+        ],
+    )
 
-    # Package types.
     if report.by_extension_type:
-        lines.append("## Package Types")
-        lines.append("")
-        lines.append("| Type | Total | Active | Skipped | % of Total |")
-        lines.append("|------|------:|-------:|--------:|-----------:|")
+        rows = []
         for ext_type in sorted(report.by_extension_type.keys()):
             active, skipped = report.by_extension_type[ext_type]
             total = active + skipped
-            lines.append(
-                f"| {ext_type} | {total:,} | {active:,} | {skipped:,} | "
-                f"{_pct(total, report.total).strip()} |"
+            rows.append(
+                [
+                    ext_type,
+                    f"{total:,}",
+                    f"{active:,}",
+                    f"{skipped:,}",
+                    _pct(total, report.total).strip(),
+                ]
             )
-        lines.append("")
+        lines += _md_table(
+            "Package Types",
+            ["Type", "Total", "Active", "Skipped", "% of Total"],
+            rows,
+        )
 
-    # Version readiness.
     if report.per_version:
-        lines.append("## Version Readiness")
-        lines.append("")
-        lines.append("| Python Version | Active | Version-Skipped | Active % |")
-        lines.append("|---------------|-------:|----------------:|---------:|")
+        rows = []
         for va in report.per_version:
-            ver_skipped = va.skipped - report.skipped
-            if ver_skipped < 0:
-                ver_skipped = 0
+            ver_skipped = max(va.skipped - report.skipped, 0)
             active_pct = _pct(va.total_active, va.total_active + va.skipped).strip()
-            lines.append(
-                f"| {va.version} | {va.total_active:,} | {ver_skipped:,} | {active_pct} |"
-            )
-        lines.append("")
+            rows.append([va.version, f"{va.total_active:,}", f"{ver_skipped:,}", active_pct])
+        lines += _md_table(
+            "Version Readiness",
+            ["Python Version", "Active", "Version-Skipped", "Active %"],
+            rows,
+        )
 
-    # Skip reasons.
     if report.by_skip_category:
-        lines.append("## Skip Reasons")
-        lines.append("")
-        lines.append("| Reason | Count | % of Skipped |")
-        lines.append("|--------|------:|-------------:|")
-        for cat, count in sorted(report.by_skip_category.items(), key=lambda x: -x[1]):
-            lines.append(f"| {cat} | {count:,} | {_pct(count, report.skipped).strip()} |")
-        lines.append("")
+        rows = [
+            [cat, f"{count:,}", _pct(count, report.skipped).strip()]
+            for cat, count in sorted(report.by_skip_category.items(), key=lambda x: -x[1])
+        ]
+        lines += _md_table("Skip Reasons", ["Reason", "Count", "% of Skipped"], rows)
 
-    # Compatibility blockers.
-    blocker_items_md: list[tuple[str, int]] = []
-    for field_name, label in _BLOCKER_LABELS.items():
-        count = report.compat_blockers.get(field_name, 0)
-        if count > 0:
-            blocker_items_md.append((label, count))
-    if blocker_items_md:
-        lines.append("## Compatibility Blockers")
-        lines.append("")
-        lines.append("| Technology | Packages |")
-        lines.append("|-----------|--------:|")
-        for label, count in sorted(blocker_items_md, key=lambda x: -x[1]):
-            lines.append(f"| {label} | {count:,} |")
-        lines.append("")
+    blocker_rows = [
+        [label, f"{count:,}"]
+        for field_name, label in _BLOCKER_LABELS.items()
+        if (count := report.compat_blockers.get(field_name, 0)) > 0
+    ]
+    if blocker_rows:
+        blocker_rows.sort(key=lambda r: -int(r[1].replace(",", "")))
+        lines += _md_table("Compatibility Blockers", ["Technology", "Packages"], blocker_rows)
 
-    # Download coverage.
     tiers = report.download_tiers
     if tiers.all_packages != (0, 0):
-        lines.append("## Download Coverage")
-        lines.append("")
-        lines.append("| Tier | Active | Total | Coverage |")
-        lines.append("|------|-------:|------:|---------:|")
-        for label, (active, total) in [
-            ("Top 100", tiers.top_100),
-            ("Top 500", tiers.top_500),
-            ("Top 1000", tiers.top_1000),
-            ("Top 2000", tiers.top_2000),
-        ]:
-            if total > 0:
-                lines.append(
-                    f"| {label} | {active:,} | {total:,} | {_pct(active, total).strip()} |"
-                )
-        lines.append("")
-
-    # Repository hosting.
-    host_items_md: list[tuple[str, int]] = [
-        (label, report.repo_hosts.get(key, 0)) for key, label in _HOST_LABELS
-    ]
-    host_items_md = [(lb, ct) for lb, ct in host_items_md if ct > 0]
-    if host_items_md:
-        lines.append("## Repository Hosting")
-        lines.append("")
-        lines.append("| Host | Count | Percentage |")
-        lines.append("|------|------:|-----------:|")
-        for label, count in host_items_md:
-            lines.append(f"| {label} | {count:,} | {_pct(count, report.total).strip()} |")
-        lines.append("")
-
-    # Install complexity.
-    if report.active > 0:
-        install_items_md: list[tuple[str, int]] = [
-            (label, report.install_complexity.get(key, 0)) for key, label in _INSTALL_LABELS
+        rows = [
+            [label, f"{active:,}", f"{total:,}", _pct(active, total).strip()]
+            for label, (active, total) in [
+                ("Top 100", tiers.top_100),
+                ("Top 500", tiers.top_500),
+                ("Top 1000", tiers.top_1000),
+                ("Top 2000", tiers.top_2000),
+            ]
+            if total > 0
         ]
-        install_items_md = [(lb, ct) for lb, ct in install_items_md if ct > 0]
-        if install_items_md:
-            lines.append("## Install Complexity")
-            lines.append("")
-            lines.append("| Type | Count | % of Active |")
-            lines.append("|------|------:|------------:|")
-            for label, count in install_items_md:
-                lines.append(f"| {label} | {count:,} | {_pct(count, report.active).strip()} |")
-            lines.append("")
+        lines += _md_table("Download Coverage", ["Tier", "Active", "Total", "Coverage"], rows)
 
-    # Test framework.
+    host_rows = [
+        [label, f"{ct:,}", _pct(ct, report.total).strip()]
+        for key, label in _HOST_LABELS
+        if (ct := report.repo_hosts.get(key, 0)) > 0
+    ]
+    if host_rows:
+        lines += _md_table("Repository Hosting", ["Host", "Count", "Percentage"], host_rows)
+
+    if report.active > 0:
+        install_rows = [
+            [label, f"{ct:,}", _pct(ct, report.active).strip()]
+            for key, label in _INSTALL_LABELS
+            if (ct := report.install_complexity.get(key, 0)) > 0
+        ]
+        if install_rows:
+            lines += _md_table(
+                "Install Complexity", ["Type", "Count", "% of Active"], install_rows
+            )
+
     if report.by_test_framework:
-        lines.append("## Test Framework")
-        lines.append("")
-        lines.append("| Framework | Count | % of Active |")
-        lines.append("|-----------|------:|------------:|")
-        for fw, count in sorted(report.by_test_framework.items(), key=lambda x: -x[1]):
-            lines.append(f"| {fw} | {count:,} | {_pct(count, report.active).strip()} |")
-        lines.append("")
+        rows = [
+            [fw, f"{count:,}", _pct(count, report.active).strip()]
+            for fw, count in sorted(report.by_test_framework.items(), key=lambda x: -x[1])
+        ]
+        lines += _md_table("Test Framework", ["Framework", "Count", "% of Active"], rows)
 
     return "\n".join(lines)
 
