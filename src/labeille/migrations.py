@@ -16,7 +16,7 @@ from typing import Any, Callable
 
 import yaml
 
-from labeille.io_utils import atomic_write_text, utc_now_iso
+from labeille.io_utils import atomic_write_text, safe_load_yaml, utc_now_iso
 from labeille.logging import get_logger
 from labeille.registry import _dict_to_package, _package_to_dict
 
@@ -206,13 +206,8 @@ def execute_migration(
     results: list[MigrationResult] = []
 
     for f in files:
-        try:
-            raw = yaml.safe_load(f.read_text(encoding="utf-8"))
-        except yaml.YAMLError as exc:
-            log.warning("Skipping %s: malformed YAML: %s", f.name, exc)
-            skipped_count += 1
-            continue
-        if not isinstance(raw, dict):
+        raw = safe_load_yaml(f)
+        if raw is None:
             skipped_count += 1
             continue
 

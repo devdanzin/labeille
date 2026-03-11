@@ -63,6 +63,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Replace `getattr` with direct attribute access on typed dataclass objects in `analyze.py`, `summary.py`, `bench/runner.py`, and `ft/runner.py`.
 - Migrate `registry_cli.py` from `sys.exit(1)` to `raise click.ClickException(...)` for validation errors and sync failures, matching the rest of the CLI surface.
 - Extract `_HOST_LABELS` and `_INSTALL_LABELS` to module-level constants in `analyze_cli.py`, removing duplicates between terminal and markdown formatters.
+- Migrate `RunMeta.from_dict` and `PackageResult.from_dict` in `analyze.py` to use `dataclass_from_dict` utility.
+- Use `safe_load_yaml` in `migrations.py` instead of duplicating the YAML load-and-validate pattern.
 
 ### Tests
 - Add 26 tests for `bench track` subcommands: init, add, show, pin, unpin, list, trend, alert.
