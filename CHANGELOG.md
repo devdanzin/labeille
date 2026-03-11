@@ -90,6 +90,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Add `exc_info=True` to 14 `log.error()` calls inside `except` blocks across `runner.py`, `resolve.py`, `bench/runner.py`, and `ft/runner.py` to preserve tracebacks for debugging.
 - Explicitly set `import_ok = False` in `ft/compat.py` `JSONDecodeError`, `KeyError`, and `OSError` handlers for robustness.
 
+### Documentation
+- Add missing `help=` text to 21 CLI options across `cli.py`, `analyze_cli.py`, `ft_cli.py`, `compat_cli.py`, and `bench_cli.py`.
+
 ### Tests
 - Add 26 tests for `bench track` subcommands: init, add, show, pin, unpin, list, trend, alert.
 - Add CLI tests for `registry` subcommands: rename-field, set-field (--all, --where, --packages), validate (--packages filter), migrate (list, unknown, missing name), sync (clone, pull, failure, non-git), add-index-field, remove-index-field, and group help.
