@@ -24,6 +24,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Import check `OSError` now sets `install_error` status instead of silently continuing.
 - Raise compat survey clone/build failure log levels from `debug` to `warning` for visibility.
 - Rename `from_dict` parameter `d` → `data` in `CompatResult` and `CompatMeta` for consistency.
+- Bisect extra deps install failure now returns `skip` step instead of silently continuing.
+- Narrow `except Exception` to specific types in `analyze_cli.py` and `ft/compat.py`.
+- Add warning logs for silent failures in `runner.py` (JIT check), `scan_deps.py` (dir scan), and `bisect.py` (deps install).
+- Extension probe script now reports `walk_error` and `skipped_modules` instead of silently passing.
 
 ### Tests
 - Add 26 tests for `bench track` subcommands: init, add, show, pin, unpin, list, trend, alert.

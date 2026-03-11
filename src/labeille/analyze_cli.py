@@ -41,7 +41,12 @@ from labeille.formatting import (
     format_table,
     truncate,
 )
-from labeille.registry import PackageEntry, load_package, package_exists
+from labeille.registry import (
+    PackageEntry,
+    RegistrySchemaError,
+    load_package,
+    package_exists,
+)
 
 
 @click.group()
@@ -154,7 +159,7 @@ def registry_cmd(
             index = load_index(registry_dir)
         except FileNotFoundError:
             pass
-        except Exception as exc:
+        except (OSError, RegistrySchemaError) as exc:
             click.echo(
                 f"Warning: could not load index ({exc}); download tier coverage will be omitted.",
                 err=True,
