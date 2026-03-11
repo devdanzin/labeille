@@ -147,7 +147,7 @@ def iter_jsonl(
                 data = json.loads(line)
                 yield deserialize(data)
             except (json.JSONDecodeError, KeyError, TypeError) as exc:
-                log.debug("Skipping malformed JSONL line in %s: %s", path.name, exc)
+                log.warning("Skipping malformed JSONL line in %s: %s", path.name, exc)
                 skipped += 1
     if skipped:
         log.warning("Skipped %d malformed line(s) in %s", skipped, path)

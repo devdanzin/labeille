@@ -818,10 +818,13 @@ def _survey_package(
         # Save build logs.
         logs_dir = output_dir / "build_logs"
         logs_dir.mkdir(exist_ok=True)
-        if install_proc.stderr:
-            (logs_dir / f"{pkg.name}.stderr").write_text(install_proc.stderr, encoding="utf-8")
-        if install_proc.stdout:
-            (logs_dir / f"{pkg.name}.stdout").write_text(install_proc.stdout, encoding="utf-8")
+        try:
+            if install_proc.stderr:
+                (logs_dir / f"{pkg.name}.stderr").write_text(install_proc.stderr, encoding="utf-8")
+            if install_proc.stdout:
+                (logs_dir / f"{pkg.name}.stdout").write_text(install_proc.stdout, encoding="utf-8")
+        except OSError as exc:
+            log.warning("Could not save build logs for %s: %s", pkg.name, exc)
 
         # Check install result.
         result.exit_code = install_proc.returncode

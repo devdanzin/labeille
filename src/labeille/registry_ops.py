@@ -162,7 +162,12 @@ def _list_package_files(registry_dir: Path) -> list[Path]:
 
 
 def _read_lines(path: Path) -> list[str]:
-    """Read a file as a list of lines (preserving newlines)."""
+    """Read a file as a list of lines (preserving newlines).
+
+    Raises:
+        OSError: If the file cannot be read.
+        UnicodeDecodeError: If the file is not valid UTF-8.
+    """
     text = path.read_text(encoding="utf-8")
     # splitlines(True) keeps line endings
     return text.splitlines(True)
@@ -242,7 +247,11 @@ def batch_add_field(
     sample_diffs: list[tuple[str, str, str]] = []
 
     for f in files:
-        lines = _read_lines(f)
+        try:
+            lines = _read_lines(f)
+        except (OSError, UnicodeDecodeError) as exc:
+            errors.append(f"{f.name}: {exc}")
+            continue
         if has_field(lines, field_name):
             if lenient:
                 skipped.append(f.name)
@@ -334,7 +343,11 @@ def batch_remove_field(
     sample_diffs: list[tuple[str, str, str]] = []
 
     for f in files:
-        lines = _read_lines(f)
+        try:
+            lines = _read_lines(f)
+        except (OSError, UnicodeDecodeError) as exc:
+            errors.append(f"{f.name}: {exc}")
+            continue
         if not has_field(lines, field_name):
             if lenient:
                 skipped.append(f.name)
@@ -396,7 +409,11 @@ def batch_rename_field(
     sample_diffs: list[tuple[str, str, str]] = []
 
     for f in files:
-        lines = _read_lines(f)
+        try:
+            lines = _read_lines(f)
+        except (OSError, UnicodeDecodeError) as exc:
+            errors.append(f"{f.name}: {exc}")
+            continue
         has_old = has_field(lines, old_name)
         has_new = has_field(lines, new_name)
 
@@ -471,7 +488,11 @@ def batch_set_field(
     sample_diffs: list[tuple[str, str, str]] = []
 
     for f in files:
-        lines = _read_lines(f)
+        try:
+            lines = _read_lines(f)
+        except (OSError, UnicodeDecodeError) as exc:
+            errors.append(f"{f.name}: {exc}")
+            continue
         # Parse for filtering and type detection only.
         try:
             raw = yaml.safe_load("".join(lines))
