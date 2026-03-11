@@ -604,10 +604,10 @@ def load_patterns_from_yaml(path: Path) -> list[ErrorPattern]:
     Raises:
         ValueError: If the YAML structure is invalid or a regex fails to compile.
     """
-    import yaml
+    from labeille.io_utils import load_yaml_strict
 
-    data = yaml.safe_load(path.read_text(encoding="utf-8"))
-    if not isinstance(data, dict) or "patterns" not in data:
+    data = load_yaml_strict(path)
+    if "patterns" not in data:
         raise ValueError(f"Expected top-level 'patterns' key in {path}")
 
     result: list[ErrorPattern] = []

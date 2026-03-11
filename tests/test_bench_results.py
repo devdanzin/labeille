@@ -282,8 +282,8 @@ class TestBenchPackageResult(unittest.TestCase):
         pkg = BenchPackageResult(package="click", clone_duration_s=2.0)
         pkg.conditions["baseline"] = self._make_condition("baseline", n_iters=2)
 
-        line = pkg.to_jsonl_line()
-        restored = BenchPackageResult.from_jsonl_line(line)
+        line = json.dumps(pkg.to_dict())
+        restored = BenchPackageResult.from_dict(json.loads(line))
         self.assertEqual(restored.package, "click")
         self.assertAlmostEqual(restored.clone_duration_s, 2.0, places=1)
         self.assertEqual(len(restored.conditions["baseline"].iterations), 2)
@@ -519,8 +519,8 @@ class TestIO(unittest.TestCase):
             lines = results_path.read_text().strip().splitlines()
             self.assertEqual(len(lines), 2)
 
-            pkg1 = BenchPackageResult.from_jsonl_line(lines[0])
-            pkg2 = BenchPackageResult.from_jsonl_line(lines[1])
+            pkg1 = BenchPackageResult.from_dict(json.loads(lines[0]))
+            pkg2 = BenchPackageResult.from_dict(json.loads(lines[1]))
             self.assertEqual(pkg1.package, "flask")
             self.assertEqual(pkg2.package, "django")
 

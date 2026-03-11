@@ -66,6 +66,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Migrate `RunMeta.from_dict` and `PackageResult.from_dict` in `analyze.py` to use `dataclass_from_dict` utility.
 - Use `safe_load_yaml` in `migrations.py` instead of duplicating the YAML load-and-validate pattern.
 - Wire up `setup_logging` for `--verbose` flags in `analyze registry`, `analyze run`, and `registry sync` commands that previously accepted but ignored the flag.
+- Add `load_yaml_strict` utility to `io_utils.py` and migrate 4 inline YAML load-and-validate patterns in `registry.py`, `compat.py`, and `bench/config.py`.
+- Use `atomic_write_text` for `bench/results.py` JSONL batch write and remove unused `to_jsonl_line`/`from_jsonl_line` methods.
+- Use `dataclass_from_dict` in `BenchIteration.from_dict` instead of inline field-filtering reimplementation.
+- Use `load_json_file` in `bench/tracking.py` `load_series` instead of inline JSON parsing.
 
 ### Tests
 - Add 26 tests for `bench track` subcommands: init, add, show, pin, unpin, list, trend, alert.

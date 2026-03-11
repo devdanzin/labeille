@@ -69,7 +69,7 @@ def _make_bench_run_dir(
         if packages:
             for pkg_name, pkg_conditions in packages.items():
                 pkg = make_package_result(pkg_name, pkg_conditions, warmup_count=1)
-                f.write(pkg.to_jsonl_line() + "\n")
+                f.write(json.dumps(pkg.to_dict()) + "\n")
 
     return run_dir
 
