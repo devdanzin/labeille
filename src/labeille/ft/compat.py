@@ -196,12 +196,12 @@ def probe_package(package_name):
     try:
         pkg = importlib.import_module(package_name)
         result["import_ok"] = True
-    except ImportError as e:
-        result["import_error"] = str(e)
+    except ImportError as exc:
+        result["import_error"] = str(exc)
         print(json.dumps(result))
         return
-    except Exception as e:
-        result["import_error"] = f"{type(e).__name__}: {e}"
+    except Exception as exc:
+        result["import_error"] = f"{type(exc).__name__}: {exc}"
         print(json.dumps(result))
         return
 

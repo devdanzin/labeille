@@ -266,8 +266,8 @@ def batch_add_field(
             else:
                 # Append before the last field
                 new_lines = _append_field(lines, field_name, value_text)
-        except ValueError as e:
-            errors.append(f"{f.name}: {e}")
+        except ValueError as exc:
+            errors.append(f"{f.name}: {exc}")
             continue
 
         if dry_run:
@@ -536,8 +536,8 @@ def batch_set_field(
 
         try:
             new_lines = set_field_value(lines, field_name, formatted)
-        except ValueError as e:
-            errors.append(f"{f.name}: {e}")
+        except ValueError as exc:
+            errors.append(f"{f.name}: {exc}")
             continue
 
         if dry_run:
