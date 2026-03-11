@@ -287,8 +287,8 @@ def _start_output_monitor(
                 if isinstance(line, bytes):
                     line = line.decode("utf-8", errors="replace")
                 monitor.feed(line)
-        except (ValueError, OSError):
-            pass
+        except (ValueError, OSError) as exc:
+            log.debug("Stderr reader stopped: %s", exc)
         finally:
             monitor.mark_finished()
 
@@ -378,8 +378,8 @@ def run_single_iteration(
                     stdout_chunks.append(raw_line.decode("utf-8", errors="replace"))
                 else:
                     stdout_chunks.append(raw_line)
-        except (ValueError, OSError):
-            pass
+        except (ValueError, OSError) as exc:
+            log.debug("Stdout reader stopped: %s", exc)
 
     stdout_thread = threading.Thread(target=_stdout_reader, daemon=True)
     stdout_thread.start()

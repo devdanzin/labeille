@@ -27,6 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Use `append_jsonl()` in `migrations.py` instead of raw `open()`/`json.dumps` for pattern consistency.
 
 ### Fixed
+- Log `ValueError`/`OSError` in `ft/runner.py` stderr and stdout reader threads instead of silently ignoring.
 - Replace `ProgressCallback = Any` with `Callable[[BenchProgress], None] | None` in `bench/runner.py`.
 - Replace `list[Any]` with `list[PackageEntry]` in `bench/runner.py` `_run_sequential` and `_run_interleaved`.
 - Replace `cond: Any` with `BenchConditionResult` in `bench/compare.py` `_collect_call_durations`.
