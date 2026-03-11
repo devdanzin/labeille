@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Rename `compat diff` to `compat compare` for CLI vocabulary consistency.
 - Extract `parse_env_pairs()` and `parse_csv_list()` CLI helpers to eliminate duplicated parsing across `cli.py`, `registry_cli.py`, `compat_cli.py`, `bench_cli.py`, and `ft_cli.py`.
 - Decompose `generate_registry_report` (190 lines) into focused helpers: `_accumulate_package_stats`, `_analyze_compat_blockers`, `_analyze_per_version`, `_analyze_download_tiers`.
+- Decompose `_print_run_summary` (180 lines) into 7 section formatters for readability.
 - Extract `run_in_process_group()` into `io_utils.py` as a shared subprocess lifecycle utility, used by both `runner.py` and `bench/timing.py`.
 - `bench/results.py` `append_package_result` now uses shared `append_jsonl` instead of raw `open()`.
 
