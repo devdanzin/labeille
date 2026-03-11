@@ -71,8 +71,9 @@ def check_registry_schema(registry_path: Path) -> None:
     try:
         data = yaml.safe_load(schema_file.read_text(encoding="utf-8"))
     except (yaml.YAMLError, OSError) as exc:
-        log.warning("Could not parse schema.yaml in %s: %s", registry_path, exc)
-        return
+        raise RegistrySchemaError(
+            f"schema.yaml exists at {registry_path} but cannot be parsed: {exc}"
+        ) from exc
 
     if not isinstance(data, dict):
         return

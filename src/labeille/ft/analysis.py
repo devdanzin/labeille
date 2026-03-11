@@ -37,6 +37,7 @@ class FlakyTest:
     statuses: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize to a JSON-compatible dict."""
         return {
             "test_id": self.test_id,
             "fail_count": self.fail_count,
@@ -65,6 +66,7 @@ class FlakinessProfile:
     pattern: str = "unknown"
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize to a JSON-compatible dict."""
         return {
             "package": self.package,
             "pass_rate": round(self.pass_rate, 4),
@@ -211,6 +213,7 @@ class GILComparisonResult:
         return self.gil_enabled_pass_rate == 1.0 and self.gil_disabled_pass_rate < 1.0
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize to a JSON-compatible dict."""
         return {
             "package": self.package,
             "gil_disabled_pass_rate": round(self.gil_disabled_pass_rate, 4),
@@ -306,6 +309,7 @@ class TriageEntry:
     monthly_downloads: int = 0
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize to a JSON-compatible dict."""
         return {
             "package": self.package,
             "priority_score": round(self.priority_score, 2),

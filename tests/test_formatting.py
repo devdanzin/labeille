@@ -89,7 +89,7 @@ class TestFormatTable(unittest.TestCase):
         # Count column should be right-aligned.
         for line in lines:
             # The count value in the last column.
-            self.assertTrue(len(line) > 0)
+            self.assertGreater(len(line), 0)
 
     def test_empty_rows(self) -> None:
         headers = ["Name", "Value"]

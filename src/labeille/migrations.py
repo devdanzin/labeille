@@ -8,7 +8,6 @@ accidental re-application.
 
 from __future__ import annotations
 
-import json
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -16,7 +15,7 @@ from typing import Any, Callable
 
 import yaml
 
-from labeille.io_utils import atomic_write_text, safe_load_yaml, utc_now_iso
+from labeille.io_utils import atomic_write_text, load_jsonl, safe_load_yaml, utc_now_iso
 from labeille.logging import get_logger
 from labeille.registry import _dict_to_package, _package_to_dict
 
@@ -121,29 +120,22 @@ def _log_path(registry_dir: Path) -> Path:
     return registry_dir / "migrations.log"
 
 
+def _deserialize_log_entry(data: dict[str, Any]) -> MigrationLogEntry:
+    """Deserialize a migration log entry from a JSON dict."""
+    return MigrationLogEntry(
+        migration=data["migration"],
+        applied_at=data["applied_at"],
+        files_modified=data["files_modified"],
+        files_skipped=data["files_skipped"],
+    )
+
+
 def read_migration_log(registry_dir: Path) -> list[MigrationLogEntry]:
     """Read the migration log. Returns empty list if file doesn't exist."""
     path = _log_path(registry_dir)
     if not path.exists():
         return []
-    entries: list[MigrationLogEntry] = []
-    for line in path.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        try:
-            data = json.loads(line)
-            entries.append(
-                MigrationLogEntry(
-                    migration=data["migration"],
-                    applied_at=data["applied_at"],
-                    files_modified=data["files_modified"],
-                    files_skipped=data["files_skipped"],
-                )
-            )
-        except (json.JSONDecodeError, KeyError):
-            log.warning("Skipping malformed migration log entry: %s", line)
-    return entries
+    return load_jsonl(path, _deserialize_log_entry)
 
 
 def append_migration_log(registry_dir: Path, entry: MigrationLogEntry) -> None:

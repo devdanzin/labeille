@@ -29,6 +29,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Replace `cond: Any` with `BenchConditionResult` in `bench/compare.py` `_collect_call_durations`.
 - Replace `Any` return/param types with `BenchConfig` in `bench_cli.py` `_build_base_config` and `_apply_config_overrides`.
 - Add `Literal` types for `BisectStep.status`, `BisectConfig.installer`, `PackageAnomaly.anomaly_type`/`severity`, `ValidationError.severity`, `BenchConfig.installer`, and `analyze.PackageResult.status`.
+- Log warning in `runner.py:list_installed_packages` when pip exits with non-zero code instead of silently returning empty.
+- Raise `RegistrySchemaError` in `check_registry_schema` when `schema.yaml` exists but is corrupt instead of silently ignoring.
+- Set `import_ok = False` in `ft/runner.py` when extension compat check raises instead of leaving default `True`.
+- Remove dead `hasattr(result, "returncode")` guard in `bench/runner.py` — `install_with_fallback` always returns `CompletedProcess`.
+- Use `parse_env_pairs` in `ft_cli.py` and `bench_cli.py` instead of inline env parsing that silently drops malformed pairs.
+- Use `load_jsonl` in `migrations.py:read_migration_log` instead of hand-rolled JSONL parsing.
+- Add missing docstrings to 8 `to_dict` methods in `ft/analysis.py`, `ft/compare.py`, `ft/compat.py`.
+- Replace 21 `assertTrue(len(...))` with `assertGreater`/`assertGreaterEqual` in tests for better failure messages.
+- Convert `mkdtemp()` to `TemporaryDirectory()` in `test_ft_compat.py` for consistency.
 - Type `pkg: Any` parameters as `PackageEntry` in `bench/runner.py` and `ft/runner.py` for type safety.
 - Fix `IndexEntry.package` attribute access (should be `.name`) in `ft/runner.py:_select_packages`.
 - Add missing `encoding="utf-8"` to `bench_cli.py` export `write_text()` call.

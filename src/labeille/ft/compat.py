@@ -38,6 +38,7 @@ class ExtensionInfo:
     triggered_gil_fallback: bool = False
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize to a JSON-compatible dict."""
         return asdict(self)
 
     @classmethod
@@ -55,6 +56,7 @@ class ModGilDeclaration:
     is_not_used: bool
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize to a JSON-compatible dict."""
         return asdict(self)
 
     @classmethod

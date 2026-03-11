@@ -451,6 +451,12 @@ def get_installed_packages(
         if proc.returncode == 0:
             packages = json.loads(proc.stdout)
             return {p["name"]: p["version"] for p in packages}
+        else:
+            log.warning(
+                "pip list exited %d: %s",
+                proc.returncode,
+                (proc.stderr or "").strip()[:200],
+            )
     except (subprocess.TimeoutExpired, json.JSONDecodeError, KeyError, OSError) as exc:
         log.warning("Could not list installed packages: %s", exc)
     return {}

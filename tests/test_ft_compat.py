@@ -197,13 +197,11 @@ class TestGuessImportName(unittest.TestCase):
 
 class TestScanSourceForModGil(unittest.TestCase):
     def setUp(self) -> None:
-        self.tmpdir = tempfile.mkdtemp()
-        self.repo = Path(self.tmpdir)
+        self._tmpdir = tempfile.TemporaryDirectory()
+        self.repo = Path(self._tmpdir.name)
 
     def tearDown(self) -> None:
-        import shutil
-
-        shutil.rmtree(self.tmpdir, ignore_errors=True)
+        self._tmpdir.cleanup()
 
     def _write_file(self, relpath: str, content: str) -> Path:
         p = self.repo / relpath
@@ -454,13 +452,11 @@ class TestProbeGilFallback(unittest.TestCase):
 
 class TestAssessExtensionCompat(unittest.TestCase):
     def setUp(self) -> None:
-        self.tmpdir = tempfile.mkdtemp()
-        self.repo = Path(self.tmpdir)
+        self._tmpdir = tempfile.TemporaryDirectory()
+        self.repo = Path(self._tmpdir.name)
 
     def tearDown(self) -> None:
-        import shutil
-
-        shutil.rmtree(self.tmpdir, ignore_errors=True)
+        self._tmpdir.cleanup()
 
     def _write_file(self, relpath: str, content: str) -> None:
         p = self.repo / relpath

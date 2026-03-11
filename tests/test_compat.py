@@ -296,7 +296,7 @@ class TestClassifyBuildOutput(unittest.TestCase):
     def test_detects_pyunicode_ready(self) -> None:
         stderr = "foo.c:42: error: implicit declaration of PyUnicode_READY\n"
         matches = classify_build_output(stderr)
-        self.assertTrue(len(matches) >= 1)
+        self.assertGreaterEqual(len(matches), 1)
         self.assertEqual(matches[0].category, "removed_c_api")
         self.assertEqual(matches[0].subcategory, "PyUnicode_READY")
         self.assertEqual(matches[0].since, "3.12")
@@ -304,51 +304,51 @@ class TestClassifyBuildOutput(unittest.TestCase):
     def test_detects_py_unicode(self) -> None:
         stderr = "error: unknown type name 'Py_UNICODE'\n"
         matches = classify_build_output(stderr)
-        self.assertTrue(len(matches) >= 1)
+        self.assertGreaterEqual(len(matches), 1)
         self.assertEqual(matches[0].subcategory, "Py_UNICODE")
 
     def test_detects_tp_print(self) -> None:
         stderr = "error: 'PyTypeObject' has no member named 'tp_print'\n"
         matches = classify_build_output(stderr)
-        self.assertTrue(len(matches) >= 1)
+        self.assertGreaterEqual(len(matches), 1)
         self.assertEqual(matches[0].subcategory, "tp_print")
 
     def test_detects_distutils_removed(self) -> None:
         stderr = "ModuleNotFoundError: No module named 'distutils'\n"
         matches = classify_build_output(stderr)
-        self.assertTrue(len(matches) >= 1)
+        self.assertGreaterEqual(len(matches), 1)
         self.assertEqual(matches[0].category, "setuptools_distutils")
 
     def test_detects_missing_header(self) -> None:
         stderr = "fatal error: openssl/ssl.h: No such file or directory\n"
         matches = classify_build_output(stderr)
-        self.assertTrue(len(matches) >= 1)
+        self.assertGreaterEqual(len(matches), 1)
         self.assertEqual(matches[0].category, "missing_system_lib")
         self.assertEqual(matches[0].subcategory, "missing_header")
 
     def test_detects_python_h_missing(self) -> None:
         stderr = "fatal error: Python.h: No such file or directory\n"
         matches = classify_build_output(stderr)
-        self.assertTrue(len(matches) >= 1)
+        self.assertGreaterEqual(len(matches), 1)
         self.assertEqual(matches[0].category, "python_header")
 
     def test_detects_linker_error(self) -> None:
         stderr = "undefined reference to `PyFoo_Bar'\n"
         matches = classify_build_output(stderr)
-        self.assertTrue(len(matches) >= 1)
+        self.assertGreaterEqual(len(matches), 1)
         self.assertEqual(matches[0].category, "compiler_error")
         self.assertEqual(matches[0].subcategory, "linker_error")
 
     def test_detects_pyo3(self) -> None:
         stderr = "error: PyO3 does not support Python 3.15\n"
         matches = classify_build_output(stderr)
-        self.assertTrue(len(matches) >= 1)
+        self.assertGreaterEqual(len(matches), 1)
         self.assertEqual(matches[0].category, "pyo3_incompatible")
 
     def test_detects_rust_error(self) -> None:
         stderr = "error[E0412]: cannot find type `PyObject`\n"
         matches = classify_build_output(stderr)
-        self.assertTrue(len(matches) >= 1)
+        self.assertGreaterEqual(len(matches), 1)
         self.assertEqual(matches[0].subcategory, "rust_build_fail")
 
     def test_detects_cython_version(self) -> None:
@@ -399,30 +399,30 @@ class TestClassifyBuildOutput(unittest.TestCase):
     def test_case_insensitive(self) -> None:
         stderr = "Error: IMPLICIT DECLARATION OF PYUNICODE_READY\n"
         matches = classify_build_output(stderr)
-        self.assertTrue(len(matches) >= 1)
+        self.assertGreaterEqual(len(matches), 1)
 
     def test_detects_ob_type_assignment(self) -> None:
         stderr = "error: assignment to read-only member 'ob_type'\n"
         matches = classify_build_output(stderr)
-        self.assertTrue(len(matches) >= 1)
+        self.assertGreaterEqual(len(matches), 1)
         self.assertEqual(matches[0].category, "changed_struct")
 
     def test_detects_missing_library(self) -> None:
         stderr = "cannot find -lssl\n"
         matches = classify_build_output(stderr)
-        self.assertTrue(len(matches) >= 1)
+        self.assertGreaterEqual(len(matches), 1)
         self.assertEqual(matches[0].subcategory, "missing_library")
 
     def test_detects_cmake_error(self) -> None:
         stderr = "CMakeLists.txt error: something went wrong\n"
         matches = classify_build_output(stderr)
-        self.assertTrue(len(matches) >= 1)
+        self.assertGreaterEqual(len(matches), 1)
         self.assertEqual(matches[0].category, "build_backend")
 
     def test_detects_import_undefined_symbol(self) -> None:
         stderr = "ImportError: symbol PyFoo not found\n"
         matches = classify_build_output(stderr)
-        self.assertTrue(len(matches) >= 1)
+        self.assertGreaterEqual(len(matches), 1)
         self.assertEqual(matches[0].category, "import_failure")
 
 

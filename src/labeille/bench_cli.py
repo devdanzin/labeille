@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from labeille.bench.config import BenchConfig
 
 from labeille.bench.results import BenchMeta, BenchPackageResult
-from labeille.cli_utils import parse_csv_list
+from labeille.cli_utils import parse_csv_list, parse_env_pairs
 from labeille.logging import setup_logging
 
 
@@ -127,10 +127,7 @@ def _apply_config_overrides(config: BenchConfig, ctx: click.Context) -> BenchCon
     if p["test_command_suffix"]:
         config.default_test_command_suffix = p["test_command_suffix"]
 
-    for pair in p["env_pairs"]:
-        if "=" in pair:
-            k, v = pair.split("=", 1)
-            config.default_env[k] = v
+    config.default_env.update(parse_env_pairs(p["env_pairs"]))
 
     config.installer = p["installer"]
     if p["adaptive"]:
