@@ -48,6 +48,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Catch `ValueError` from malformed `tracking.json` in `bench_cli.py` track commands.
 - Surface skipped-package counts in `ft/runner.py`, `bench/runner.py`, and `bench/tracking.py` so users know when results are incomplete.
 - Extract `dataclass_from_dict` utility to `io_utils.py` and deduplicate 13 identical `from_dict` implementations across `bench/` and `ft/` modules.
+- Use `atomic_write_text` for `ft/results.py` JSONL output and `runner.py` summary file to prevent corruption on interruption.
 
 ### Tests
 - Add 26 tests for `bench track` subcommands: init, add, show, pin, unpin, list, trend, alert.

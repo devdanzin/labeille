@@ -31,6 +31,7 @@ from typing import Any
 from labeille.crash import detect_crash
 from labeille.io_utils import (
     append_jsonl,
+    atomic_write_text,
     run_in_process_group,
     utc_now_iso,
     write_meta_json,
@@ -1519,7 +1520,7 @@ def run_all(config: RunnerConfig) -> RunOutput:
         run_dir=run_dir,
         mode="verbose",
     )
-    (run_dir / "summary.txt").write_text(summary_text + "\n", encoding="utf-8")
+    atomic_write_text(run_dir / "summary.txt", summary_text + "\n")
     log.info("Run summary:\n%s", summary_text)
 
     return RunOutput(
