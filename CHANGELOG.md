@@ -43,6 +43,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Fix `IndexEntry.package` attribute access (should be `.name`) in `ft/runner.py:_select_packages`.
 - Add missing `encoding="utf-8"` to `bench_cli.py` export `write_text()` call.
 - Import check `OSError` now sets `install_error` status instead of silently continuing.
+- Standardize exception variable naming from `as e:` to `as exc:` in `ft/compat.py`, `registry_ops.py`, and `registry_cli.py` (5 instances).
 - Raise compat survey clone/build failure log levels from `debug` to `warning` for visibility.
 - Rename `from_dict` parameter `d` → `data` in `CompatResult` and `CompatMeta` for consistency.
 - Bisect extra deps install failure now returns `skip` step instead of silently continuing.

@@ -56,8 +56,8 @@ def _parse_filters(where_exprs: tuple[str, ...]) -> list[FieldFilter]:
     for expr in where_exprs:
         try:
             filters.append(parse_where(expr))
-        except ValueError as e:
-            raise click.UsageError(str(e)) from e
+        except ValueError as exc:
+            raise click.UsageError(str(exc)) from exc
     return filters
 
 
