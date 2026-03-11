@@ -66,8 +66,9 @@ class TrackingRunEntry:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> TrackingRunEntry:
         """Deserialize from a dict, ignoring unknown fields."""
-        known = {f.name for f in cls.__dataclass_fields__.values()}
-        return cls(**{k: v for k, v in data.items() if k in known})
+        from labeille.io_utils import dataclass_from_dict
+
+        return dataclass_from_dict(cls, data)
 
 
 @dataclass

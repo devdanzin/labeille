@@ -143,9 +143,9 @@ class IterationOutcome:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> IterationOutcome:
-        known = {f.name for f in cls.__dataclass_fields__.values()}
-        filtered = {k: v for k, v in data.items() if k in known}
-        return cls(**filtered)
+        from labeille.io_utils import dataclass_from_dict
+
+        return dataclass_from_dict(cls, data)
 
 
 @dataclass
@@ -408,8 +408,9 @@ class FTRunMeta:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> FTRunMeta:
-        known = {f.name for f in cls.__dataclass_fields__.values()}
-        return cls(**{k: v for k, v in data.items() if k in known})
+        from labeille.io_utils import dataclass_from_dict
+
+        return dataclass_from_dict(cls, data)
 
 
 @dataclass
@@ -498,8 +499,9 @@ class FTRunSummary:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> FTRunSummary:
-        known = {f.name for f in cls.__dataclass_fields__.values()}
-        return cls(**{k: v for k, v in data.items() if k in known})
+        from labeille.io_utils import dataclass_from_dict
+
+        return dataclass_from_dict(cls, data)
 
 
 # ---------------------------------------------------------------------------

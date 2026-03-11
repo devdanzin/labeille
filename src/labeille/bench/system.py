@@ -84,9 +84,9 @@ class SystemProfile:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> SystemProfile:
         """Deserialize from a dict, ignoring unknown fields."""
-        known = {f.name for f in cls.__dataclass_fields__.values()}
-        filtered = {k: v for k, v in data.items() if k in known}
-        return cls(**filtered)
+        from labeille.io_utils import dataclass_from_dict
+
+        return dataclass_from_dict(cls, data)
 
     def to_json(self, indent: int = 2) -> str:
         """Serialize to a JSON string."""
@@ -125,9 +125,9 @@ class PythonProfile:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> PythonProfile:
         """Deserialize from a dict, ignoring unknown fields."""
-        known = {f.name for f in cls.__dataclass_fields__.values()}
-        filtered = {k: v for k, v in data.items() if k in known}
-        return cls(**filtered)
+        from labeille.io_utils import dataclass_from_dict
+
+        return dataclass_from_dict(cls, data)
 
 
 # ---------------------------------------------------------------------------
