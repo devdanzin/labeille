@@ -225,9 +225,10 @@ def probe_package(package_name):
                 to_check.append(modname)
                 if len(to_check) > 200:  # Safety limit.
                     break
-        except (ImportError, OSError, AttributeError):
-            pass
+        except (ImportError, OSError, AttributeError) as e:
+            result["walk_error"] = f"{type(e).__name__}: {e}"
 
+    skipped_modules = []
     for modname in to_check:
         if modname in checked:
             continue
@@ -243,7 +244,9 @@ def probe_package(package_name):
                     "file": filepath,
                 })
         except (ImportError, OSError):
-            pass  # Some submodules may not be importable.
+            skipped_modules.append(modname)
+    if skipped_modules:
+        result["skipped_modules"] = skipped_modules
 
     print(json.dumps(result))
 
@@ -549,7 +552,7 @@ def assess_extension_compat(
                 compat.is_pure_python = not scan.has_any_declaration
                 if scan.has_any_declaration:
                     compat.all_extensions_compatible = scan.all_not_used
-        except Exception as exc:
+        except (OSError, UnicodeDecodeError, ValueError) as exc:
             log.warning("Source scan failed for %s: %s", package_name, exc)
 
     return compat

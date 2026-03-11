@@ -744,8 +744,8 @@ def _auto_detect_test_dirs(repo_root: Path, package_name: str = "") -> list[Path
         for d in repo_root.iterdir():
             if d.is_dir() and (d.name.endswith("_test") or d.name.endswith("_tests")):
                 found.append(d)
-    except OSError:
-        pass
+    except OSError as exc:
+        log.warning("Could not scan root-level dirs in %s: %s", repo_root, exc)
 
     # 2b: Test subdirs inside the package directory.
     if pkg_norm:

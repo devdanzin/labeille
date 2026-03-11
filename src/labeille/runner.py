@@ -229,7 +229,8 @@ def check_jit_enabled(python_path: Path) -> bool:
             env=clean_env(PYTHON_JIT="1", ASAN_OPTIONS="detect_leaks=0"),
         )
         return proc.stdout.strip() == "True"
-    except (subprocess.TimeoutExpired, FileNotFoundError, OSError):
+    except (subprocess.TimeoutExpired, FileNotFoundError, OSError) as exc:
+        log.warning("Could not check JIT availability: %s", exc)
         return False
 
 

@@ -263,8 +263,14 @@ def test_revision(repo_dir: Path, commit: str, config: BisectConfig) -> BisectSt
                     timeout=config.timeout,
                     installer=installer,
                 )
-            except (subprocess.TimeoutExpired, OSError):
-                pass
+            except (subprocess.TimeoutExpired, OSError) as exc:
+                log.warning("Extra deps install failed at %s: %s", short, exc)
+                return BisectStep(
+                    commit=commit,
+                    commit_short=short,
+                    status="skip",
+                    detail=f"extra deps install failed: {exc}",
+                )
 
         # Run tests.
         test_cmd = config.test_command or "python -m pytest"
