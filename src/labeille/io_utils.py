@@ -95,6 +95,19 @@ def load_json_file(path: Path) -> dict[str, Any]:
     return data
 
 
+def dataclass_from_dict(cls: type[T], data: dict[str, Any]) -> T:
+    """Create a dataclass instance from a dict, ignoring unknown keys.
+
+    Filters *data* to only the fields defined on *cls*, so that
+    forward-compatible JSON (with extra keys from newer versions)
+    deserializes without error.
+    """
+    from dataclasses import fields as dc_fields
+
+    known = {f.name for f in dc_fields(cls)}  # type: ignore[arg-type]
+    return cls(**{k: v for k, v in data.items() if k in known})
+
+
 def iter_jsonl(
     path: Path,
     deserialize: Callable[[dict[str, Any]], T],

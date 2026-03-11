@@ -41,8 +41,9 @@ class ExtensionInfo:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ExtensionInfo:
-        known = {f.name for f in cls.__dataclass_fields__.values()}
-        return cls(**{k: v for k, v in data.items() if k in known})
+        from labeille.io_utils import dataclass_from_dict
+
+        return dataclass_from_dict(cls, data)
 
 
 @dataclass
@@ -59,8 +60,9 @@ class ModGilDeclaration:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ModGilDeclaration:
-        known = {f.name for f in cls.__dataclass_fields__.values()}
-        return cls(**{k: v for k, v in data.items() if k in known})
+        from labeille.io_utils import dataclass_from_dict
+
+        return dataclass_from_dict(cls, data)
 
 
 @dataclass
