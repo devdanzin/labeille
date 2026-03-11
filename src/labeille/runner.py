@@ -47,9 +47,6 @@ from labeille.runner_models import RunOutput as RunOutput
 from labeille.runner_models import RunSummary as RunSummary
 
 # Re-export repo operations from repo_ops (preserves all existing imports).
-from labeille.repo_ops import _EXTRAS_RE as _EXTRAS_RE
-from labeille.repo_ops import _SELF_INSTALL_RE as _SELF_INSTALL_RE
-from labeille.repo_ops import _TAG_PATTERNS as _TAG_PATTERNS
 from labeille.repo_ops import _extract_extras as _extract_extras
 from labeille.repo_ops import _is_self_install_segment as _is_self_install_segment
 from labeille.repo_ops import build_sdist_install_commands as build_sdist_install_commands
@@ -1171,19 +1168,12 @@ def extract_python_minor_version(version_string: str) -> str:
     """Extract the ``major.minor`` version from a full Python version string.
 
     For example, ``"3.15.0a5+ (heads/main:abc1234)"`` returns ``"3.15"``.
+
+    .. deprecated:: Use :func:`labeille.io_utils.extract_minor_version` directly.
     """
-    parts = version_string.strip().split(".")
-    if len(parts) >= 2:
-        # The minor component may contain alpha/rc suffixes — strip non-digits.
-        minor = ""
-        for ch in parts[1]:
-            if ch.isdigit():
-                minor += ch
-            else:
-                break
-        if parts[0].isdigit() and minor:
-            return f"{parts[0]}.{minor}"
-    return version_string
+    from labeille.io_utils import extract_minor_version
+
+    return extract_minor_version(version_string)
 
 
 def filter_packages(

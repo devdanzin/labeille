@@ -172,20 +172,11 @@ class RunData:
 def extract_minor_version(version_string: str) -> str:
     """Extract major.minor from a full Python version string.
 
-    See also :func:`labeille.runner.extract_python_minor_version` which
-    handles the same task in the runner context.
+    Delegates to :func:`labeille.io_utils.extract_minor_version`.
     """
-    parts = version_string.strip().split(".")
-    if len(parts) >= 2:
-        minor = ""
-        for ch in parts[1]:
-            if ch.isdigit():
-                minor += ch
-            else:
-                break
-        if parts[0].isdigit() and minor:
-            return f"{parts[0]}.{minor}"
-    return version_string
+    from labeille.io_utils import extract_minor_version as _extract
+
+    return _extract(version_string)
 
 
 class ResultsStore:

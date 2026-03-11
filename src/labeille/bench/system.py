@@ -20,7 +20,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
-from labeille.io_utils import utc_now_iso
+from labeille.io_utils import dataclass_from_dict, utc_now_iso
 from labeille.logging import get_logger
 
 log = get_logger("bench.system")
@@ -84,8 +84,6 @@ class SystemProfile:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> SystemProfile:
         """Deserialize from a dict, ignoring unknown fields."""
-        from labeille.io_utils import dataclass_from_dict
-
         return dataclass_from_dict(cls, data)
 
     def to_json(self, indent: int = 2) -> str:
@@ -125,8 +123,6 @@ class PythonProfile:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> PythonProfile:
         """Deserialize from a dict, ignoring unknown fields."""
-        from labeille.io_utils import dataclass_from_dict
-
         return dataclass_from_dict(cls, data)
 
 

@@ -18,6 +18,8 @@ import math
 from dataclasses import dataclass, field
 from typing import Any
 
+from labeille.io_utils import dataclass_from_dict
+
 from labeille.bench.results import BenchConditionResult, BenchPackageResult
 
 
@@ -56,8 +58,6 @@ class PackageAnomaly:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> PackageAnomaly:
         """Deserialize from a dict."""
-        from labeille.io_utils import dataclass_from_dict
-
         return dataclass_from_dict(cls, data)
 
 

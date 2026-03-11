@@ -22,6 +22,7 @@ import sys
 from dataclasses import dataclass
 from typing import Any
 
+from labeille.io_utils import dataclass_from_dict
 from labeille.logging import get_logger
 
 log = get_logger("bench.constraints")
@@ -71,8 +72,6 @@ class ResourceConstraints:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ResourceConstraints:
         """Deserialize from a dict, ignoring unknown fields."""
-        from labeille.io_utils import dataclass_from_dict
-
         return dataclass_from_dict(cls, data)
 
     @property

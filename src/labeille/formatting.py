@@ -243,15 +243,13 @@ def format_signal_name(sig: int | None) -> str:
     """Convert a signal number to its name, e.g. 11 → 'SIGSEGV'.
 
     Returns ``""`` if *sig* is ``None``.
+    Delegates to :func:`labeille.crash.signal_name` for the conversion.
     """
     if sig is None:
         return ""
-    import signal as signal_module
+    from labeille.crash import signal_name
 
-    try:
-        return signal_module.Signals(sig).name
-    except (ValueError, AttributeError):
-        return f"SIG{sig}"
+    return signal_name(sig)
 
 
 def format_percentage(count: int, total: int) -> str:

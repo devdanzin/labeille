@@ -21,6 +21,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Iterator
 
+from labeille.io_utils import dataclass_from_dict
 from labeille.logging import get_logger
 
 log = get_logger("ft.compat")
@@ -41,8 +42,6 @@ class ExtensionInfo:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ExtensionInfo:
-        from labeille.io_utils import dataclass_from_dict
-
         return dataclass_from_dict(cls, data)
 
 
@@ -60,8 +59,6 @@ class ModGilDeclaration:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> ModGilDeclaration:
-        from labeille.io_utils import dataclass_from_dict
-
         return dataclass_from_dict(cls, data)
 
 

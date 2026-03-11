@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import Any
 
 from labeille.bench.results import BenchMeta, BenchPackageResult, load_bench_run
-from labeille.io_utils import utc_now_iso
+from labeille.io_utils import dataclass_from_dict, utc_now_iso
 from labeille.logging import get_logger
 
 log = get_logger("bench.tracking")
@@ -66,8 +66,6 @@ class TrackingRunEntry:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> TrackingRunEntry:
         """Deserialize from a dict, ignoring unknown fields."""
-        from labeille.io_utils import dataclass_from_dict
-
         return dataclass_from_dict(cls, data)
 
 
@@ -226,13 +224,12 @@ def save_series(series: TrackingSeries, series_dir: Path) -> None:
         series: The series to save.
         series_dir: Path to the series directory.
     """
-    from labeille.io_utils import atomic_write_text
+    from labeille.io_utils import write_meta_json
 
     series_dir.mkdir(parents=True, exist_ok=True)
     tracking_file = series_dir / "tracking.json"
 
-    text = json.dumps(series.to_dict(), indent=2) + "\n"
-    atomic_write_text(tracking_file, text)
+    write_meta_json(tracking_file, series.to_dict())
 
 
 def list_series(tracking_dir: Path) -> list[TrackingSeries]:
