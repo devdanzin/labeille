@@ -245,7 +245,7 @@ class TestDetectAnomalies(unittest.TestCase):
 
         # Test by_type.
         by_type = report.by_type
-        self.assertTrue(len(by_type) > 0)
+        self.assertGreater(len(by_type), 0)
 
         # Test affected_packages.
         self.assertIn("unstable", report.affected_packages)

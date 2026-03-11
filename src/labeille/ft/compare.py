@@ -32,6 +32,7 @@ class PackageTransition:
     detail: str = ""  # Human-readable description
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize to a JSON-compatible dict."""
         return {
             "package": self.package,
             "old_category": self.old_category,
@@ -80,6 +81,7 @@ class FTComparisonResult:
         return self.compatible_count_b - self.compatible_count_a
 
     def to_dict(self) -> dict[str, Any]:
+        """Serialize to a JSON-compatible dict."""
         return {
             "label_a": self.label_a,
             "label_b": self.label_b,

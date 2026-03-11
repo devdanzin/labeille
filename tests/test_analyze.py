@@ -1304,12 +1304,12 @@ class TestGenerateRegistryReport(unittest.TestCase):
     def test_report_quality_warnings(self) -> None:
         packages = [_make_pkg("a", enriched=True, test_command="")]
         report = generate_registry_report(packages)
-        self.assertTrue(len(report.quality_warnings) > 0)
+        self.assertGreater(len(report.quality_warnings), 0)
 
     def test_report_generated_at(self) -> None:
         packages = [_make_pkg("a")]
         report = generate_registry_report(packages)
-        self.assertTrue(len(report.generated_at) > 0)
+        self.assertGreater(len(report.generated_at), 0)
 
     def test_report_empty_packages(self) -> None:
         report = generate_registry_report([])

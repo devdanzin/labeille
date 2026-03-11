@@ -6,7 +6,7 @@ from pathlib import Path
 
 import click
 
-from labeille.cli_utils import parse_csv_list
+from labeille.cli_utils import parse_csv_list, parse_env_pairs
 
 
 @click.group()
@@ -186,11 +186,7 @@ def run(
     if registry_dir is None:
         registry_dir = default_registry_dir()
 
-    env_overrides: dict[str, str] = {}
-    for pair in env_pairs:
-        if "=" in pair:
-            k, v = pair.split("=", 1)
-            env_overrides[k] = v
+    env_overrides = parse_env_pairs(env_pairs)
 
     config = FTRunConfig(
         target_python=target_python,

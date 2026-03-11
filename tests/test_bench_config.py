@@ -162,7 +162,7 @@ class TestValidateConfig(unittest.TestCase):
         config.alternate = True
         errors = validate_config(config)
         warnings = [e for e in errors if e.severity == "warning"]
-        self.assertTrue(len(warnings) > 0)
+        self.assertGreater(len(warnings), 0)
 
     def test_validate_adaptive_threshold_positive(self) -> None:
         """Adaptive threshold must be positive."""

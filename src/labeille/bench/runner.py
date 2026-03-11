@@ -688,7 +688,7 @@ class BenchRunner:
                     installer,
                 )
                 venv_python = venv_dir / "bin" / "python"  # refresh after possible recreate
-                if hasattr(result, "returncode") and result.returncode != 0:
+                if result.returncode != 0:
                     log.error(
                         "Install failed for %s/%s (exit %d)",
                         pkg.package,

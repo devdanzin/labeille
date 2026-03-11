@@ -899,7 +899,7 @@ class TestParseInstallPackages(unittest.TestCase):
     def test_editable_install_with_extras(self) -> None:
         pkgs, extras = _parse_install_packages("pip install -e '.[test]'")
         self.assertEqual(pkgs, [])
-        self.assertTrue(len(extras) > 0)
+        self.assertGreater(len(extras), 0)
 
     def test_version_specifiers(self) -> None:
         pkgs, extras = _parse_install_packages("pip install foo>=1.0 bar==2.0")

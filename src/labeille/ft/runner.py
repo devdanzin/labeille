@@ -895,6 +895,8 @@ def run_package_ft(
                 result.import_error = compat.import_error
             except (OSError, subprocess.SubprocessError, ValueError) as exc:
                 log.warning("Extension compat check failed for %s: %s", pkg.package, exc)
+                result.import_ok = False
+                result.import_error = f"Extension compat check failed: {exc}"
 
             if not result.import_ok:
                 result.categorize()

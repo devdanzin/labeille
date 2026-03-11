@@ -107,7 +107,7 @@ class TestExportCSV(unittest.TestCase):
         output = export_csv(meta, results)
         reader = csv.reader(io.StringIO(output))
         rows = list(reader)
-        self.assertTrue(len(rows) > 1)
+        self.assertGreater(len(rows), 1)
         header_len = len(rows[0])
         for row in rows[1:]:
             self.assertEqual(len(row), header_len)
