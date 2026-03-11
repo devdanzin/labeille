@@ -178,9 +178,9 @@ def survey(
         package_names = parse_csv_list(packages_csv)
 
     # Extract minor version for skip_versions filtering.
-    from labeille.runner import extract_python_minor_version
+    from labeille.io_utils import extract_minor_version
 
-    minor_ver = extract_python_minor_version(python_version)
+    minor_ver = extract_minor_version(python_version)
 
     # Resolve inputs.
     packages = resolve_compat_inputs(

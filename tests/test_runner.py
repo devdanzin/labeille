@@ -29,7 +29,6 @@ from labeille.runner import (
     check_jit_enabled,
     checkout_revision,
     create_run_dir,
-    extract_python_minor_version,
     filter_packages,
     get_package_version,
     load_completed_packages,
@@ -1717,26 +1716,6 @@ class TestCancelEvent(unittest.TestCase):
         pkg = _make_package()
         result = run_package(pkg, self.config, self.run_dir, self.env, cancel_event=None)
         self.assertEqual(result.status, "pass")
-
-
-class TestExtractPythonMinorVersion(unittest.TestCase):
-    def test_full_version_string(self) -> None:
-        self.assertEqual(extract_python_minor_version("3.15.0a5+"), "3.15")
-
-    def test_release_version(self) -> None:
-        self.assertEqual(extract_python_minor_version("3.14.2"), "3.14")
-
-    def test_version_with_build_info(self) -> None:
-        self.assertEqual(extract_python_minor_version("3.15.0a5+ (heads/main:abc1234)"), "3.15")
-
-    def test_short_version(self) -> None:
-        self.assertEqual(extract_python_minor_version("3.15"), "3.15")
-
-    def test_empty_string(self) -> None:
-        self.assertEqual(extract_python_minor_version(""), "")
-
-    def test_malformed_version(self) -> None:
-        self.assertEqual(extract_python_minor_version("not-a-version"), "not-a-version")
 
 
 class TestPullRepo(unittest.TestCase):

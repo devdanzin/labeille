@@ -1170,18 +1170,6 @@ def _run_package_inner(
 # ---------------------------------------------------------------------------
 
 
-def extract_python_minor_version(version_string: str) -> str:
-    """Extract the ``major.minor`` version from a full Python version string.
-
-    For example, ``"3.15.0a5+ (heads/main:abc1234)"`` returns ``"3.15"``.
-
-    .. deprecated:: Use :func:`labeille.io_utils.extract_minor_version` directly.
-    """
-    from labeille.io_utils import extract_minor_version
-
-    return extract_minor_version(version_string)
-
-
 def filter_packages(
     index: Index,
     registry_dir: Path,
