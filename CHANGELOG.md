@@ -20,6 +20,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Replace `RepoHostStats`, `InstallComplexity`, `CompatBlockers` dataclasses with `dict[str, int]` counters on `RegistryReport`, eliminating `getattr`/`setattr` usage.
 - Replace `Any` type annotations with concrete types in `ft/export.py`, `ft/compare.py`, `ft/display.py`.
 - Simplify `_build_bench_config` by splitting into `_build_base_config` and `_apply_config_overrides`, eliminating `locals()` dict unpacking via `@click.pass_context`.
+- Use `clean_env()` in `bench/system.py` instead of inline env dict construction for pattern consistency.
+- Use `append_jsonl()` in `migrations.py` instead of raw `open()`/`json.dumps` for pattern consistency.
 
 ### Fixed
 - Type `pkg: Any` parameters as `PackageEntry` in `bench/runner.py` and `ft/runner.py` for type safety.
