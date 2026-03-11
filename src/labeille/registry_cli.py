@@ -13,6 +13,7 @@ from pathlib import Path
 import click
 
 from labeille.cli_utils import parse_csv_list
+from labeille.logging import setup_logging
 from labeille.registry_ops import (
     PROTECTED_FIELDS,
     PROTECTED_INDEX_FIELDS,
@@ -670,6 +671,8 @@ def sync_cmd(
     The registry is stored at ~/.local/share/labeille/registry/ by
     default, or wherever --registry-dir points.
     """
+    setup_logging(verbose=verbose)
+
     import subprocess
 
     from labeille.registry import LARUCHE_REPO_URL, default_registry_dir

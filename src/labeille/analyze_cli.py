@@ -41,6 +41,7 @@ from labeille.formatting import (
     format_table,
     truncate,
 )
+from labeille.logging import setup_logging
 from labeille.registry import (
     PackageEntry,
     RegistrySchemaError,
@@ -121,6 +122,8 @@ def registry_cmd(
     verbose: bool,
 ) -> None:
     """Analyze registry composition and generate reports."""
+    setup_logging(verbose=verbose)
+
     from labeille.registry import Index, default_registry_dir, load_index
 
     if registry_dir is None:
@@ -659,6 +662,8 @@ def run_cmd(
     no_reproduce: bool,
 ) -> None:
     """Analyze a single run."""
+    setup_logging(verbose=verbose, quiet=quiet)
+
     from labeille.registry import default_registry_dir
 
     if registry_dir is None:
