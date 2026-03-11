@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Simplify `_run_package_inner` in `runner.py` by extracting 4 helper functions: `_align_sdist_version`, `_setup_venv`, `_install_in_venv`, `_check_import`.
 - Split `_check_import_and_extras` into `_check_import` and `_install_extra_deps` for single-responsibility.
 - Rename `compat diff` to `compat compare` for CLI vocabulary consistency.
+- Extract `parse_env_pairs()` and `parse_csv_list()` CLI helpers to eliminate duplicated parsing across `cli.py`, `registry_cli.py`, `compat_cli.py`, `bench_cli.py`, and `ft_cli.py`.
 - Extract `run_in_process_group()` into `io_utils.py` as a shared subprocess lifecycle utility, used by both `runner.py` and `bench/timing.py`.
 - `bench/results.py` `append_package_result` now uses shared `append_jsonl` instead of raw `open()`.
 

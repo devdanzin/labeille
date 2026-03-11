@@ -17,6 +17,7 @@ from typing import Any
 import click
 
 from labeille.bench.results import BenchMeta, BenchPackageResult
+from labeille.cli_utils import parse_csv_list
 from labeille.logging import setup_logging
 
 
@@ -98,9 +99,7 @@ def _build_bench_config(params: dict[str, Any]) -> Any:
         "wait_for_stability": wait_for_stability,
         "alternate": alternate,
         "interleave": interleave,
-        "packages_filter": (
-            [p.strip() for p in packages.split(",") if p.strip()] if packages else None
-        ),
+        "packages_filter": parse_csv_list(packages) or None,
         "top_n": top_n,
         "adaptive": adaptive or None,
         "adaptive_threshold": adaptive_threshold,
@@ -129,7 +128,7 @@ def _build_bench_config(params: dict[str, Any]) -> Any:
             config.venvs_dir = work_dir / "venvs"
         config.results_dir = results_dir
         if packages:
-            config.packages_filter = [p.strip() for p in packages.split(",") if p.strip()]
+            config.packages_filter = parse_csv_list(packages)
         if top_n:
             config.top_n = top_n
 
@@ -140,7 +139,7 @@ def _build_bench_config(params: dict[str, Any]) -> Any:
 
     # Apply shared options.
     if extra_deps:
-        config.default_extra_deps = [d.strip() for d in extra_deps.split(",") if d.strip()]
+        config.default_extra_deps = parse_csv_list(extra_deps)
     if test_command_suffix:
         config.default_test_command_suffix = test_command_suffix
 

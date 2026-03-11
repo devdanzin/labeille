@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from labeille.scan_deps import ScanResult
 
 from labeille import __version__
+from labeille.cli_utils import parse_csv_list, parse_env_pairs
 from labeille.logging import setup_logging
 from labeille.resolve import (
     merge_inputs,
@@ -348,13 +349,7 @@ def run_cmd(
         raise click.ClickException(str(exc)) from exc
     click.echo(f"Target Python: {python_version}")
 
-    # Parse env pairs.
-    env_overrides: dict[str, str] = {}
-    for pair in env_pairs:
-        if "=" not in pair:
-            raise click.UsageError(f"Invalid --env format (expected KEY=VALUE): {pair}")
-        key, _, value = pair.partition("=")
-        env_overrides[key] = value
+    env_overrides = parse_env_pairs(env_pairs)
 
     # Parse packages filter (supports name@revision syntax).
     packages_filter: list[str] | None = None
@@ -433,7 +428,7 @@ def run_cmd(
         cli_args=sys.argv[1:],
         clone_depth_override=effective_clone_depth,
         revision_overrides=revision_overrides,
-        extra_deps=[d.strip() for d in extra_deps.split(",") if d.strip()] if extra_deps else [],
+        extra_deps=parse_csv_list(extra_deps),
         test_command_override=test_command_override,
         test_command_suffix=test_command_suffix,
         repo_overrides=repo_overrides,
@@ -724,17 +719,8 @@ def bisect_cmd(
     if registry_dir is None:
         registry_dir = default_registry_dir()
 
-    # Parse env pairs.
-    env_overrides: dict[str, str] = {}
-    for pair in env_pairs:
-        if "=" not in pair:
-            raise click.UsageError(f"Invalid --env format (expected KEY=VALUE): {pair}")
-        key, _, value = pair.partition("=")
-        env_overrides[key] = value
-
-    parsed_extra_deps = (
-        [d.strip() for d in extra_deps.split(",") if d.strip()] if extra_deps else []
-    )
+    env_overrides = parse_env_pairs(env_pairs)
+    parsed_extra_deps = parse_csv_list(extra_deps)
 
     config = BisectConfig(
         package=package,
