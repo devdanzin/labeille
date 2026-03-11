@@ -19,7 +19,13 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Literal
 
-from labeille.io_utils import append_jsonl, load_json_file, load_jsonl, write_meta_json
+from labeille.io_utils import (
+    append_jsonl,
+    atomic_write_text,
+    load_json_file,
+    load_jsonl,
+    write_meta_json,
+)
 from labeille.logging import get_logger
 
 log = get_logger("ft.results")
@@ -534,9 +540,8 @@ def save_ft_run(
     write_meta_json(meta_path, meta.to_dict())
 
     results_path = results_dir / "ft_results.jsonl"
-    with results_path.open("w", encoding="utf-8") as f:
-        for r in results:
-            f.write(json.dumps(r.to_dict()) + "\n")
+    content = "".join(json.dumps(r.to_dict()) + "\n" for r in results)
+    atomic_write_text(results_path, content)
 
     summary = FTRunSummary.compute(results)
     summary_path = results_dir / "ft_summary.json"
