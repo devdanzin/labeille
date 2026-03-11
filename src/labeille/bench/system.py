@@ -748,13 +748,11 @@ def capture_python_profile(
     """
     profile = PythonProfile(path=str(python_path))
 
-    run_env = dict(os.environ)
+    from labeille.runner import clean_env
+
+    run_env = clean_env(ASAN_OPTIONS="detect_leaks=0")
     if env:
         run_env.update(env)
-    # Don't let host PYTHONHOME/PYTHONPATH contaminate the probe.
-    run_env.pop("PYTHONHOME", None)
-    run_env.pop("PYTHONPATH", None)
-    run_env["ASAN_OPTIONS"] = "detect_leaks=0"
 
     try:
         proc = subprocess.run(

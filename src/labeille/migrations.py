@@ -155,8 +155,9 @@ def append_migration_log(registry_dir: Path, entry: MigrationLogEntry) -> None:
         "files_modified": entry.files_modified,
         "files_skipped": entry.files_skipped,
     }
-    with open(path, "a", encoding="utf-8") as f:
-        f.write(json.dumps(data) + "\n")
+    from labeille.io_utils import append_jsonl
+
+    append_jsonl(path, data)
 
 
 def has_been_applied(registry_dir: Path, migration_name: str) -> bool:
