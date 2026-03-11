@@ -78,6 +78,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Add CLI tests for `registry` subcommands: rename-field, set-field (--all, --where, --packages), validate (--packages filter), migrate (list, unknown, missing name), sync (clone, pull, failure, non-git), add-index-field, remove-index-field, and group help.
 - Add `test_cli_utils.py` with 14 tests for `parse_env_pairs` and `parse_csv_list`.
 - Add 12 behavioral tests for `ft compare`, `ft report`, and `ft export` CLI commands.
+- Add `test_repo_ops.py` with 31 tests for `clone_repo`, `pull_repo`, `checkout_revision`, `parse_package_specs`, and `parse_repo_overrides`.
 
 ### Documentation
 - Update CLAUDE.md: fix stale test count (546 → 2068) and add 13 missing modules to architecture section.
