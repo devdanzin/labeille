@@ -471,6 +471,185 @@ def _classify_compat_blocker(reason: str) -> str | None:
     return None
 
 
+def _detect_python_versions(packages: list[PackageEntry]) -> list[str]:
+    """Auto-detect target Python versions from skip_versions keys."""
+    all_versions: set[str] = set()
+    for pkg in packages:
+        if pkg.skip_versions:
+            all_versions.update(pkg.skip_versions.keys())
+    return sorted(all_versions, reverse=True)
+
+
+def _build_version_skip_sets(
+    packages: list[PackageEntry],
+    target_python_versions: list[str],
+) -> dict[str, set[str]]:
+    """Build a mapping from Python version to the set of packages skipped for it."""
+    version_skipped: dict[str, set[str]] = {v: set() for v in target_python_versions}
+    for pkg in packages:
+        if pkg.skip_versions:
+            for ver in pkg.skip_versions:
+                if ver in version_skipped:
+                    version_skipped[ver].add(pkg.package)
+    return version_skipped
+
+
+def _accumulate_package_stats(report: RegistryReport, pkg: PackageEntry) -> None:
+    """Accumulate per-package metrics into the report."""
+    is_skipped = pkg.skip
+
+    if is_skipped:
+        report.skipped += 1
+    else:
+        report.active += 1
+
+    # Enrichment.
+    report.enrichment.total = report.total
+    if pkg.enriched:
+        report.enrichment.enriched += 1
+        if is_skipped:
+            report.enrichment.enriched_skipped += 1
+        else:
+            report.enrichment.enriched_active += 1
+    else:
+        report.enrichment.not_enriched += 1
+
+    # Extension type.
+    ext = pkg.extension_type or "unknown"
+    active_count, skipped_count = report.by_extension_type.get(ext, (0, 0))
+    if is_skipped:
+        report.by_extension_type[ext] = (active_count, skipped_count + 1)
+    else:
+        report.by_extension_type[ext] = (active_count + 1, skipped_count)
+
+    # Skip reason categorization.
+    if is_skipped:
+        reason = pkg.skip_reason or ""
+        cat = categorize_skip_reason(reason) if reason else "Other"
+        report.by_skip_category[cat] = report.by_skip_category.get(cat, 0) + 1
+
+    # Repo host.
+    host = _classify_repo_host(pkg.repo)
+    current = getattr(report.repo_hosts, host)
+    setattr(report.repo_hosts, host, current + 1)
+
+    # Install complexity (active only).
+    if not is_skipped:
+        complexity = _classify_install_complexity(pkg.install_command)
+        current_val = getattr(report.install_complexity, complexity)
+        setattr(report.install_complexity, complexity, current_val + 1)
+        if (
+            pkg.install_command
+            and "git fetch" in pkg.install_command
+            and "--tags" in pkg.install_command
+        ):
+            report.install_complexity.has_git_fetch_tags += 1
+
+    # Test framework (active only).
+    if not is_skipped:
+        fw = pkg.test_framework or "unknown"
+        report.by_test_framework[fw] = report.by_test_framework.get(fw, 0) + 1
+
+    # Notable attributes (active only).
+    if not is_skipped:
+        if pkg.timeout is not None:
+            report.notable["Custom timeout"] = report.notable.get("Custom timeout", 0) + 1
+        if pkg.clone_depth is not None:
+            report.notable["clone_depth set"] = report.notable.get("clone_depth set", 0) + 1
+        if pkg.uses_xdist:
+            report.notable["uses_xdist"] = report.notable.get("uses_xdist", 0) + 1
+        if pkg.import_name is not None:
+            report.notable["import_name set"] = report.notable.get("import_name set", 0) + 1
+        if pkg.notes:
+            report.notable["Has notes"] = report.notable.get("Has notes", 0) + 1
+
+    # Quality warnings.
+    for warning in detect_quality_warnings(pkg):
+        report.quality_warnings.append((pkg.package, warning))
+
+
+def _analyze_compat_blockers(
+    packages: list[PackageEntry],
+    blockers: CompatBlockers,
+    *,
+    collect_package_lists: bool = False,
+) -> None:
+    """Scan all skip reasons for compatibility blocker categories."""
+    for pkg in packages:
+        reasons: list[str] = []
+        if pkg.skip_reason:
+            reasons.append(pkg.skip_reason)
+        if pkg.skip_versions:
+            reasons.extend(pkg.skip_versions.values())
+
+        seen: set[str] = set()
+        for reason in reasons:
+            blocker = _classify_compat_blocker(reason)
+            if blocker and blocker not in seen:
+                seen.add(blocker)
+                current_val = getattr(blockers, blocker)
+                setattr(blockers, blocker, current_val + 1)
+                if collect_package_lists:
+                    blockers.packages_by_blocker.setdefault(blocker, []).append(pkg.package)
+
+
+def _analyze_per_version(
+    packages: list[PackageEntry],
+    target_python_versions: list[str],
+    version_skipped: dict[str, set[str]],
+    globally_skipped: set[str],
+) -> list[VersionAnalysis]:
+    """Compute per-version skip/active analysis."""
+    result: list[VersionAnalysis] = []
+    for ver in target_python_versions:
+        va = VersionAnalysis(version=ver)
+        ver_skipped_set = version_skipped.get(ver, set())
+
+        for pkg in packages:
+            if pkg.package in globally_skipped or pkg.package in ver_skipped_set:
+                va.skipped += 1
+                if pkg.package in ver_skipped_set and pkg.skip_versions:
+                    reason = pkg.skip_versions.get(ver, "")
+                else:
+                    reason = pkg.skip_reason or ""
+                if reason:
+                    cat = categorize_skip_reason(reason)
+                    va.skip_reasons[cat] = va.skip_reasons.get(cat, 0) + 1
+            else:
+                va.total_active += 1
+
+        result.append(va)
+    return result
+
+
+def _analyze_download_tiers(
+    packages: list[PackageEntry],
+    index: Index,
+    tiers: DownloadTierCoverage,
+) -> None:
+    """Compute download tier coverage from the registry index."""
+    sorted_entries = sorted(
+        index.packages,
+        key=lambda e: -(e.download_count or 0),
+    )
+    active_names = {p.package for p in packages if not p.skip}
+
+    tier_defs: list[tuple[str, int]] = [
+        ("top_100", 100),
+        ("top_500", 500),
+        ("top_1000", 1000),
+        ("top_2000", 2000),
+    ]
+
+    for attr_name, n in tier_defs:
+        tier_entries = sorted_entries[:n]
+        tier_total = len(tier_entries)
+        tier_active = sum(1 for e in tier_entries if e.name in active_names)
+        setattr(tiers, attr_name, (tier_active, tier_total))
+
+    tiers.all_packages = (len(active_names), len(packages))
+
+
 def generate_registry_report(
     packages: list[PackageEntry],
     *,
@@ -497,169 +676,26 @@ def generate_registry_report(
         generated_at=utc_now_iso(),
     )
 
-    # Auto-detect Python versions.
     if target_python_versions is None:
-        all_versions: set[str] = set()
-        for pkg in packages:
-            if pkg.skip_versions:
-                all_versions.update(pkg.skip_versions.keys())
-        target_python_versions = sorted(all_versions, reverse=True)
+        target_python_versions = _detect_python_versions(packages)
 
-    # Build per-version skip sets.
-    version_skipped: dict[str, set[str]] = {v: set() for v in target_python_versions}
-    for pkg in packages:
-        if pkg.skip_versions:
-            for ver, _reason in pkg.skip_versions.items():
-                if ver in version_skipped:
-                    version_skipped[ver].add(pkg.package)
-
+    version_skipped = _build_version_skip_sets(packages, target_python_versions)
     globally_skipped: set[str] = set()
 
-    # Main pass over packages.
+    # Main pass: accumulate per-package metrics.
     for pkg in packages:
-        is_skipped = pkg.skip
-        if is_skipped:
+        if pkg.skip:
             globally_skipped.add(pkg.package)
+        _accumulate_package_stats(report, pkg)
 
-        if is_skipped:
-            report.skipped += 1
-        else:
-            report.active += 1
-
-        # Enrichment.
-        report.enrichment.total = report.total
-        if pkg.enriched:
-            report.enrichment.enriched += 1
-            if is_skipped:
-                report.enrichment.enriched_skipped += 1
-            else:
-                report.enrichment.enriched_active += 1
-        else:
-            report.enrichment.not_enriched += 1
-
-        # Extension type.
-        ext = pkg.extension_type or "unknown"
-        active_count, skipped_count = report.by_extension_type.get(ext, (0, 0))
-        if is_skipped:
-            report.by_extension_type[ext] = (active_count, skipped_count + 1)
-        else:
-            report.by_extension_type[ext] = (active_count + 1, skipped_count)
-
-        # Skip reason categorization.
-        if is_skipped:
-            reason = pkg.skip_reason or ""
-            if reason:
-                cat = categorize_skip_reason(reason)
-            else:
-                cat = "Other"
-            report.by_skip_category[cat] = report.by_skip_category.get(cat, 0) + 1
-
-        # Repo host.
-        host = _classify_repo_host(pkg.repo)
-        current = getattr(report.repo_hosts, host)
-        setattr(report.repo_hosts, host, current + 1)
-
-        # Install complexity (active only).
-        if not is_skipped:
-            complexity = _classify_install_complexity(pkg.install_command)
-            current_val = getattr(report.install_complexity, complexity)
-            setattr(report.install_complexity, complexity, current_val + 1)
-            # Separately count git fetch --tags.
-            if (
-                pkg.install_command
-                and "git fetch" in pkg.install_command
-                and "--tags" in pkg.install_command
-            ):
-                report.install_complexity.has_git_fetch_tags += 1
-
-        # Test framework (active only).
-        if not is_skipped:
-            fw = pkg.test_framework or "unknown"
-            report.by_test_framework[fw] = report.by_test_framework.get(fw, 0) + 1
-
-        # Notable attributes.
-        if not is_skipped:
-            if pkg.timeout is not None:
-                report.notable["Custom timeout"] = report.notable.get("Custom timeout", 0) + 1
-            if pkg.clone_depth is not None:
-                report.notable["clone_depth set"] = report.notable.get("clone_depth set", 0) + 1
-            if pkg.uses_xdist:
-                report.notable["uses_xdist"] = report.notable.get("uses_xdist", 0) + 1
-            if pkg.import_name is not None:
-                report.notable["import_name set"] = report.notable.get("import_name set", 0) + 1
-            if pkg.notes:
-                report.notable["Has notes"] = report.notable.get("Has notes", 0) + 1
-
-        # Quality warnings.
-        for warning in detect_quality_warnings(pkg):
-            report.quality_warnings.append((pkg.package, warning))
-
-    # Compatibility blockers — scan all skip reasons.
-    for pkg in packages:
-        reasons: list[str] = []
-        if pkg.skip_reason:
-            reasons.append(pkg.skip_reason)
-        if pkg.skip_versions:
-            reasons.extend(pkg.skip_versions.values())
-
-        seen_blockers: set[str] = set()
-        for reason in reasons:
-            blocker = _classify_compat_blocker(reason)
-            if blocker and blocker not in seen_blockers:
-                seen_blockers.add(blocker)
-                current_val = getattr(report.compat_blockers, blocker)
-                setattr(report.compat_blockers, blocker, current_val + 1)
-                if collect_package_lists:
-                    report.compat_blockers.packages_by_blocker.setdefault(blocker, []).append(
-                        pkg.package
-                    )
-
-    # Per-version analysis.
-    for ver in target_python_versions:
-        va = VersionAnalysis(version=ver)
-        ver_skipped_set = version_skipped.get(ver, set())
-
-        for pkg in packages:
-            if pkg.package in globally_skipped or pkg.package in ver_skipped_set:
-                va.skipped += 1
-                if pkg.package in ver_skipped_set and pkg.skip_versions:
-                    reason = pkg.skip_versions.get(ver, "")
-                else:
-                    reason = pkg.skip_reason or ""
-                if reason:
-                    cat = categorize_skip_reason(reason)
-                    va.skip_reasons[cat] = va.skip_reasons.get(cat, 0) + 1
-            else:
-                va.total_active += 1
-
-        report.per_version.append(va)
-
-    # Download tier coverage.
+    _analyze_compat_blockers(
+        packages, report.compat_blockers, collect_package_lists=collect_package_lists
+    )
+    report.per_version = _analyze_per_version(
+        packages, target_python_versions, version_skipped, globally_skipped
+    )
     if index is not None:
-        sorted_entries = sorted(
-            index.packages,
-            key=lambda e: -(e.download_count or 0),
-        )
-
-        active_names = {p.package for p in packages if not p.skip}
-
-        tiers: list[tuple[str, int]] = [
-            ("top_100", 100),
-            ("top_500", 500),
-            ("top_1000", 1000),
-            ("top_2000", 2000),
-        ]
-
-        for attr_name, n in tiers:
-            tier_entries = sorted_entries[:n]
-            tier_total = len(tier_entries)
-            tier_active = sum(1 for e in tier_entries if e.name in active_names)
-            setattr(report.download_tiers, attr_name, (tier_active, tier_total))
-
-        report.download_tiers.all_packages = (
-            len(active_names),
-            len(packages),
-        )
+        _analyze_download_tiers(packages, index, report.download_tiers)
 
     return report
 
