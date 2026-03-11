@@ -14,6 +14,7 @@ from labeille.analyze import (
     ComparisonResult,
     HistoryAnalysis,
     PackageHistory,
+    PackageResult,
     RegistryReport,
     ResultsStore,
     RunAnalysis,
@@ -728,19 +729,9 @@ def _print_run_quiet(analysis: RunAnalysis, run: RunData) -> None:
     )
 
 
-def _print_run_summary(
-    analysis: RunAnalysis,
-    run: RunData,
-    registry_dir: Path,
-    *,
-    verbose: bool = False,
-    no_histogram: bool = False,
-    no_reproduce: bool = False,
-) -> None:
-    """Print the summary format for run analysis."""
+def _print_run_header(analysis: RunAnalysis, run: RunData) -> None:
+    """Print run metadata header."""
     meta = run.meta
-
-    # 1. Run header.
     click.echo()
     click.echo(f"Run ID: {run.run_id}")
     click.echo(f"Python: {meta.python_version}")
@@ -748,72 +739,73 @@ def _print_run_summary(
     click.echo(f"Duration: {format_duration(analysis.total_duration)}")
     click.echo()
 
-    # 2. Per-package table.
+
+def _print_results_table(
+    analysis: RunAnalysis,
+    run: RunData,
+    *,
+    verbose: bool = False,
+) -> None:
+    """Print per-package results table with change tags."""
     results = run.results
-    if verbose:
-        show_results = results
-    else:
-        show_results = [r for r in results if r.status != "pass"]
+    show_results = results if verbose else [r for r in results if r.status != "pass"]
+    if not show_results:
+        return
 
-    if show_results:
-        show_results = sorted(
-            show_results,
-            key=lambda r: (_STATUS_ORDER.get(r.status, 99), r.package),
-        )
+    show_results = sorted(
+        show_results,
+        key=lambda r: (_STATUS_ORDER.get(r.status, 99), r.package),
+    )
 
-        # Build change tags.
-        change_tags: dict[str, str] = {}
-        if analysis.status_changes is not None:
-            for sc in analysis.status_changes:
-                if sc.new_status == "pass" and sc.old_status in ("crash", "fail"):
-                    change_tags[sc.package] = "[FIXED]"
-                elif sc.old_status == "pass" and sc.new_status in ("crash", "fail"):
-                    change_tags[sc.package] = "[REGRESSED]"
-
-        headers = ["Package", "Status", "Duration", "Signal", "Detail"]
-        rows: list[list[str]] = []
-        for r in show_results:
-            status_str = format_status_icon(r.status)
-            tag = change_tags.get(r.package, "")
-            if tag:
-                status_str += f" {tag}"
-            sig = format_signal_name(r.signal)
-            detail = result_detail(r)
-            rows.append(
-                [
-                    r.package,
-                    status_str,
-                    format_duration(r.duration_seconds),
-                    sig,
-                    truncate(detail, 60),
-                ]
-            )
-
-        click.echo(
-            format_table(
-                headers,
-                rows,
-                alignments=["l", "l", "r", "l", "l"],
-                max_col_width={0: 20, 4: 60},
-            )
-        )
-        click.echo()
-
-    # 2b. Status changes with commit context (vs previous run).
-    if analysis.status_changes:
-        click.echo(f"Status changes vs previous run ({len(analysis.status_changes)}):")
+    change_tags: dict[str, str] = {}
+    if analysis.status_changes is not None:
         for sc in analysis.status_changes:
-            old_icon = format_status_icon(sc.old_status).split()[0]
-            new_icon = format_status_icon(sc.new_status).split()[0]
-            click.echo(
-                f"  {old_icon}\u2192{new_icon}  {sc.package:<20s} "
-                f"{sc.old_status.upper()} \u2192 {sc.new_status.upper()}"
-            )
-            click.echo(f"    {_format_commit_context(sc)}")
-        click.echo()
+            if sc.new_status == "pass" and sc.old_status in ("crash", "fail"):
+                change_tags[sc.package] = "[FIXED]"
+            elif sc.old_status == "pass" and sc.new_status in ("crash", "fail"):
+                change_tags[sc.package] = "[REGRESSED]"
 
-    # 3. Aggregate summary.
-    tested = len(results)
+    headers = ["Package", "Status", "Duration", "Signal", "Detail"]
+    rows: list[list[str]] = []
+    for r in show_results:
+        status_str = format_status_icon(r.status)
+        tag = change_tags.get(r.package, "")
+        if tag:
+            status_str += f" {tag}"
+        sig = format_signal_name(r.signal)
+        detail = result_detail(r)
+        rows.append(
+            [r.package, status_str, format_duration(r.duration_seconds), sig, truncate(detail, 60)]
+        )
+
+    click.echo(
+        format_table(
+            headers, rows, alignments=["l", "l", "r", "l", "l"], max_col_width={0: 20, 4: 60}
+        )
+    )
+    click.echo()
+
+
+def _print_status_changes(analysis: RunAnalysis) -> None:
+    """Print status changes vs previous run."""
+    if not analysis.status_changes:
+        return
+    click.echo(f"Status changes vs previous run ({len(analysis.status_changes)}):")
+    for sc in analysis.status_changes:
+        old_icon = format_status_icon(sc.old_status).split()[0]
+        new_icon = format_status_icon(sc.new_status).split()[0]
+        click.echo(
+            f"  {old_icon}\u2192{new_icon}  {sc.package:<20s} "
+            f"{sc.old_status.upper()} \u2192 {sc.new_status.upper()}"
+        )
+        click.echo(f"    {_format_commit_context(sc)}")
+    click.echo()
+
+
+def _print_aggregate_summary(analysis: RunAnalysis, run: RunData) -> None:
+    """Print aggregate counts and timing summary."""
+    meta = run.meta
+    tested = len(run.results)
     total_pkgs = meta.packages_tested + meta.packages_skipped
     if total_pkgs == 0:
         total_pkgs = tested
@@ -860,52 +852,87 @@ def _print_run_summary(
         click.echo(f"{l_text:<{pad}s}{r_text}")
     click.echo()
 
-    # 4. Duration histogram.
+
+def _print_install_errors(results: list[PackageResult]) -> None:
+    """Print install error categorization."""
+    install_errors = [r for r in results if r.status == "install_error"]
+    if not install_errors:
+        return
+    cats = categorize_install_errors(results)
+    click.echo("Install errors by type:")
+    for cat, pkgs in sorted(cats.items(), key=lambda x: -len(x[1])):
+        pkg_list = ", ".join(pkgs[:5])
+        if len(pkgs) > 5:
+            pkg_list += ", ..."
+        click.echo(f"  {cat + ':':<20s} {len(pkgs):2d}  ({pkg_list})")
+    click.echo()
+
+
+def _print_crash_details(analysis: RunAnalysis, run: RunData) -> None:
+    """Print crash detail section."""
+    if not analysis.crashes:
+        return
+    click.echo(format_section_header("Crashes"))
+    for r in analysis.crashes:
+        sig = format_signal_name(r.signal)
+        signature = r.crash_signature or "unknown"
+        click.echo(f"  {r.package}: {sig}: {signature}")
+        if run.run_dir:
+            click.echo(f"    Stderr: {run.run_dir / 'crashes' / f'{r.package}.stderr'}")
+        click.echo(f"    Test command: {r.test_command}")
+        click.echo()
+    click.echo(format_section_header(""))
+
+
+def _print_reproduce_blocks(
+    analysis: RunAnalysis,
+    run: RunData,
+    registry_dir: Path,
+) -> None:
+    """Print reproduce command blocks for crashes."""
+    if not analysis.crashes:
+        return
+    meta = run.meta
+    click.echo(format_section_header("Reproduce"))
+    for r in analysis.crashes:
+        entry: PackageEntry | None = None
+        if package_exists(r.package, registry_dir):
+            entry = load_package(r.package, registry_dir)
+
+        if entry is not None:
+            sig = format_signal_name(r.signal)
+            click.echo(f"# {r.package} ({sig}):")
+            cmd = build_reproduce_command(r, entry, str(meta.target_python))
+            click.echo(cmd)
+            click.echo()
+    click.echo(format_section_header(""))
+
+
+def _print_run_summary(
+    analysis: RunAnalysis,
+    run: RunData,
+    registry_dir: Path,
+    *,
+    verbose: bool = False,
+    no_histogram: bool = False,
+    no_reproduce: bool = False,
+) -> None:
+    """Print the summary format for run analysis."""
+    _print_run_header(analysis, run)
+    _print_results_table(analysis, run, verbose=verbose)
+    _print_status_changes(analysis)
+    _print_aggregate_summary(analysis, run)
+
     if not no_histogram and analysis.duration_buckets:
+        tested = len(run.results)
         click.echo(f"Duration distribution ({tested} packages):")
         click.echo(format_histogram(analysis.duration_buckets, total=tested))
         click.echo()
 
-    # 5. Install error analysis.
-    install_errors = [r for r in results if r.status == "install_error"]
-    if install_errors:
-        cats = categorize_install_errors(results)
-        click.echo("Install errors by type:")
-        for cat, pkgs in sorted(cats.items(), key=lambda x: -len(x[1])):
-            pkg_list = ", ".join(pkgs[:5])
-            if len(pkgs) > 5:
-                pkg_list += ", ..."
-            click.echo(f"  {cat + ':':<20s} {len(pkgs):2d}  ({pkg_list})")
-        click.echo()
-
-    # 6. Crash detail.
-    if analysis.crashes:
-        click.echo(format_section_header("Crashes"))
-        for r in analysis.crashes:
-            sig = format_signal_name(r.signal)
-            signature = r.crash_signature or "unknown"
-            click.echo(f"  {r.package}: {sig}: {signature}")
-            if run.run_dir:
-                click.echo(f"    Stderr: {run.run_dir / 'crashes' / f'{r.package}.stderr'}")
-            click.echo(f"    Test command: {r.test_command}")
-            click.echo()
-        click.echo(format_section_header(""))
-
-    # 7. Reproduce blocks.
-    if not no_reproduce and analysis.crashes:
-        click.echo(format_section_header("Reproduce"))
-        for r in analysis.crashes:
-            entry: PackageEntry | None = None
-            if package_exists(r.package, registry_dir):
-                entry = load_package(r.package, registry_dir)
-
-            if entry is not None:
-                sig = format_signal_name(r.signal)
-                click.echo(f"# {r.package} ({sig}):")
-                cmd = build_reproduce_command(r, entry, str(meta.target_python))
-                click.echo(cmd)
-                click.echo()
-        click.echo(format_section_header(""))
+    _print_install_errors(run.results)
+    _print_crash_details(analysis, run)
+    if not no_reproduce:
+        _print_reproduce_blocks(analysis, run, registry_dir)
 
 
 def _print_run_table(analysis: RunAnalysis, *, verbose: bool = False) -> None:
