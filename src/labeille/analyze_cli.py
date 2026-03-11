@@ -363,6 +363,23 @@ def format_registry_summary(report: RegistryReport) -> str:
     return "\n".join(lines)
 
 
+_HOST_LABELS: list[tuple[str, str]] = [
+    ("github", "GitHub"),
+    ("gitlab", "GitLab"),
+    ("bitbucket", "Bitbucket"),
+    ("codeberg", "Codeberg"),
+    ("no_repo", "No repo URL"),
+    ("other", "Other"),
+]
+
+_INSTALL_LABELS: list[tuple[str, str]] = [
+    ("simple_editable", "Simple editable"),
+    ("editable_with_extras", "Editable + extras"),
+    ("multi_step", "Multi-step"),
+    ("custom", "Custom"),
+]
+
+
 def format_registry_detail(report: RegistryReport) -> str:
     """Format the detailed tier of the registry report."""
     lines: list[str] = [format_registry_summary(report), ""]
@@ -380,14 +397,6 @@ def format_registry_detail(report: RegistryReport) -> str:
         lines.append("")
 
     # Repository hosting.
-    _HOST_LABELS = [
-        ("github", "GitHub"),
-        ("gitlab", "GitLab"),
-        ("bitbucket", "Bitbucket"),
-        ("codeberg", "Codeberg"),
-        ("no_repo", "No repo URL"),
-        ("other", "Other"),
-    ]
     host_items: list[tuple[str, int]] = [
         (label, report.repo_hosts.get(key, 0)) for key, label in _HOST_LABELS
     ]
@@ -399,12 +408,6 @@ def format_registry_detail(report: RegistryReport) -> str:
         lines.append("")
 
     # Install complexity.
-    _INSTALL_LABELS = [
-        ("simple_editable", "Simple editable"),
-        ("editable_with_extras", "Editable + extras"),
-        ("multi_step", "Multi-step"),
-        ("custom", "Custom"),
-    ]
     if report.active > 0:
         install_items: list[tuple[str, int]] = [
             (label, report.install_complexity.get(key, 0)) for key, label in _INSTALL_LABELS
@@ -574,16 +577,8 @@ def export_registry_report_md(report: RegistryReport) -> str:
         lines.append("")
 
     # Repository hosting.
-    _HOST_LABELS_MD = [
-        ("github", "GitHub"),
-        ("gitlab", "GitLab"),
-        ("bitbucket", "Bitbucket"),
-        ("codeberg", "Codeberg"),
-        ("no_repo", "No repo URL"),
-        ("other", "Other"),
-    ]
     host_items_md: list[tuple[str, int]] = [
-        (label, report.repo_hosts.get(key, 0)) for key, label in _HOST_LABELS_MD
+        (label, report.repo_hosts.get(key, 0)) for key, label in _HOST_LABELS
     ]
     host_items_md = [(lb, ct) for lb, ct in host_items_md if ct > 0]
     if host_items_md:
@@ -596,15 +591,9 @@ def export_registry_report_md(report: RegistryReport) -> str:
         lines.append("")
 
     # Install complexity.
-    _INSTALL_LABELS_MD = [
-        ("simple_editable", "Simple editable"),
-        ("editable_with_extras", "Editable + extras"),
-        ("multi_step", "Multi-step"),
-        ("custom", "Custom"),
-    ]
     if report.active > 0:
         install_items_md: list[tuple[str, int]] = [
-            (label, report.install_complexity.get(key, 0)) for key, label in _INSTALL_LABELS_MD
+            (label, report.install_complexity.get(key, 0)) for key, label in _INSTALL_LABELS
         ]
         install_items_md = [(lb, ct) for lb, ct in install_items_md if ct > 0]
         if install_items_md:
