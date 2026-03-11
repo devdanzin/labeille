@@ -70,8 +70,8 @@ def check_registry_schema(registry_path: Path) -> None:
 
     try:
         data = yaml.safe_load(schema_file.read_text(encoding="utf-8"))
-    except (yaml.YAMLError, OSError):
-        log.warning("Could not parse schema.yaml in %s", registry_path)
+    except (yaml.YAMLError, OSError) as exc:
+        log.warning("Could not parse schema.yaml in %s: %s", registry_path, exc)
         return
 
     if not isinstance(data, dict):

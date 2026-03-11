@@ -779,7 +779,7 @@ def capture_python_profile(
                 proc.returncode,
                 proc.stderr.strip()[:200],
             )
-    except (subprocess.TimeoutExpired, FileNotFoundError, OSError) as exc:
+    except (subprocess.TimeoutExpired, FileNotFoundError, OSError, json.JSONDecodeError) as exc:
         log.warning("Could not profile Python at %s: %s", python_path, exc)
 
     return profile

@@ -7,12 +7,11 @@ analysis functions that operate on loaded data.
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from labeille.io_utils import load_jsonl, utc_now_iso
+from labeille.io_utils import load_json_file, load_jsonl, utc_now_iso
 from labeille.registry import Index, PackageEntry
 
 
@@ -157,7 +156,10 @@ class RunData:
         meta_file = self.run_dir / "run_meta.json"
         if not meta_file.exists():
             return RunMeta(run_id=self.run_id)
-        data = json.loads(meta_file.read_text(encoding="utf-8"))
+        try:
+            data = load_json_file(meta_file)
+        except ValueError:
+            return RunMeta(run_id=self.run_id)
         return RunMeta.from_dict(data)
 
     def _load_results(self) -> list[PackageResult]:

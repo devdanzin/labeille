@@ -8,7 +8,6 @@ workflow: read inputs, query PyPI, update the registry.
 
 from __future__ import annotations
 
-import json
 import re
 import threading
 import time
@@ -223,7 +222,9 @@ def read_packages_from_json(path: Path, top_n: int | None = None) -> list[Packag
     Returns:
         A list of PackageInput entries with download counts.
     """
-    data = json.loads(path.read_text(encoding="utf-8"))
+    from labeille.io_utils import load_json_file
+
+    data = load_json_file(path)
     rows: list[dict[str, Any]] = data.get("rows", [])
     entries = [
         PackageInput(

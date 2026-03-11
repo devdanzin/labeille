@@ -29,7 +29,7 @@ from labeille.bench.constraints import ResourceConstraints
 from labeille.bench.stats import DescriptiveStats, describe, detect_outliers
 from labeille.bench.system import PythonProfile, SystemProfile
 from labeille.bench.timing import PerTestTimings
-from labeille.io_utils import append_jsonl, load_jsonl, write_meta_json
+from labeille.io_utils import append_jsonl, load_json_file, load_jsonl, write_meta_json
 from labeille.logging import get_logger
 
 log = get_logger("bench.results")
@@ -421,7 +421,7 @@ def load_bench_run(
     if not meta_path.exists():
         raise FileNotFoundError(f"No bench_meta.json in {run_dir}")
 
-    meta = BenchMeta.from_dict(json.loads(meta_path.read_text(encoding="utf-8")))
+    meta = BenchMeta.from_dict(load_json_file(meta_path))
 
     results_path = run_dir / "bench_results.jsonl"
     results: list[BenchPackageResult] = []

@@ -128,5 +128,46 @@ class TestSafeLoadYaml(unittest.TestCase):
             self.assertIsNone(result)
 
 
+class TestLoadJsonFile(unittest.TestCase):
+    """Tests for load_json_file."""
+
+    def test_valid_json(self) -> None:
+        from labeille.io_utils import load_json_file
+
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / "test.json"
+            p.write_text('{"key": "value"}', encoding="utf-8")
+            result = load_json_file(p)
+            self.assertEqual(result, {"key": "value"})
+
+    def test_malformed_json_raises_valueerror(self) -> None:
+        from labeille.io_utils import load_json_file
+
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / "bad.json"
+            p.write_text("{truncated", encoding="utf-8")
+            with self.assertRaises(ValueError) as ctx:
+                load_json_file(p)
+            self.assertIn("Invalid JSON", str(ctx.exception))
+
+    def test_non_dict_json_raises_valueerror(self) -> None:
+        from labeille.io_utils import load_json_file
+
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / "list.json"
+            p.write_text("[1, 2, 3]", encoding="utf-8")
+            with self.assertRaises(ValueError) as ctx:
+                load_json_file(p)
+            self.assertIn("Expected JSON object", str(ctx.exception))
+
+    def test_missing_file_raises_oserror(self) -> None:
+        from labeille.io_utils import load_json_file
+
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / "missing.json"
+            with self.assertRaises(OSError):
+                load_json_file(p)
+
+
 if __name__ == "__main__":
     unittest.main()

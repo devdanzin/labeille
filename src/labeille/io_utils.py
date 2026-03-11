@@ -79,6 +79,22 @@ def write_meta_json(path: Path, data: dict[str, Any]) -> None:
     atomic_write_text(path, json.dumps(data, indent=2) + "\n")
 
 
+def load_json_file(path: Path) -> dict[str, Any]:
+    """Read and parse a JSON file.
+
+    Raises:
+        ValueError: If the file contains invalid JSON or is not a dict.
+        OSError: If the file cannot be read.
+    """
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"Invalid JSON in {path.name}: {exc}") from exc
+    if not isinstance(data, dict):
+        raise ValueError(f"Expected JSON object in {path.name}, got {type(data).__name__}")
+    return data
+
+
 def iter_jsonl(
     path: Path,
     deserialize: Callable[[dict[str, Any]], T],

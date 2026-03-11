@@ -19,7 +19,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Literal
 
-from labeille.io_utils import append_jsonl, load_jsonl, write_meta_json
+from labeille.io_utils import append_jsonl, load_json_file, load_jsonl, write_meta_json
 from labeille.logging import get_logger
 
 log = get_logger("ft.results")
@@ -580,6 +580,6 @@ def load_ft_run(
     if not results_path.exists():
         raise FileNotFoundError(f"No ft_results.jsonl in {results_dir}")
 
-    meta = FTRunMeta.from_dict(json.loads(meta_path.read_text(encoding="utf-8")))
+    meta = FTRunMeta.from_dict(load_json_file(meta_path))
     results = load_jsonl(results_path, FTPackageResult.from_dict)
     return meta, results
