@@ -984,6 +984,7 @@ def track_list(tracking_dir: Path) -> None:
     "--tracking-dir",
     type=click.Path(path_type=Path),
     default="results/tracking",
+    help="Directory containing tracking series data.",
 )
 def track_trend(
     series_name: str,
@@ -1032,6 +1033,7 @@ def track_trend(
     "--tracking-dir",
     type=click.Path(path_type=Path),
     default="results/tracking",
+    help="Directory containing tracking series data.",
 )
 def track_alert(
     series_name: str,

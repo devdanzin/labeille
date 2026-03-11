@@ -102,7 +102,13 @@ _registry_dir_option = click.option(
     default=None,
     help="Write output to file (default: stdout).",
 )
-@click.option("--where", "where_exprs", type=str, multiple=True)
+@click.option(
+    "--where",
+    "where_exprs",
+    type=str,
+    multiple=True,
+    help="Filter expression (e.g. 'has_c_extension=true'). Repeatable.",
+)
 @click.option(
     "--python-version",
     "python_versions",
@@ -646,6 +652,7 @@ _STATUS_ORDER: dict[str, int] = {
     type=click.Choice(["summary", "table", "full"]),
     default="summary",
     show_default=True,
+    help="Output detail level.",
 )
 @click.option("-q", "--quiet", is_flag=True)
 @click.option("-v", "--verbose", is_flag=True)
@@ -1190,15 +1197,18 @@ def _print_comparison(
 
 @analyze.command("history")
 @_results_dir_option
-@click.option("--last", "last_n", type=int, default=10, show_default=True)
+@click.option("--last", "last_n", type=int, default=10, show_default=True, help="Number of runs.")
 @click.option(
     "--format",
     "fmt",
     type=click.Choice(["table", "timeline"]),
     default="table",
     show_default=True,
+    help="Output format.",
 )
-@click.option("--python-version", type=str, default=None)
+@click.option(
+    "--python-version", type=str, default=None, help="Filter to a specific Python version."
+)
 def history_cmd(
     results_dir: Path,
     last_n: int,
@@ -1349,7 +1359,7 @@ def _print_history_timeline(history: HistoryAnalysis) -> None:
 @_results_dir_option
 @_registry_dir_option
 @click.argument("package_name")
-@click.option("--last", "last_n", type=int, default=None)
+@click.option("--last", "last_n", type=int, default=None, help="Limit to the last N runs.")
 def package_cmd(
     results_dir: Path,
     registry_dir: Path | None,

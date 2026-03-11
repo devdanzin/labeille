@@ -85,7 +85,13 @@ def compat() -> None:
     show_default=True,
     help="Output directory for survey results.",
 )
-@click.option("--timeout", type=int, default=600, show_default=True)
+@click.option(
+    "--timeout",
+    type=int,
+    default=600,
+    show_default=True,
+    help="Build timeout in seconds per package.",
+)
 @click.option(
     "--workers",
     type=int,
@@ -248,6 +254,7 @@ def survey(
     type=click.Choice(["table", "markdown"]),
     default="table",
     show_default=True,
+    help="Output format.",
 )
 @click.option(
     "--category",

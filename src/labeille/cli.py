@@ -54,9 +54,19 @@ _register_subcommands()
 
 @main.command()
 @click.argument("packages", nargs=-1)
-@click.option("--from-file", "from_file", type=click.Path(exists=True, path_type=Path))
-@click.option("--from-json", "from_json", type=click.Path(exists=True, path_type=Path))
-@click.option("--top", "top_n", type=int, default=None)
+@click.option(
+    "--from-file",
+    "from_file",
+    type=click.Path(exists=True, path_type=Path),
+    help="File with one package name per line.",
+)
+@click.option(
+    "--from-json",
+    "from_json",
+    type=click.Path(exists=True, path_type=Path),
+    help="JSON file with package metadata (e.g. top-pypi-packages.json).",
+)
+@click.option("--top", "top_n", type=int, default=None, help="Resolve only the top N packages.")
 @click.option(
     "--registry-dir",
     type=click.Path(path_type=Path),
@@ -64,7 +74,13 @@ _register_subcommands()
     help="Registry directory (default: ~/.local/share/labeille/registry/).",
 )
 @click.option("--dry-run", is_flag=True, help="Show what would be done without making changes.")
-@click.option("--timeout", type=float, default=10.0, show_default=True)
+@click.option(
+    "--timeout",
+    type=float,
+    default=10.0,
+    show_default=True,
+    help="PyPI API request timeout in seconds.",
+)
 @click.option("-v", "--verbose", is_flag=True, help="Show detailed output.")
 @click.option("-q", "--quiet", is_flag=True, help="Only show errors.")
 @click.option(
@@ -72,6 +88,7 @@ _register_subcommands()
     type=click.Path(path_type=Path),
     default=Path("labeille-resolve.log"),
     show_default=True,
+    help="Path to the log file.",
 )
 @click.option(
     "--workers",
@@ -162,28 +179,49 @@ def resolve(
     type=click.Path(path_type=Path),
     default=Path("results"),
     show_default=True,
+    help="Output directory for test results.",
 )
-@click.option("--top", "top_n", type=int, default=None)
-@click.option("--packages", "packages_csv", type=str, default=None)
-@click.option("--skip-extensions", is_flag=True)
+@click.option(
+    "--top", "top_n", type=int, default=None, help="Test only the top N packages by downloads."
+)
+@click.option(
+    "--packages",
+    "packages_csv",
+    type=str,
+    default=None,
+    help="Comma-separated list of package names (supports pkg@revision).",
+)
+@click.option("--skip-extensions", is_flag=True, help="Skip packages with C extensions.")
 @click.option("--skip-completed", is_flag=True, help="Resume: skip already-tested packages.")
 @click.option(
     "--force-run",
     is_flag=True,
     help="Override skip and skip_versions flags; run all selected packages.",
 )
-@click.option("--stop-after-crash", type=int, default=None)
-@click.option("--timeout", type=int, default=600, show_default=True)
+@click.option(
+    "--stop-after-crash",
+    type=int,
+    default=None,
+    help="Stop after N crashes are detected.",
+)
+@click.option(
+    "--timeout",
+    type=int,
+    default=600,
+    show_default=True,
+    help="Test suite timeout in seconds.",
+)
 @click.option("--env", "env_pairs", type=str, multiple=True, help="KEY=VALUE env var.")
-@click.option("--run-id", type=str, default=None)
-@click.option("--dry-run", is_flag=True)
-@click.option("-v", "--verbose", is_flag=True)
+@click.option("--run-id", type=str, default=None, help="Custom run identifier.")
+@click.option("--dry-run", is_flag=True, help="Show what would be done without running tests.")
+@click.option("-v", "--verbose", is_flag=True, help="Show detailed output.")
 @click.option("-q", "--quiet", is_flag=True, help="Only show crashes.")
 @click.option(
     "--log-file",
     type=click.Path(path_type=Path),
     default=Path("labeille-run.log"),
     show_default=True,
+    help="Path to the log file.",
 )
 @click.option("--keep-work-dirs", is_flag=True, help="Don't clean up working directories.")
 @click.option(
@@ -671,7 +709,13 @@ def _print_human_format(result: ScanResult, install_command: str | None) -> None
     default=None,
     help="Only count crashes matching this substring.",
 )
-@click.option("--timeout", type=int, default=600, show_default=True)
+@click.option(
+    "--timeout",
+    type=int,
+    default=600,
+    show_default=True,
+    help="Test suite timeout in seconds.",
+)
 @click.option(
     "--extra-deps",
     type=str,

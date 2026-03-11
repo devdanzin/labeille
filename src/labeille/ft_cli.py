@@ -237,6 +237,7 @@ def run(
     "sort_by",
     type=click.Choice(["category", "pass_rate", "name"]),
     default="category",
+    help="Sort results by the given field.",
 )
 @click.option("--limit", default=None, type=int, help="Maximum packages to show.")
 def show(result_dir: Path, sort_by: str, limit: int | None) -> None:
@@ -420,6 +421,7 @@ def compare(run_a: Path, run_b: Path) -> None:
     "fmt",
     type=click.Choice(["markdown", "text"]),
     default="markdown",
+    help="Output format.",
 )
 @click.option(
     "--output",
@@ -460,6 +462,7 @@ def report(result_dir: Path, fmt: str, output: Path | None) -> None:
     "fmt",
     type=click.Choice(["csv", "json"]),
     default="csv",
+    help="Export format.",
 )
 @click.option(
     "--output",
