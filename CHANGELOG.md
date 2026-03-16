@@ -27,6 +27,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Use `append_jsonl()` in `migrations.py` instead of raw `open()`/`json.dumps` for pattern consistency.
 
 ### Fixed
+- Fix `--no-shallow` / `--clone-depth=0` to produce actual full clones (no `--depth` flag) instead of silently defaulting to depth=1.
+- Add warning logs to 4 silent return-None paths in `repo_ops.py` (`clone_repo`, `pull_repo`, `checkout_revision`, `fetch_latest_pypi_version`).
+- Promote `pull_repo` git reset/clean failure logs from DEBUG to WARNING for visibility.
+- Log warning for corrupted `run_meta.json` in `analyze.py` instead of silently returning empty metadata.
+- Add `ignore_errors=True` to `shutil.rmtree` in `bench/runner.py` venv refresh to prevent crashes on permission errors.
+- Standardize exception chaining from `from None` to `from exc` in 3 `bench_cli.py` `load_series` handlers.
 - Log `ValueError`/`OSError` in `ft/runner.py` stderr and stdout reader threads instead of silently ignoring.
 - Remove thin `extract_minor_version` wrapper from `analyze.py`; callers now use `io_utils.extract_minor_version` directly.
 - Replace `ProgressCallback = Any` with `Callable[[BenchProgress], None] | None` in `bench/runner.py`.
