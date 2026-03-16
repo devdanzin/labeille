@@ -8,6 +8,7 @@ import json
 import unittest
 from typing import Any
 
+from labeille.ft.compat import ExtensionCompat
 from labeille.ft.export import export_csv, export_json, generate_report
 from labeille.ft.results import (
     FailureCategory,
@@ -263,11 +264,11 @@ class TestGenerateReport(unittest.TestCase):
                 0.7,
                 crash_count=3,
                 failure_signatures=["SIGSEGV"],
-                extension_compat={
-                    "package": "numpy",
-                    "is_pure_python": False,
-                    "gil_fallback_active": True,
-                },
+                extension_compat=ExtensionCompat(
+                    package="numpy",
+                    is_pure_python=False,
+                    gil_fallback_active=True,
+                ),
             )
         ]
         output = generate_report(meta, results, format="markdown")

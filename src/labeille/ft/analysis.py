@@ -377,8 +377,8 @@ def prioritize_triage(
             score += min(r.deadlock_count * 5, 15)
             reasons.append(f"{r.deadlock_count} deadlocks")
 
-        ext = r.extension_compat or {}
-        is_pure = ext.get("is_pure_python", True)
+        ext = r.extension_compat
+        is_pure = ext.is_pure_python if ext else True
         if not is_pure and r.category in (
             FailureCategory.CRASH,
             FailureCategory.INTERMITTENT,

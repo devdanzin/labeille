@@ -13,6 +13,7 @@ from labeille.ft.analysis import (
     detect_duration_anomalies,
     prioritize_triage,
 )
+from labeille.ft.compat import ExtensionCompat
 from labeille.ft.results import (
     FTPackageResult,
 )
@@ -304,7 +305,7 @@ class TestPrioritizeTriage(unittest.TestCase):
             make_package_result(
                 "ext_crash",
                 ["pass", "crash"],
-                extension_compat={"is_pure_python": False},
+                extension_compat=ExtensionCompat(package="ext_crash", is_pure_python=False),
             ),
             make_package_result("py_crash", ["pass", "crash"]),
         ]
