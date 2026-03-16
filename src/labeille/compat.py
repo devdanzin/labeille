@@ -738,6 +738,100 @@ def resolve_compat_inputs(
 # ---------------------------------------------------------------------------
 
 
+def _prepare_source(
+    pkg: CompatPackageInput,
+    from_mode: str,
+    repos_dir: Path | None,
+    tmp_path: Path,
+    no_binary_all: bool,
+    result: CompatResult,
+) -> tuple[str, Path] | None:
+    """Prepare source and build the install command.
+
+    Returns ``(install_cmd, cwd)`` on success or ``None`` if the package
+    should be skipped (sets ``result.status`` before returning).
+    """
+    if from_mode == "sdist":
+        if no_binary_all:
+            return f"pip install --no-binary :all: {pkg.name}", tmp_path
+        return f"pip install --no-binary {pkg.name} {pkg.name}", tmp_path
+
+    # Source mode — need a repo.
+    if pkg.repo_url is None:
+        result.status = "no_repo"
+        return None
+    repo_dir = repos_dir / pkg.name if repos_dir else tmp_path / "repo"
+    try:
+        if repo_dir.exists() and (repo_dir / ".git").exists():
+            pull_repo(repo_dir)
+        else:
+            clone_repo(pkg.repo_url, repo_dir)
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as exc:
+        result.status = "clone_error"
+        log.warning("Clone failed for %s: %s", pkg.name, exc)
+        return None
+    return pkg.install_command or "pip install -e .", repo_dir
+
+
+def _classify_install_result(
+    install_proc: subprocess.CompletedProcess[str],
+    from_mode: str,
+    patterns: list[ErrorPattern],
+    result: CompatResult,
+) -> bool:
+    """Classify a non-zero install exit code. Returns True if the build failed."""
+    result.exit_code = install_proc.returncode
+    if install_proc.returncode == 0:
+        return False
+    stderr_text = install_proc.stderr or ""
+    if from_mode == "sdist" and _NO_SDIST_PATTERN.search(stderr_text):
+        result.status = "no_sdist"
+    else:
+        result.status = "build_fail"
+        matches = classify_build_output(stderr_text, patterns=patterns)
+        result.error_matches = matches
+        if matches:
+            result.primary_category = matches[0].category
+            result.primary_subcategory = matches[0].subcategory
+            result.primary_description = matches[0].description
+    return True
+
+
+def _check_import_result(
+    pkg: CompatPackageInput,
+    venv_dir: Path,
+    patterns: list[ErrorPattern],
+    result: CompatResult,
+) -> None:
+    """Run an import check and set the result status accordingly."""
+    import_name = pkg.import_name or pkg.name.replace("-", "_")
+    venv_python = venv_dir / "bin" / "python"
+    import_env = clean_env(PYTHON_JIT="0", ASAN_OPTIONS="detect_leaks=0")
+    try:
+        import_proc = check_import(venv_python, import_name, import_env)
+    except subprocess.TimeoutExpired:
+        result.status = "import_fail"
+        result.import_error = "import timed out"
+        return
+
+    if import_proc.returncode != 0:
+        crash = detect_crash(import_proc.returncode, import_proc.stderr or "")
+        if crash is not None:
+            result.status = "import_crash"
+            result.crash_signature = crash.signature
+        else:
+            result.status = "import_fail"
+            result.import_error = (import_proc.stderr or "").strip()[-300:]
+        import_matches = classify_build_output(import_proc.stderr or "", patterns=patterns)
+        result.error_matches = import_matches
+        if import_matches:
+            result.primary_category = import_matches[0].category
+            result.primary_subcategory = import_matches[0].subcategory
+            result.primary_description = import_matches[0].description
+    else:
+        result.status = "build_ok"
+
+
 def _survey_package(
     pkg: CompatPackageInput,
     target_python: Path,
@@ -760,122 +854,62 @@ def _survey_package(
         repo_url=pkg.repo_url,
     )
 
-    with tempfile.TemporaryDirectory(prefix=f"compat-{pkg.name}-") as tmpdir:
-        tmp_path = Path(tmpdir)
-        venv_dir = tmp_path / "venv"
+    try:
+        with tempfile.TemporaryDirectory(prefix=f"compat-{pkg.name}-") as tmpdir:
+            tmp_path = Path(tmpdir)
+            venv_dir = tmp_path / "venv"
 
-        # Build install command.
-        if from_mode == "sdist":
-            if no_binary_all:
-                install_cmd = f"pip install --no-binary :all: {pkg.name}"
-            else:
-                install_cmd = f"pip install --no-binary {pkg.name} {pkg.name}"
-            cwd = tmp_path
-        else:
-            # Source mode.
-            if pkg.repo_url is None:
-                result.status = "no_repo"
-                result.duration_seconds = round(time.monotonic() - start, 2)
+            # Phase 1: Prepare source and install command.
+            prepared = _prepare_source(pkg, from_mode, repos_dir, tmp_path, no_binary_all, result)
+            if prepared is None:
                 return result
-            repo_dir = repos_dir / pkg.name if repos_dir else tmp_path / "repo"
+            install_cmd, cwd = prepared
+
+            # Phase 2: Install.
+            env = clean_env(ASAN_OPTIONS="detect_leaks=0")
             try:
-                if repo_dir.exists() and (repo_dir / ".git").exists():
-                    pull_repo(repo_dir)
-                else:
-                    clone_repo(pkg.repo_url, repo_dir)
-            except (subprocess.CalledProcessError, subprocess.TimeoutExpired, OSError) as exc:
-                result.status = "clone_error"
-                result.duration_seconds = round(time.monotonic() - start, 2)
-                log.warning("Clone failed for %s: %s", pkg.name, exc)
+                install_proc, actual_backend = install_with_fallback(
+                    python_path=target_python,
+                    venv_dir=venv_dir,
+                    install_command=install_cmd,
+                    cwd=cwd,
+                    env=env,
+                    timeout=timeout,
+                    installer=installer,
+                )
+                result.installer_used = actual_backend.value
+            except subprocess.TimeoutExpired:
+                result.status = "timeout"
                 return result
-            install_cmd = pkg.install_command or "pip install -e ."
-            cwd = repo_dir
-
-        # Install.
-        env = clean_env(ASAN_OPTIONS="detect_leaks=0")
-        install_proc: subprocess.CompletedProcess[str] | None = None
-        try:
-            install_proc, actual_backend = install_with_fallback(
-                python_path=target_python,
-                venv_dir=venv_dir,
-                install_command=install_cmd,
-                cwd=cwd,
-                env=env,
-                timeout=timeout,
-                installer=installer,
-            )
-            result.installer_used = actual_backend.value
-        except subprocess.TimeoutExpired:
-            result.status = "timeout"
-            result.duration_seconds = round(time.monotonic() - start, 2)
-            return result
-        except (subprocess.CalledProcessError, OSError) as exc:
-            result.status = "build_fail"
-            result.duration_seconds = round(time.monotonic() - start, 2)
-            log.warning("Build exception for %s: %s", pkg.name, exc)
-            return result
-
-        # Save build logs.
-        logs_dir = output_dir / "build_logs"
-        logs_dir.mkdir(exist_ok=True)
-        try:
-            if install_proc.stderr:
-                (logs_dir / f"{pkg.name}.stderr").write_text(install_proc.stderr, encoding="utf-8")
-            if install_proc.stdout:
-                (logs_dir / f"{pkg.name}.stdout").write_text(install_proc.stdout, encoding="utf-8")
-        except OSError as exc:
-            log.warning("Could not save build logs for %s: %s", pkg.name, exc)
-
-        # Check install result.
-        result.exit_code = install_proc.returncode
-        if install_proc.returncode != 0:
-            stderr_text = install_proc.stderr or ""
-            # Check for no-sdist case.
-            if from_mode == "sdist" and _NO_SDIST_PATTERN.search(stderr_text):
-                result.status = "no_sdist"
-            else:
+            except (subprocess.CalledProcessError, OSError) as exc:
                 result.status = "build_fail"
-                matches = classify_build_output(stderr_text, patterns=patterns)
-                result.error_matches = matches
-                if matches:
-                    result.primary_category = matches[0].category
-                    result.primary_subcategory = matches[0].subcategory
-                    result.primary_description = matches[0].description
-            result.duration_seconds = round(time.monotonic() - start, 2)
-            return result
+                log.warning("Build exception for %s: %s", pkg.name, exc)
+                return result
 
-        # Import check.
-        import_name = pkg.import_name or pkg.name.replace("-", "_")
-        venv_python = venv_dir / "bin" / "python"
-        import_env = clean_env(PYTHON_JIT="0", ASAN_OPTIONS="detect_leaks=0")
-        try:
-            import_proc = check_import(venv_python, import_name, import_env)
-        except subprocess.TimeoutExpired:
-            result.status = "import_fail"
-            result.import_error = "import timed out"
-            result.duration_seconds = round(time.monotonic() - start, 2)
-            return result
+            # Save build logs.
+            logs_dir = output_dir / "build_logs"
+            logs_dir.mkdir(exist_ok=True)
+            try:
+                if install_proc.stderr:
+                    (logs_dir / f"{pkg.name}.stderr").write_text(
+                        install_proc.stderr, encoding="utf-8"
+                    )
+                if install_proc.stdout:
+                    (logs_dir / f"{pkg.name}.stdout").write_text(
+                        install_proc.stdout, encoding="utf-8"
+                    )
+            except OSError as exc:
+                log.warning("Could not save build logs for %s: %s", pkg.name, exc)
 
-        if import_proc.returncode != 0:
-            crash = detect_crash(import_proc.returncode, import_proc.stderr or "")
-            if crash is not None:
-                result.status = "import_crash"
-                result.crash_signature = crash.signature
-            else:
-                result.status = "import_fail"
-                result.import_error = (import_proc.stderr or "").strip()[-300:]
-            # Classify import stderr.
-            import_matches = classify_build_output(import_proc.stderr or "", patterns=patterns)
-            result.error_matches = import_matches
-            if import_matches:
-                result.primary_category = import_matches[0].category
-                result.primary_subcategory = import_matches[0].subcategory
-                result.primary_description = import_matches[0].description
-        else:
-            result.status = "build_ok"
+            if _classify_install_result(install_proc, from_mode, patterns, result):
+                return result
 
-    result.duration_seconds = round(time.monotonic() - start, 2)
-    return result
+            # Phase 3: Import check.
+            _check_import_result(pkg, venv_dir, patterns, result)
+
+        return result
+    finally:
+        result.duration_seconds = round(time.monotonic() - start, 2)
 
 
 def run_compat_survey(
