@@ -890,7 +890,7 @@ def run_package_ft(
                     import_name=pkg.import_name,
                     env=env,
                 )
-                result.extension_compat = compat.to_dict()
+                result.extension_compat = compat
                 result.import_ok = compat.import_ok
                 result.import_error = compat.import_error
             except (OSError, subprocess.SubprocessError, ValueError) as exc:

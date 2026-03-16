@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import subprocess
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, Literal
@@ -76,6 +76,17 @@ log = get_logger("bench.runner")
 # ---------------------------------------------------------------------------
 # Install environment
 # ---------------------------------------------------------------------------
+
+
+@dataclass
+class _PackageSetup:
+    """Result of setting up a package for benchmarking."""
+
+    repo_dir: Path
+    venvs: dict[str, Path]
+    clone_duration: float = 0.0
+    venv_durations: dict[str, float] = field(default_factory=dict)
+    install_durations: dict[str, float] = field(default_factory=dict)
 
 
 def _build_install_env(
@@ -371,7 +382,7 @@ class BenchRunner:
         """
         # Pre-setup: clone repos and create venvs for all packages.
         log.info("Pre-setup phase: cloning repos and creating venvs...")
-        pkg_setups: list[dict[str, Any]] = []
+        pkg_setups: list[_PackageSetup | None] = []
         pkg_results: list[BenchPackageResult] = []
 
         for pkg in packages:
@@ -383,18 +394,18 @@ class BenchRunner:
                     skip_reason="setup failed",
                 )
                 pkg_results.append(pkg_result)
-                pkg_setups.append({})
+                pkg_setups.append(None)
                 continue
 
             pkg_result = BenchPackageResult(
                 package=pkg.package,
-                clone_duration_s=setup.get("clone_duration", 0.0),
+                clone_duration_s=setup.clone_duration,
             )
             for cond_name in self.config.conditions:
                 pkg_result.conditions[cond_name] = BenchConditionResult(
                     condition_name=cond_name,
-                    install_duration_s=setup.get(f"install_{cond_name}", 0.0),
-                    venv_setup_duration_s=setup.get(f"venv_{cond_name}", 0.0),
+                    install_duration_s=setup.install_durations.get(cond_name, 0.0),
+                    venv_setup_duration_s=setup.venv_durations.get(cond_name, 0.0),
                 )
             pkg_results.append(pkg_result)
             pkg_setups.append(setup)
@@ -484,14 +495,14 @@ class BenchRunner:
             pkg_result.skip_reason = "setup failed"
             return pkg_result
 
-        pkg_result.clone_duration_s = setup.get("clone_duration", 0.0)
+        pkg_result.clone_duration_s = setup.clone_duration
 
         # Initialize condition results.
         for cond_name in self.config.conditions:
             pkg_result.conditions[cond_name] = BenchConditionResult(
                 condition_name=cond_name,
-                install_duration_s=setup.get(f"install_{cond_name}", 0.0),
-                venv_setup_duration_s=setup.get(f"venv_{cond_name}", 0.0),
+                install_duration_s=setup.install_durations.get(cond_name, 0.0),
+                venv_setup_duration_s=setup.venv_durations.get(cond_name, 0.0),
             )
 
         # Run iterations.
@@ -596,11 +607,10 @@ class BenchRunner:
 
         return pkg_result
 
-    def _setup_package(self, pkg: PackageEntry) -> dict[str, Any] | None:
+    def _setup_package(self, pkg: PackageEntry) -> _PackageSetup | None:
         """Clone repo and create venvs for all conditions.
 
-        Returns a setup dict with repo_dir, venvs, and durations.
-        Returns None if setup fails.
+        Returns a :class:`_PackageSetup` on success, or ``None`` on failure.
         """
         from labeille.runner import (
             clone_repo,
@@ -609,8 +619,6 @@ class BenchRunner:
             install_with_fallback,
             resolve_installer,
         )
-
-        setup: dict[str, Any] = {}
 
         # Clone the repo.
         if not pkg.repo:
@@ -634,14 +642,15 @@ class BenchRunner:
         except (OSError, subprocess.SubprocessError) as exc:
             log.error("Failed to clone %s: %s", pkg.package, exc, exc_info=True)
             return None
-        setup["clone_duration"] = time.monotonic() - clone_start
-        setup["repo_dir"] = repo_dir
+        clone_duration = time.monotonic() - clone_start
 
         # Resolve installer backend.
         installer = resolve_installer(self.config.installer)
 
         # Create a venv per condition.
         venvs: dict[str, Path] = {}
+        venv_durations: dict[str, float] = {}
+        install_durations: dict[str, float] = {}
         venvs_base = self.config.venvs_dir or (self.config.output_dir / "venvs")
         venvs_base.mkdir(parents=True, exist_ok=True)
 
@@ -666,7 +675,7 @@ class BenchRunner:
                     exc_info=True,
                 )
                 return None
-            setup[f"venv_{cond_name}"] = time.monotonic() - venv_start
+            venv_durations[cond_name] = time.monotonic() - venv_start
 
             # Install the package.
             venv_python = venv_dir / "bin" / "python"
@@ -701,8 +710,7 @@ class BenchRunner:
                     "Install failed for %s/%s: %s", pkg.package, cond_name, exc, exc_info=True
                 )
                 return None
-            setup[f"install_{cond_name}"] = time.monotonic() - install_start
-
+            install_durations[cond_name] = time.monotonic() - install_start
             # Install extra deps.
             extra_deps = resolve_extra_deps(cond, self.config.default_extra_deps)
             if extra_deps:
@@ -726,22 +734,26 @@ class BenchRunner:
 
             venvs[cond_name] = venv_dir
 
-        setup["venvs"] = venvs
-        return setup
+        return _PackageSetup(
+            repo_dir=repo_dir,
+            venvs=venvs,
+            clone_duration=clone_duration,
+            venv_durations=venv_durations,
+            install_durations=install_durations,
+        )
 
     def _run_iteration(
         self,
         *,
         pkg: PackageEntry,
         cond: ConditionDef,
-        setup: dict[str, Any],
+        setup: _PackageSetup,
         iter_index: int,
         is_warmup: bool,
     ) -> BenchIteration:
         """Execute a single timed iteration."""
-        repo_dir: Path = setup["repo_dir"]
-        venvs: dict[str, Path] = setup["venvs"]
-        venv_path = venvs[cond.name]
+        repo_dir = setup.repo_dir
+        venv_path = setup.venvs[cond.name]
 
         # Resolve the test command.
         registry_cmd = pkg.test_command or None

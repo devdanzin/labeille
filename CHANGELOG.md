@@ -35,6 +35,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Log warning for corrupted `run_meta.json` in `analyze.py` instead of silently returning empty metadata.
 - Add `ignore_errors=True` to `shutil.rmtree` in `bench/runner.py` venv refresh to prevent crashes on permission errors.
 - Standardize exception chaining from `from None` to `from exc` in 3 `bench_cli.py` `load_series` handlers.
+- Type `FTPackageResult.extension_compat` as `ExtensionCompat | None` instead of `dict[str, Any] | None`, eliminating untyped dict access across ft subsystem.
+- Replace `_setup_package` return type `dict[str, Any]` with typed `_PackageSetup` dataclass in `bench/runner.py`.
 - Log `ValueError`/`OSError` in `ft/runner.py` stderr and stdout reader threads instead of silently ignoring.
 - Remove thin `extract_minor_version` wrapper from `analyze.py`; callers now use `io_utils.extract_minor_version` directly.
 - Replace `ProgressCallback = Any` with `Callable[[BenchProgress], None] | None` in `bench/runner.py`.

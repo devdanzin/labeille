@@ -9,6 +9,7 @@ from pathlib import Path
 
 from ft_test_helpers import make_iteration, make_package_result
 
+from labeille.ft.compat import ExtensionCompat
 from labeille.ft.results import (
     FailureCategory,
     FTPackageResult,
@@ -279,7 +280,7 @@ class TestFTPackageResult(unittest.TestCase):
                 make_iteration(0, "pass", duration_s=10.0),
                 make_iteration(1, "crash", exit_code=-11, crash_signal="SIGSEGV"),
             ],
-            extension_compat={"is_pure_python": False, "gil_fallback_active": True},
+            extension_compat=ExtensionCompat(package="mypkg", is_pure_python=False, gil_fallback_active=True),
             install_duration_s=5.5,
             commit="abc123",
             gil_enabled_iterations=[make_iteration(0, "pass")],
@@ -386,7 +387,7 @@ class TestCategorizePackage(unittest.TestCase):
         r = FTPackageResult(
             package="pkg",
             iterations=[make_iteration(i, "pass") for i in range(5)],
-            extension_compat={"gil_fallback_active": True},
+            extension_compat=ExtensionCompat(package="pkg", gil_fallback_active=True),
         )
         r.compute_aggregates()
         cat = r.categorize()
@@ -405,7 +406,7 @@ class TestCategorizePackage(unittest.TestCase):
         r = FTPackageResult(
             package="pkg",
             iterations=[make_iteration(i, "pass", tsan_warnings=["data race"]) for i in range(5)],
-            extension_compat={"gil_fallback_active": True},
+            extension_compat=ExtensionCompat(package="pkg", gil_fallback_active=True),
         )
         r.compute_aggregates()
         cat = r.categorize()
@@ -477,12 +478,12 @@ class TestFTRunSummary(unittest.TestCase):
             make_package_result(
                 "ext1",
                 ["pass"] * 5,
-                extension_compat={"is_pure_python": False},
+                extension_compat=ExtensionCompat(package="ext1", is_pure_python=False),
             ),
             make_package_result(
                 "ext2",
                 ["fail"] * 5,
-                extension_compat={"is_pure_python": False},
+                extension_compat=ExtensionCompat(package="ext2", is_pure_python=False),
             ),
         ]
         summary = FTRunSummary.compute(results)
@@ -510,12 +511,12 @@ class TestFTRunSummary(unittest.TestCase):
         wheel_result = FTPackageResult(
             package="numpy",
             category=FailureCategory.COMPATIBLE_BY_WHEEL,
-            extension_compat={"is_pure_python": False},
+            extension_compat=ExtensionCompat(package="numpy", is_pure_python=False),
         )
         fail_result = make_package_result(
             "badext",
             ["fail"] * 5,
-            extension_compat={"is_pure_python": False},
+            extension_compat=ExtensionCompat(package="badext", is_pure_python=False),
         )
         results = [wheel_result, fail_result]
         summary = FTRunSummary.compute(results)

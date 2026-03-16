@@ -17,7 +17,7 @@ from labeille.bench.results import (
     BenchMeta,
     ConditionDef,
 )
-from labeille.bench.runner import BenchProgress, BenchRunner, quick_config
+from labeille.bench.runner import BenchProgress, BenchRunner, _PackageSetup, quick_config
 from labeille.bench.system import PythonProfile, StabilityCheck, SystemProfile, SystemSnapshot
 from labeille.bench.timing import TimedResult
 from labeille.registry import Index, IndexEntry
@@ -222,10 +222,9 @@ class TestSetupPackage(unittest.TestCase):
                 result = runner._setup_package(pkg)
 
             self.assertIsNotNone(result)
-            self.assertIn("repo_dir", result)
-            self.assertIn("venvs", result)
-            self.assertIn("clone_duration", result)
-            self.assertIn("baseline", result["venvs"])
+            self.assertIsNotNone(result)
+            self.assertIsInstance(result.repo_dir, Path)
+            self.assertIn("baseline", result.venvs)
             mock_clone.assert_called_once()
             mock_create.assert_called_once()
             mock_install.assert_called_once()
@@ -356,8 +355,8 @@ class TestSetupPackage(unittest.TestCase):
             self.assertIsNotNone(result)
             self.assertEqual(mock_create.call_count, 2)
             self.assertEqual(mock_install.call_count, 2)
-            self.assertIn("baseline", result["venvs"])
-            self.assertIn("coverage", result["venvs"])
+            self.assertIn("baseline", result.venvs)
+            self.assertIn("coverage", result.venvs)
 
     @patch(
         "labeille.bench.runner.time.monotonic",
@@ -431,7 +430,7 @@ class TestSetupPackage(unittest.TestCase):
 
             # Setup still succeeds despite extra deps failure.
             self.assertIsNotNone(result)
-            self.assertIn("venvs", result)
+            self.assertIsNotNone(result)
 
 
 # ---------------------------------------------------------------------------
@@ -446,7 +445,7 @@ class TestRunIteration(unittest.TestCase):
         self,
         cond_name: str = "baseline",
         **config_kwargs: object,
-    ) -> tuple[BenchRunner, dict[str, object], ConditionDef]:
+    ) -> tuple[BenchRunner, _PackageSetup, ConditionDef]:
         """Create runner with a basic setup dict."""
         cond = _make_condition(cond_name)
         config = _make_config(
@@ -454,10 +453,10 @@ class TestRunIteration(unittest.TestCase):
             **config_kwargs,
         )
         runner = BenchRunner(config)
-        setup: dict[str, object] = {
-            "repo_dir": Path("/tmp/fake/repo"),
-            "venvs": {cond_name: Path("/tmp/fake/venv")},
-        }
+        setup = _PackageSetup(
+            repo_dir=Path("/tmp/fake/repo"),
+            venvs={cond_name: Path("/tmp/fake/venv")},
+        )
         return runner, setup, cond
 
     @patch("labeille.bench.runner.SystemSnapshot.capture")
@@ -589,10 +588,10 @@ class TestRunIteration(unittest.TestCase):
         cond = _make_condition(test_command_suffix="--tb=short")
         config = _make_config(conditions={"baseline": cond})
         runner = BenchRunner(config)
-        setup: dict[str, object] = {
-            "repo_dir": Path("/tmp/fake/repo"),
-            "venvs": {"baseline": Path("/tmp/fake/venv")},
-        }
+        setup = _PackageSetup(
+            repo_dir=Path("/tmp/fake/repo"),
+            venvs={"baseline": Path("/tmp/fake/venv")},
+        )
 
         runner._run_iteration(
             pkg=FakePackage(package="mypkg", test_command="python -m pytest"),
@@ -625,10 +624,10 @@ class TestRunIteration(unittest.TestCase):
             default_env={"PYTHONFAULTHANDLER": "1"},
         )
         runner = BenchRunner(config)
-        setup: dict[str, object] = {
-            "repo_dir": Path("/tmp/fake/repo"),
-            "venvs": {"cov": Path("/tmp/fake/venv")},
-        }
+        setup = _PackageSetup(
+            repo_dir=Path("/tmp/fake/repo"),
+            venvs={"cov": Path("/tmp/fake/venv")},
+        )
 
         runner._run_iteration(
             pkg=FakePackage(package="mypkg"),
@@ -710,13 +709,13 @@ class TestExecutionStrategies(unittest.TestCase):
 
     def _fake_setup(
         self, pkg: FakePackage, conditions: dict[str, ConditionDef]
-    ) -> dict[str, object]:
-        """Create a fake setup dict for a package."""
-        return {
-            "repo_dir": Path("/tmp/fake/repo"),
-            "venvs": {name: Path(f"/tmp/fake/venv_{name}") for name in conditions},
-            "clone_duration": 0.5,
-        }
+    ) -> _PackageSetup:
+        """Create a fake setup for a package."""
+        return _PackageSetup(
+            repo_dir=Path("/tmp/fake/repo"),
+            venvs={name: Path(f"/tmp/fake/venv_{name}") for name in conditions},
+            clone_duration=0.5,
+        )
 
     def test_block_order(self) -> None:
         """Block mode: all iterations of condition A, then all of B."""
@@ -819,11 +818,11 @@ class TestExecutionStrategies(unittest.TestCase):
         progress_log: list[BenchProgress] = []
         runner = BenchRunner(config, progress_callback=progress_log.append)
         pkg = FakePackage(package="mypkg")
-        setup: dict[str, object] = {
-            "repo_dir": Path("/tmp/fake/repo"),
-            "venvs": {"A": Path("/tmp/fake/venv_A")},
-            "clone_duration": 0.5,
-        }
+        setup = _PackageSetup(
+            repo_dir=Path("/tmp/fake/repo"),
+            venvs={"A": Path("/tmp/fake/venv_A")},
+            clone_duration=0.5,
+        )
 
         with (
             patch.object(runner, "_setup_package", return_value=setup),
@@ -864,12 +863,12 @@ class TestResultWriting(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             results_path = Path(tmpdir) / "results.jsonl"
 
-            def fake_setup(pkg: object) -> dict[str, object]:
-                return {
-                    "repo_dir": Path("/tmp/fake/repo"),
-                    "venvs": {"A": Path("/tmp/fake/venv_A")},
-                    "clone_duration": 0.5,
-                }
+            def fake_setup(pkg: object) -> _PackageSetup:
+                return _PackageSetup(
+                    repo_dir=Path("/tmp/fake/repo"),
+                    venvs={"A": Path("/tmp/fake/venv_A")},
+                    clone_duration=0.5,
+                )
 
             with (
                 patch.object(runner, "_setup_package", side_effect=fake_setup),
@@ -1140,11 +1139,11 @@ class TestAdaptiveConvergence(unittest.TestCase):
             adaptive_min_iterations=3,
         )
         pkg = FakePackage(package="mypkg")
-        setup: dict[str, object] = {
-            "repo_dir": Path("/tmp/fake/repo"),
-            "venvs": {"A": Path("/tmp/fake/venv_A")},
-            "clone_duration": 0.5,
-        }
+        setup = _PackageSetup(
+            repo_dir=Path("/tmp/fake/repo"),
+            venvs={"A": Path("/tmp/fake/venv_A")},
+            clone_duration=0.5,
+        )
         with patch.object(runner, "_setup_package", return_value=setup):
             result = runner._benchmark_package(pkg, 0, 1)
 
@@ -1169,11 +1168,11 @@ class TestAdaptiveConvergence(unittest.TestCase):
             adaptive_min_iterations=3,
         )
         pkg = FakePackage(package="mypkg")
-        setup: dict[str, object] = {
-            "repo_dir": Path("/tmp/fake/repo"),
-            "venvs": {"A": Path("/tmp/A"), "B": Path("/tmp/B")},
-            "clone_duration": 0.5,
-        }
+        setup = _PackageSetup(
+            repo_dir=Path("/tmp/fake/repo"),
+            venvs={"A": Path("/tmp/A"), "B": Path("/tmp/B")},
+            clone_duration=0.5,
+        )
         with patch.object(runner, "_setup_package", return_value=setup):
             result = runner._benchmark_package(pkg, 0, 1)
 
@@ -1196,11 +1195,11 @@ class TestAdaptiveConvergence(unittest.TestCase):
             adaptive_threshold=0.001,
         )
         pkg = FakePackage(package="mypkg")
-        setup: dict[str, object] = {
-            "repo_dir": Path("/tmp/fake/repo"),
-            "venvs": {"A": Path("/tmp/fake/venv_A")},
-            "clone_duration": 0.5,
-        }
+        setup = _PackageSetup(
+            repo_dir=Path("/tmp/fake/repo"),
+            venvs={"A": Path("/tmp/fake/venv_A")},
+            clone_duration=0.5,
+        )
         with patch.object(runner, "_setup_package", return_value=setup):
             result = runner._benchmark_package(pkg, 0, 1)
 
@@ -1221,11 +1220,11 @@ class TestAdaptiveConvergence(unittest.TestCase):
             adaptive=False,
         )
         pkg = FakePackage(package="mypkg")
-        setup: dict[str, object] = {
-            "repo_dir": Path("/tmp/fake/repo"),
-            "venvs": {"A": Path("/tmp/fake/venv_A")},
-            "clone_duration": 0.5,
-        }
+        setup = _PackageSetup(
+            repo_dir=Path("/tmp/fake/repo"),
+            venvs={"A": Path("/tmp/fake/venv_A")},
+            clone_duration=0.5,
+        )
         with patch.object(runner, "_setup_package", return_value=setup):
             result = runner._benchmark_package(pkg, 0, 1)
 
@@ -1246,11 +1245,11 @@ class TestAdaptiveConvergence(unittest.TestCase):
             adaptive_min_iterations=3,
         )
         pkg = FakePackage(package="mypkg")
-        setup: dict[str, object] = {
-            "repo_dir": Path("/tmp/fake/repo"),
-            "venvs": {"A": Path("/tmp/fake/venv_A")},
-            "clone_duration": 0.5,
-        }
+        setup = _PackageSetup(
+            repo_dir=Path("/tmp/fake/repo"),
+            venvs={"A": Path("/tmp/fake/venv_A")},
+            clone_duration=0.5,
+        )
         with patch.object(runner, "_setup_package", return_value=setup):
             result = runner._benchmark_package(pkg, 0, 1)
 
@@ -1339,13 +1338,13 @@ class TestFullIntegration(unittest.TestCase):
                 patch.object(
                     runner,
                     "_setup_package",
-                    return_value={
-                        "repo_dir": Path("/tmp/fake/repo"),
-                        "venvs": {"baseline": Path("/tmp/fake/venv")},
-                        "clone_duration": 0.5,
-                        "install_baseline": 1.0,
-                        "venv_baseline": 0.5,
-                    },
+                    return_value=_PackageSetup(
+                        repo_dir=Path("/tmp/fake/repo"),
+                        venvs={"baseline": Path("/tmp/fake/venv")},
+                        clone_duration=0.5,
+                        install_durations={"baseline": 1.0},
+                        venv_durations={"baseline": 0.5},
+                    ),
                 ),
                 # Timing.
                 patch(

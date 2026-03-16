@@ -52,7 +52,7 @@ def export_csv(
     )
 
     for r in sorted(results, key=lambda r: r.package):
-        ext = r.extension_compat or {}
+        ext = r.extension_compat
         writer.writerow(
             [
                 r.package,
@@ -66,8 +66,8 @@ def export_csv(
                 r.timeout_count,
                 r.tsan_warning_iterations,
                 round(r.mean_duration_s, 2),
-                ext.get("is_pure_python", True),
-                ext.get("gil_fallback_active", False),
+                ext.is_pure_python if ext else True,
+                ext.gil_fallback_active if ext else False,
                 r.install_ok,
                 r.import_ok,
                 len(r.flaky_tests),
@@ -327,7 +327,7 @@ def _report_extensions_md(results: list[FTPackageResult]) -> list[str]:
     ext_pkgs = [
         r
         for r in results
-        if r.extension_compat and not r.extension_compat.get("is_pure_python", True)
+        if r.extension_compat and not r.extension_compat.is_pure_python
     ]
     if not ext_pkgs:
         return []
@@ -340,11 +340,11 @@ def _report_extensions_md(results: list[FTPackageResult]) -> list[str]:
     ]
 
     for r in sorted(ext_pkgs, key=lambda r: r.package):
-        ext = r.extension_compat or {}
-        fallback = "Yes" if ext.get("gil_fallback_active") else "No"
-        scan = ext.get("source_scan", {})
-        if scan and scan.get("declarations"):
-            all_not_used = all(d.get("is_not_used", False) for d in scan["declarations"])
+        ext = r.extension_compat
+        fallback = "Yes" if ext and ext.gil_fallback_active else "No"
+        scan = ext.source_scan if ext else None
+        if scan and scan.declarations:
+            all_not_used = all(d.is_not_used for d in scan.declarations)
             source = "Declared (NOT_USED)" if all_not_used else "Declared (USED)"
         else:
             source = "Not declared"

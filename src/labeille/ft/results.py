@@ -17,7 +17,10 @@ import enum
 import json
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
+
+if TYPE_CHECKING:
+    from labeille.ft.compat import ExtensionCompat
 
 from labeille.io_utils import (
     append_jsonl,
@@ -176,7 +179,7 @@ class FTPackageResult:
     pass_rate: float = 0.0
     mean_duration_s: float = 0.0
 
-    extension_compat: dict[str, Any] | None = None
+    extension_compat: ExtensionCompat | None = None
 
     failure_signatures: list[str] = field(default_factory=list)
     tsan_warning_types: list[str] = field(default_factory=list)
@@ -292,12 +295,20 @@ class FTPackageResult:
             "iterations": [i.to_dict() for i in self.iterations],
         }
         if self.extension_compat is not None:
-            d["extension_compat"] = self.extension_compat
+            d["extension_compat"] = self.extension_compat.to_dict()
         if self.gil_enabled_pass_rate is not None:
             d["gil_enabled_pass_rate"] = round(self.gil_enabled_pass_rate, 4)
         if self.gil_enabled_iterations is not None:
             d["gil_enabled_iterations"] = [i.to_dict() for i in self.gil_enabled_iterations]
         return d
+
+    @staticmethod
+    def _parse_extension_compat(raw: dict[str, Any] | None) -> ExtensionCompat | None:
+        if raw is None:
+            return None
+        from labeille.ft.compat import ExtensionCompat
+
+        return ExtensionCompat.from_dict(raw)
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> FTPackageResult:
@@ -319,7 +330,7 @@ class FTPackageResult:
             tsan_warning_iterations=data.get("tsan_warning_iterations", 0),
             pass_rate=data.get("pass_rate", 0.0),
             mean_duration_s=data.get("mean_duration_s", 0.0),
-            extension_compat=data.get("extension_compat"),
+            extension_compat=cls._parse_extension_compat(data.get("extension_compat")),
             failure_signatures=data.get("failure_signatures", []),
             tsan_warning_types=data.get("tsan_warning_types", []),
             flaky_tests=data.get("flaky_tests", {}),
@@ -377,7 +388,7 @@ def categorize_package(result: FTPackageResult) -> FailureCategory:
             return FailureCategory.TSAN_WARNINGS
 
         ext = result.extension_compat
-        if ext and ext.get("gil_fallback_active", False):
+        if ext and ext.gil_fallback_active:
             return FailureCategory.COMPATIBLE_GIL_FALLBACK
 
         return FailureCategory.COMPATIBLE
@@ -458,7 +469,7 @@ class FTRunSummary:
         extensions: list[FTPackageResult] = []
         for r in results:
             ext = r.extension_compat
-            if ext and not ext.get("is_pure_python", True):
+            if ext and not ext.is_pure_python:
                 extensions.append(r)
             else:
                 pure_python.append(r)

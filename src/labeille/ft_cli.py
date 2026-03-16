@@ -353,7 +353,7 @@ def compat(result_dir: Path, extensions_only: bool) -> None:
     Reports which packages have C extensions, whether they declare
     Py_mod_gil, and whether GIL fallback was triggered at runtime.
     """
-    from labeille.ft.compat import ExtensionCompat, format_extension_compat
+    from labeille.ft.compat import format_extension_compat
     from labeille.ft.results import load_ft_run
 
     _, results = load_ft_run(result_dir)
@@ -362,7 +362,7 @@ def compat(result_dir: Path, extensions_only: bool) -> None:
         if r.extension_compat is None:
             continue
 
-        ext = ExtensionCompat.from_dict(r.extension_compat)
+        ext = r.extension_compat
 
         if extensions_only and ext.is_pure_python:
             continue
