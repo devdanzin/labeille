@@ -20,8 +20,8 @@ class TestCloneRepo(unittest.TestCase):
     """Tests for clone_repo()."""
 
     @patch("labeille.repo_ops.subprocess.run")
-    def test_shallow_clone_default(self, mock_run: MagicMock) -> None:
-        """Default clone uses depth=1."""
+    def test_full_clone_default(self, mock_run: MagicMock) -> None:
+        """Default clone (clone_depth=None) produces a full clone with no --depth flag."""
         rev_proc = MagicMock(returncode=0, stdout="abc123\n", stderr="")
         clone_proc = MagicMock(returncode=0, stderr="")
         mock_run.side_effect = [clone_proc, rev_proc]
@@ -30,7 +30,10 @@ class TestCloneRepo(unittest.TestCase):
 
         self.assertEqual(result, "abc123")
         clone_call = mock_run.call_args_list[0]
-        self.assertIn("--depth=1", clone_call[0][0])
+        cmd = clone_call[0][0]
+        self.assertNotIn("--depth=1", cmd)
+        for arg in cmd:
+            self.assertFalse(arg.startswith("--depth="), f"Unexpected depth flag: {arg}")
 
     @patch("labeille.repo_ops.subprocess.run")
     def test_deep_clone_fetches_tags(self, mock_run: MagicMock) -> None:

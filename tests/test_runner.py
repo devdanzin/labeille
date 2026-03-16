@@ -1257,7 +1257,7 @@ class TestCloneDepth(unittest.TestCase):
         mock_get_pkgs: MagicMock,
         mock_test: MagicMock,
     ) -> None:
-        """clone_depth=None passes None to clone_repo (default depth=1)."""
+        """clone_depth=None defaults to depth=1 (shallow) for performance."""
         mock_clone.return_value = "abc1234"
         mock_install.return_value = subprocess.CompletedProcess(
             args="", returncode=0, stdout="", stderr=""
@@ -1272,7 +1272,7 @@ class TestCloneDepth(unittest.TestCase):
         pkg = _make_package(clone_depth=None)
         run_package(pkg, self.config, self.run_dir, self.env)
         _, kwargs = mock_clone.call_args
-        self.assertIsNone(kwargs.get("clone_depth"))
+        self.assertEqual(kwargs.get("clone_depth"), 1)
 
     @patch("labeille.runner.run_test_command")
     @patch("labeille.runner.get_installed_packages")

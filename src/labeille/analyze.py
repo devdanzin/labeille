@@ -18,7 +18,10 @@ from labeille.io_utils import (
     load_jsonl,
     utc_now_iso,
 )
+from labeille.logging import get_logger
 from labeille.registry import Index, PackageEntry
+
+log = get_logger("analyze")
 
 
 # ---------------------------------------------------------------------------
@@ -131,6 +134,7 @@ class RunData:
         try:
             data = load_json_file(meta_file)
         except ValueError:
+            log.warning("Corrupted run_meta.json in %s, using defaults", self.run_dir)
             return RunMeta(run_id=self.run_id)
         return RunMeta.from_dict(data)
 

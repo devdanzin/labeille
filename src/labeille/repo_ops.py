@@ -29,19 +29,26 @@ def clone_repo(repo_url: str, dest: Path, clone_depth: int | None = None) -> str
     Args:
         repo_url: The URL of the git repository.
         dest: The destination directory for the clone.
-        clone_depth: Clone depth. ``None`` means shallow (depth=1).
-            A positive integer uses that depth.
+        clone_depth: Clone depth. ``None`` means full clone (no ``--depth``
+            flag). A positive integer uses that depth as ``--depth=N``.
+            The default shallow depth of 1 is applied by callers, not here.
 
     Returns:
         The HEAD commit hash, or ``None`` on failure.
 
     Raises:
         subprocess.CalledProcessError: If the clone fails.
+        subprocess.TimeoutExpired: If the clone times out.
     """
-    depth = clone_depth if clone_depth is not None else 1
-    log.debug("Running: git clone --depth=%d %s %s", depth, repo_url, dest)
+    cmd = ["git", "clone"]
+    if clone_depth is not None and clone_depth > 0:
+        cmd.append(f"--depth={clone_depth}")
+        log.debug("Running: git clone --depth=%d %s %s", clone_depth, repo_url, dest)
+    else:
+        log.debug("Running: git clone %s %s (full)", repo_url, dest)
+    cmd.extend([repo_url, str(dest)])
     clone_proc = subprocess.run(
-        ["git", "clone", f"--depth={depth}", repo_url, str(dest)],
+        cmd,
         capture_output=True,
         text=True,
         timeout=120,
@@ -74,6 +81,7 @@ def clone_repo(repo_url: str, dest: Path, clone_depth: int | None = None) -> str
     )
     if proc.returncode == 0:
         return proc.stdout.strip()
+    log.warning("git rev-parse HEAD failed in %s (exit %d)", dest, proc.returncode)
     return None
 
 
@@ -117,8 +125,9 @@ def pull_repo(dest: Path) -> str | None:
         check=False,
     )
     if reset_proc.returncode != 0:
-        log.debug(
-            "git reset --hard failed (non-fatal): %s",
+        log.warning(
+            "git reset --hard failed in %s (non-fatal): %s",
+            dest,
             reset_proc.stderr.strip(),
         )
 
@@ -132,8 +141,9 @@ def pull_repo(dest: Path) -> str | None:
         check=False,
     )
     if clean_proc.returncode != 0:
-        log.debug(
-            "git clean failed (non-fatal): %s",
+        log.warning(
+            "git clean -fdx failed in %s (non-fatal): %s",
+            dest,
             clean_proc.stderr.strip(),
         )
 
@@ -147,6 +157,7 @@ def pull_repo(dest: Path) -> str | None:
     )
     if proc.returncode == 0:
         return proc.stdout.strip()
+    log.warning("git rev-parse HEAD failed in %s (exit %d)", dest, proc.returncode)
     return None
 
 
@@ -254,6 +265,7 @@ def checkout_revision(repo_dir: Path, revision: str) -> str | None:
     )
     if rev_proc.returncode == 0:
         return rev_proc.stdout.strip()
+    log.warning("git rev-parse HEAD failed after checkout in %s", repo_dir)
     return None
 
 
@@ -278,6 +290,7 @@ def fetch_latest_pypi_version(
     try:
         return str(metadata["info"]["version"])
     except (KeyError, TypeError):
+        log.warning("Could not extract version from PyPI metadata for %s", package_name)
         return None
 
 

@@ -655,7 +655,7 @@ class BenchRunner:
                 if venv_dir.exists():
                     import shutil
 
-                    shutil.rmtree(venv_dir)
+                    shutil.rmtree(venv_dir, ignore_errors=True)
                 create_venv(python_path, venv_dir, installer)
             except (OSError, subprocess.SubprocessError) as exc:
                 log.error(

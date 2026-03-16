@@ -654,8 +654,11 @@ def _ensure_repo(
         depth = config.clone_depth_override
         if depth is None:
             depth = pkg.clone_depth
+        # depth=0 means full clone (no --depth flag); None defaults to shallow.
         if depth == 0:
-            depth = None
+            depth = None  # clone_repo treats None as full clone
+        elif depth is None:
+            depth = 1  # default shallow clone for performance
         log.info("Cloning %s from %s to %s", pkg.package, repo_url, repo_dir)
         try:
             result.git_revision = clone_repo(repo_url, repo_dir, clone_depth=depth)
