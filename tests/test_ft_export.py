@@ -8,6 +8,7 @@ import json
 import unittest
 from typing import Any
 
+from labeille.bench.system import PythonProfile, SystemProfile
 from labeille.ft.compat import ExtensionCompat
 from labeille.ft.export import export_csv, export_json, generate_report
 from labeille.ft.results import (
@@ -43,13 +44,17 @@ def _make_meta(**kwargs: Any) -> FTRunMeta:
     return FTRunMeta(
         run_id=kwargs.get("run_id", "test-run"),
         timestamp=kwargs.get("timestamp", "2026-01-15T12:00:00"),
-        python_profile=kwargs.get(
-            "python_profile",
-            {"version": "3.14.0b2", "gil_disabled": True, "implementation": "cpython"},
+        python_profile=PythonProfile.from_dict(
+            kwargs.get(
+                "python_profile",
+                {"version": "3.14.0b2", "gil_disabled": True, "implementation": "cpython"},
+            )
         ),
-        system_profile=kwargs.get(
-            "system_profile",
-            {"cpu_model": "AMD Ryzen 9", "ram_total_gb": 64, "os_distro": "Ubuntu 24.04"},
+        system_profile=SystemProfile.from_dict(
+            kwargs.get(
+                "system_profile",
+                {"cpu_model": "AMD Ryzen 9", "ram_total_gb": 64, "os_distro": "Ubuntu 24.04"},
+            )
         ),
         config=kwargs.get("config", {"iterations": 10}),
     )

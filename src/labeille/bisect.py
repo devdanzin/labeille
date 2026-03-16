@@ -121,6 +121,7 @@ def _resolve_rev(repo_dir: Path, rev: str) -> str | None:
     )
     if proc.returncode == 0:
         return proc.stdout.strip()
+    log.warning("Could not resolve revision %r in %s: %s", rev, repo_dir, proc.stderr.strip())
     return None
 
 
@@ -148,6 +149,7 @@ def _get_commit_info(repo_dir: Path, commit: str) -> tuple[str, str, str] | None
         lines = proc.stdout.strip().split("\n")
         if len(lines) >= 3:
             return (lines[0], lines[1], lines[2])
+    log.debug("Could not get commit info for %s: %s", commit, proc.stderr.strip())
     return None
 
 

@@ -23,6 +23,8 @@ from labeille.io_utils import dataclass_from_dict
 from labeille.bench.results import BenchConditionResult, BenchPackageResult
 
 
+SEVERITY_LABELS: dict[str, str] = {"error": "ERROR", "warning": "WARNING", "info": "INFO"}
+
 # ---------------------------------------------------------------------------
 # Data structures
 # ---------------------------------------------------------------------------

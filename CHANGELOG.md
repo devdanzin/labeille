@@ -13,7 +13,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Split `bench_cli.py:compare` into `_compare_intra_run`, `_compare_cross_run`, and `_report_anomalies`, eliminating CC=62.
 - Extract `_collect_package_data`, `_compute_trends`, `_classify_trends`, `_build_median_dicts` from `analyze_series_trends` in `bench/trends.py` (CC=48 → ~10 per helper).
 - Extract `_infer_field_type` from `batch_set_field` in `registry_ops.py` to deduplicate type inference.
-- Type `FTRunMeta.system_profile` and `python_profile` as `SystemProfile | dict` and `PythonProfile | dict` instead of `dict[str, Any]`.
+- Type `FTRunMeta.system_profile` and `python_profile` as `SystemProfile` and `PythonProfile` instead of `dict[str, Any]`.
+- Extract `_validate_package_file` from `validate_registry` in `registry_ops.py` (CC=59 → ~15 per function).
+- Extract `SEVERITY_LABELS` constant from 4 inline duplications in `bench/display.py` and `bench/export.py`.
 - Extract `_make_anomaly` helper in `bench/anomaly.py` to deduplicate 9 identical `PackageAnomaly` constructions in `detect_condition_anomalies`.
 - `bench run` and `ft run` now use shared `setup_logging()` for consistent log formatting.
 - Simplify `_run_package_inner` in `runner.py` by extracting 4 helper functions: `_align_sdist_version`, `_setup_venv`, `_install_in_venv`, `_check_import`.
@@ -34,6 +36,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ### Fixed
 - Fix `bench compare` Click decorator chain pointing at wrong function after complexity split, restoring multi-directory comparison and `--metric` option.
 - Log PyPI metadata extraction failures in `ft/runner.py` instead of silently swallowing `(KeyError, TypeError)`.
+- Wrap `load_package` in `filter_packages` with try/except to skip bad YAML instead of crashing the entire batch run.
+- Add logging to `bisect.py` git helpers (`_resolve_rev`, `_get_commit_info`) on failure.
+- Add `OSError` handler to `_check_import_result` in `compat.py` for missing venv python.
+- Use `dataclass_from_dict` for `ErrorMatch` deserialization in `compat.py` for forward compatibility.
+- Remove stale `RunOutput as RunOutput` re-export from `runner.py`.
+- Narrow `FieldFilter.op` to `Literal` type in `registry_ops.py`.
 - Wrap `checkout_matching_tag` git fetch --tags in try/except to prevent unhandled `TimeoutExpired`/`OSError` crashes.
 - Make `load_ft_run` lenient for missing `ft_results.jsonl` (returns empty list like `load_bench_run`).
 - Add missing `installer_backend` field to `analyze.PackageResult` to match `runner_models.PackageResult`.
@@ -119,6 +127,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Tests
 - Add 11 tests for compat survey execution pipeline: `_prepare_source`, `_classify_install_result`, `_check_import_result`.
+- Add 5 tests for `run_ft` orchestrator and `_select_packages` (was 0% coverage).
+- Add 3 tests for `_survey_package` integration (build_ok, build_fail, timeout paths).
+- Add 3 tests for `_align_sdist_version` (source mode, sdist with tag, sdist without tag).
 - Add 26 tests for `bench track` subcommands: init, add, show, pin, unpin, list, trend, alert.
 - Add CLI tests for `registry` subcommands: rename-field, set-field (--all, --where, --packages), validate (--packages filter), migrate (list, unknown, missing name), sync (clone, pull, failure, non-git), add-index-field, remove-index-field, and group help.
 - Add `test_cli_utils.py` with 14 tests for `parse_env_pairs` and `parse_csv_list`.

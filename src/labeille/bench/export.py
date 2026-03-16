@@ -216,7 +216,7 @@ def export_markdown(
         lines.append("## Anomalies")
         lines.append("")
 
-        severity_labels = {"error": "ERROR", "warning": "WARNING", "info": "INFO"}
+        from labeille.bench.anomaly import SEVERITY_LABELS as severity_labels
         severity_order = ["error", "warning", "info"]
         by_severity = anomaly_report.by_severity
         for severity in severity_order:
@@ -367,7 +367,7 @@ def export_trend_markdown(trend: SeriesTrend) -> str:
     if trend.alerts:
         lines.append("## Alerts")
         lines.append("")
-        severity_labels = {"error": "ERROR", "warning": "WARNING", "info": "INFO"}
+        from labeille.bench.anomaly import SEVERITY_LABELS as severity_labels
         for a in trend.alerts:
             label = severity_labels.get(a.severity, a.severity.upper())
             lines.append(f"- **[{label}]** {a.package} ({a.condition}): {a.description}")

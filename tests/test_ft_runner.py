@@ -891,5 +891,236 @@ class TestRunPackageFtWheelTrust(unittest.TestCase):
         self.assertEqual(kwargs.get("target_version"), (3, 15))
 
 
+# ---------------------------------------------------------------------------
+# run_ft orchestrator tests
+# ---------------------------------------------------------------------------
+
+
+class TestRunFt(unittest.TestCase):
+    """Tests for the run_ft() orchestrator."""
+
+    def _make_config(self, **overrides: Any) -> FTRunConfig:
+        import tempfile
+
+        tmpdir = Path(tempfile.mkdtemp())
+        defaults: dict[str, Any] = {
+            "target_python": Path(sys.executable),
+            "iterations": 2,
+            "timeout": 60,
+            "stall_threshold": 30,
+            "registry_dir": tmpdir / "registry",
+            "repos_dir": tmpdir / "repos",
+            "venvs_dir": tmpdir / "venvs",
+            "results_dir": tmpdir / "results",
+            "detect_extensions": False,
+            "compare_with_gil": False,
+            "stop_on_first_pass": False,
+            "check_stability": False,
+        }
+        defaults.update(overrides)
+        return FTRunConfig(**defaults)
+
+    def _make_pkg_entry(self, name: str) -> SimpleNamespace:
+        """Create a mock PackageEntry for _select_packages results."""
+        return SimpleNamespace(
+            package=name,
+            repo=f"https://github.com/x/{name}",
+            install_command="pip install -e .",
+            test_command="python -m pytest tests/",
+            import_name=name,
+        )
+
+    @patch("labeille.ft.runner.save_ft_run")
+    @patch("labeille.ft.runner.append_ft_result")
+    @patch("labeille.ft.runner.run_package_ft")
+    @patch("labeille.ft.runner._select_packages")
+    @patch("labeille.registry.load_index")
+    @patch("labeille.bench.system.capture_python_profile")
+    @patch("labeille.bench.system.capture_system_profile")
+    def test_run_ft_returns_results_for_each_package(
+        self,
+        mock_sys_profile: MagicMock,
+        mock_py_profile: MagicMock,
+        mock_load_index: MagicMock,
+        mock_select: MagicMock,
+        mock_run_pkg: MagicMock,
+        mock_append: MagicMock,
+        mock_save: MagicMock,
+    ) -> None:
+        from labeille.ft.results import FTPackageResult
+
+        mock_sys_profile.return_value = MagicMock()
+        mock_py_profile.return_value = MagicMock(version="3.15.0a5", gil_disabled=True)
+        mock_load_index.return_value = MagicMock()
+
+        pkgs = [self._make_pkg_entry("pkg_a"), self._make_pkg_entry("pkg_b")]
+        mock_select.return_value = pkgs
+
+        result_a = FTPackageResult(package="pkg_a")
+        result_a.category = FailureCategory.COMPATIBLE
+        result_a.pass_rate = 1.0
+        result_b = FTPackageResult(package="pkg_b")
+        result_b.category = FailureCategory.CRASH
+        result_b.pass_rate = 0.0
+
+        mock_run_pkg.side_effect = [result_a, result_b]
+
+        config = self._make_config()
+        from labeille.ft.runner import run_ft
+
+        results = run_ft(config)
+
+        self.assertEqual(len(results), 2)
+        self.assertEqual(results[0].package, "pkg_a")
+        self.assertEqual(results[1].package, "pkg_b")
+        mock_save.assert_called_once()
+        # Meta should be populated.
+        meta_arg = mock_save.call_args[0][1]
+        self.assertEqual(meta_arg.packages_completed, 2)
+
+    @patch("labeille.ft.runner.save_ft_run")
+    @patch("labeille.ft.runner.append_ft_result")
+    @patch("labeille.ft.runner.run_package_ft")
+    @patch("labeille.ft.runner._select_packages")
+    @patch("labeille.registry.load_index")
+    @patch("labeille.bench.system.capture_python_profile")
+    @patch("labeille.bench.system.capture_system_profile")
+    def test_run_ft_catches_exception_from_run_package(
+        self,
+        mock_sys_profile: MagicMock,
+        mock_py_profile: MagicMock,
+        mock_load_index: MagicMock,
+        mock_select: MagicMock,
+        mock_run_pkg: MagicMock,
+        mock_append: MagicMock,
+        mock_save: MagicMock,
+    ) -> None:
+        mock_sys_profile.return_value = MagicMock()
+        mock_py_profile.return_value = MagicMock(version="3.15.0a5", gil_disabled=True)
+        mock_load_index.return_value = MagicMock()
+
+        pkgs = [self._make_pkg_entry("bad_pkg")]
+        mock_select.return_value = pkgs
+
+        mock_run_pkg.side_effect = RuntimeError("something broke")
+
+        config = self._make_config()
+        from labeille.ft.runner import run_ft
+
+        results = run_ft(config)
+
+        self.assertEqual(len(results), 1)
+        self.assertFalse(results[0].install_ok)
+        self.assertIn("something broke", results[0].install_error or "")
+
+
+# ---------------------------------------------------------------------------
+# _select_packages tests
+# ---------------------------------------------------------------------------
+
+
+class TestSelectPackages(unittest.TestCase):
+    """Tests for _select_packages() filtering."""
+
+    def _make_config(self, **overrides: Any) -> FTRunConfig:
+        import tempfile
+
+        tmpdir = Path(tempfile.mkdtemp())
+        defaults: dict[str, Any] = {
+            "target_python": Path(sys.executable),
+            "iterations": 3,
+            "timeout": 60,
+            "stall_threshold": 30,
+            "registry_dir": tmpdir / "registry",
+            "repos_dir": tmpdir / "repos",
+            "venvs_dir": tmpdir / "venvs",
+            "results_dir": tmpdir / "results",
+        }
+        defaults.update(overrides)
+        return FTRunConfig(**defaults)
+
+    @patch("labeille.registry.load_package")
+    def test_packages_filter(self, mock_load: MagicMock) -> None:
+        """--packages filter returns only matching packages."""
+        from labeille.registry import Index, IndexEntry
+
+        from labeille.ft.runner import _select_packages
+
+        index = Index(packages=[
+            IndexEntry(name="alpha", enriched=True),
+            IndexEntry(name="beta", enriched=True),
+            IndexEntry(name="gamma", enriched=True),
+        ])
+
+        def load_side_effect(name: str, _dir: Path) -> SimpleNamespace:
+            return SimpleNamespace(
+                package=name,
+                monthly_downloads=100,
+            )
+
+        mock_load.side_effect = load_side_effect
+
+        config = self._make_config(packages_filter=["beta"])
+        result = _select_packages(index, config)
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].package, "beta")
+
+    @patch("labeille.registry.load_package")
+    def test_top_n(self, mock_load: MagicMock) -> None:
+        """--top N returns only the top N packages by downloads."""
+        from labeille.registry import Index, IndexEntry
+
+        from labeille.ft.runner import _select_packages
+
+        index = Index(packages=[
+            IndexEntry(name="a", enriched=True),
+            IndexEntry(name="b", enriched=True),
+            IndexEntry(name="c", enriched=True),
+        ])
+
+        downloads = {"a": 300, "b": 100, "c": 200}
+
+        def load_side_effect(name: str, _dir: Path) -> SimpleNamespace:
+            return SimpleNamespace(
+                package=name,
+                monthly_downloads=downloads[name],
+            )
+
+        mock_load.side_effect = load_side_effect
+
+        config = self._make_config(top_n=2)
+        result = _select_packages(index, config)
+
+        self.assertEqual(len(result), 2)
+        # Should be sorted by downloads desc: a(300), c(200).
+        self.assertEqual(result[0].package, "a")
+        self.assertEqual(result[1].package, "c")
+
+    @patch("labeille.registry.load_package")
+    def test_skips_unenriched_and_skip_entries(self, mock_load: MagicMock) -> None:
+        """Unenriched and skip=True entries are excluded."""
+        from labeille.registry import Index, IndexEntry
+
+        from labeille.ft.runner import _select_packages
+
+        index = Index(packages=[
+            IndexEntry(name="enriched_ok", enriched=True),
+            IndexEntry(name="not_enriched", enriched=False),
+            IndexEntry(name="skipped", enriched=True, skip=True),
+        ])
+
+        def load_side_effect(name: str, _dir: Path) -> SimpleNamespace:
+            return SimpleNamespace(package=name, monthly_downloads=100)
+
+        mock_load.side_effect = load_side_effect
+
+        config = self._make_config()
+        result = _select_packages(index, config)
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].package, "enriched_ok")
+
+
 if __name__ == "__main__":
     unittest.main()

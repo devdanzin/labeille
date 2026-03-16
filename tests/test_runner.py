@@ -21,6 +21,7 @@ from labeille.registry import (
 from labeille.runner import (
     PackageResult,
     RunnerConfig,
+    _align_sdist_version,
     clean_env,
     _resolve_dirs,
     _run_in_process_group,
@@ -2676,6 +2677,111 @@ class TestRepoOverride(unittest.TestCase):
         mock_checkout.assert_called_once()
         self.assertEqual(result.git_revision, "fix_branch_hash")
         self.assertEqual(result.requested_revision, "fix-branch")
+
+
+# ---------------------------------------------------------------------------
+# _align_sdist_version tests
+# ---------------------------------------------------------------------------
+
+
+class TestAlignSdistVersion(unittest.TestCase):
+    """Tests for _align_sdist_version()."""
+
+    def setUp(self) -> None:
+        self.tmpdir = Path(tempfile.mkdtemp())
+        self.registry_dir = self.tmpdir / "registry"
+        self.registry_dir.mkdir(parents=True)
+        (self.registry_dir / "packages").mkdir()
+        self.config_source = _make_config(self.tmpdir, timeout=600)
+        self.repo_dir = self.tmpdir / "repo"
+        self.repo_dir.mkdir()
+
+    def test_source_mode_returns_early(self) -> None:
+        """When install_from is 'source' (default), return early with no sdist info."""
+        pkg = _make_package(name="mypkg")
+        result = PackageResult(package="mypkg")
+
+        # config.install_from defaults to "source" which is not "sdist"
+        source_layout, sdist_version, sdist_tag_matched = _align_sdist_version(
+            pkg, self.config_source, result, self.repo_dir, "mypkg"
+        )
+
+        self.assertEqual(result.install_from, "source")
+        self.assertEqual(source_layout, "unknown")
+        self.assertIsNone(sdist_version)
+        self.assertIsNone(sdist_tag_matched)
+
+    @patch("labeille.runner.detect_source_layout", return_value="src")
+    @patch("labeille.runner.checkout_matching_tag")
+    @patch("labeille.runner.fetch_latest_pypi_version")
+    def test_sdist_mode_successful_tag_checkout(
+        self,
+        mock_fetch_version: MagicMock,
+        mock_checkout_tag: MagicMock,
+        mock_layout: MagicMock,
+    ) -> None:
+        """When install_from is 'sdist' and tag is found, checkout succeeds."""
+        mock_fetch_version.return_value = "1.2.3"
+        mock_checkout_tag.return_value = ("abc123def456", "v1.2.3")
+
+        # Create a config with install_from="sdist".
+        config = RunnerConfig(
+            target_python=Path("/usr/bin/python3"),
+            registry_dir=self.registry_dir,
+            results_dir=self.tmpdir / "results",
+            run_id="test-run",
+            timeout=600,
+            install_from="sdist",
+        )
+
+        pkg = _make_package(name="mypkg")
+        result = PackageResult(package="mypkg")
+
+        source_layout, sdist_version, sdist_tag_matched = _align_sdist_version(
+            pkg, config, result, self.repo_dir, "mypkg"
+        )
+
+        self.assertEqual(result.install_from, "sdist")
+        self.assertEqual(sdist_version, "1.2.3")
+        self.assertTrue(sdist_tag_matched)
+        self.assertEqual(result.git_revision, "abc123def456")
+        self.assertEqual(result.sdist_version, "1.2.3")
+        self.assertEqual(source_layout, "src")
+        mock_checkout_tag.assert_called_once_with(self.repo_dir, "mypkg", "1.2.3")
+
+    @patch("labeille.runner.detect_source_layout", return_value="flat")
+    @patch("labeille.runner.checkout_matching_tag")
+    @patch("labeille.runner.fetch_latest_pypi_version")
+    def test_sdist_mode_no_matching_tag(
+        self,
+        mock_fetch_version: MagicMock,
+        mock_checkout_tag: MagicMock,
+        mock_layout: MagicMock,
+    ) -> None:
+        """When install_from is 'sdist' but no tag matches, sdist_tag_matched is False."""
+        mock_fetch_version.return_value = "2.0.0"
+        mock_checkout_tag.return_value = (None, None)
+
+        config = RunnerConfig(
+            target_python=Path("/usr/bin/python3"),
+            registry_dir=self.registry_dir,
+            results_dir=self.tmpdir / "results",
+            run_id="test-run",
+            timeout=600,
+            install_from="sdist",
+        )
+
+        pkg = _make_package(name="mypkg")
+        result = PackageResult(package="mypkg")
+
+        source_layout, sdist_version, sdist_tag_matched = _align_sdist_version(
+            pkg, config, result, self.repo_dir, "mypkg"
+        )
+
+        self.assertEqual(result.install_from, "sdist")
+        self.assertEqual(sdist_version, "2.0.0")
+        self.assertFalse(sdist_tag_matched)
+        self.assertIsNone(result.git_revision)
 
 
 if __name__ == "__main__":
