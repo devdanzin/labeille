@@ -318,14 +318,17 @@ def checkout_matching_tag(
         tag found.
     """
     # Best-effort fetch of tags for shallow clones.
-    subprocess.run(
-        ["git", "fetch", "--tags", "--depth=1", "origin"],
-        check=False,
-        capture_output=True,
-        text=True,
-        cwd=str(repo_dir),
-        timeout=60,
-    )
+    try:
+        subprocess.run(
+            ["git", "fetch", "--tags", "--depth=1", "origin"],
+            check=False,
+            capture_output=True,
+            text=True,
+            cwd=str(repo_dir),
+            timeout=60,
+        )
+    except (subprocess.TimeoutExpired, OSError) as exc:
+        log.debug("Tag fetch failed for %s (non-fatal): %s", repo_dir, exc)
 
     normalized = package_name.lower().replace("_", "-")
 

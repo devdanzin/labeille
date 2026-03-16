@@ -67,7 +67,7 @@ ASAN_OPTIONS=detect_leaks=0 PYTHON_JIT=0 .venv/bin/python -m unittest discover t
 ## Testing notes
 - Integration tests mock `fetch_pypi_metadata` to avoid network calls
 - Runner tests mock `subprocess.run` and `clone_repo` extensively
-- 2166 tests total across 50 test files
+- 2171 tests total across 50 test files
 
 ## Enriching packages
 

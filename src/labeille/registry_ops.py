@@ -449,6 +449,24 @@ def batch_rename_field(
     return OpResult(modified=modified, skipped=skipped, errors=errors, total=len(files))
 
 
+def _infer_field_type(existing_value: Any) -> str:
+    """Infer the YAML field type string from an existing parsed value.
+
+    Returns one of ``"bool"``, ``"int"``, ``"list"``, ``"dict"``, or ``"str"``.
+    The check order matters: ``bool`` must precede ``int`` because in Python
+    ``isinstance(True, int)`` is ``True``.
+    """
+    if isinstance(existing_value, bool):
+        return "bool"
+    if isinstance(existing_value, int):
+        return "int"
+    if isinstance(existing_value, list):
+        return "list"
+    if isinstance(existing_value, dict):
+        return "dict"
+    return "str"
+
+
 def batch_set_field(
     registry_dir: Path,
     field_name: str,
@@ -511,20 +529,9 @@ def batch_set_field(
             continue
 
         # Determine type from existing value or explicit --type.
-        if field_type is None:
-            existing = raw[field_name]
-            if isinstance(existing, bool):
-                field_type_resolved = "bool"
-            elif isinstance(existing, int):
-                field_type_resolved = "int"
-            elif isinstance(existing, list):
-                field_type_resolved = "list"
-            elif isinstance(existing, dict):
-                field_type_resolved = "dict"
-            else:
-                field_type_resolved = "str"
-        else:
-            field_type_resolved = field_type
+        field_type_resolved = (
+            _infer_field_type(raw[field_name]) if field_type is None else field_type
+        )
 
         parsed_value = parse_default_value(value_str, field_type_resolved)
 

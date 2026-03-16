@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -12,12 +13,16 @@ from labeille.compat import (
     CompatDiff,
     CompatDiffEntry,
     CompatMeta,
+    CompatPackageInput,
     CompatResult,
     CompatSurvey,
     ErrorMatch,
     ErrorPattern,
     _BUILTIN_PATTERNS,
     _NO_SDIST_PATTERN,
+    _check_import_result,
+    _classify_install_result,
+    _prepare_source,
     _read_packages_file,
     classify_build_output,
     diff_surveys,
@@ -1003,6 +1008,182 @@ class TestBuiltinPatterns(unittest.TestCase):
                 first_catchall_idx = i
                 break
         self.assertGreater(first_catchall_idx, last_specific_idx)
+
+
+# ---------------------------------------------------------------------------
+# _prepare_source
+# ---------------------------------------------------------------------------
+
+
+class TestPrepareSource(unittest.TestCase):
+    """Tests for _prepare_source()."""
+
+    def _make_pkg(self, **kwargs: object) -> CompatPackageInput:
+        defaults: dict[str, object] = {"name": "mypkg"}
+        defaults.update(kwargs)
+        return CompatPackageInput(**defaults)  # type: ignore[arg-type]
+
+    def test_sdist_mode_returns_install_cmd(self) -> None:
+        """sdist mode returns pip install --no-binary <pkg> <pkg>."""
+        pkg = self._make_pkg()
+        result = CompatResult(package="mypkg", status="skip")
+        tmp = Path("/tmp/fake")
+        out = _prepare_source(pkg, "sdist", None, tmp, no_binary_all=False, result=result)
+        self.assertIsNotNone(out)
+        assert out is not None
+        cmd, cwd = out
+        self.assertEqual(cmd, "pip install --no-binary mypkg mypkg")
+        self.assertEqual(cwd, tmp)
+
+    def test_sdist_mode_no_binary_all(self) -> None:
+        """sdist mode with no_binary_all uses :all: flag."""
+        pkg = self._make_pkg()
+        result = CompatResult(package="mypkg", status="skip")
+        tmp = Path("/tmp/fake")
+        out = _prepare_source(pkg, "sdist", None, tmp, no_binary_all=True, result=result)
+        self.assertIsNotNone(out)
+        assert out is not None
+        cmd, cwd = out
+        self.assertEqual(cmd, "pip install --no-binary :all: mypkg")
+        self.assertEqual(cwd, tmp)
+
+    def test_source_mode_no_repo_url(self) -> None:
+        """source mode with no repo_url returns None and sets status='no_repo'."""
+        pkg = self._make_pkg(repo_url=None)
+        result = CompatResult(package="mypkg", status="skip")
+        tmp = Path("/tmp/fake")
+        out = _prepare_source(pkg, "source", None, tmp, no_binary_all=False, result=result)
+        self.assertIsNone(out)
+        self.assertEqual(result.status, "no_repo")
+
+    @patch("labeille.compat.clone_repo", side_effect=subprocess.CalledProcessError(1, "git"))
+    def test_source_mode_clone_fails(self, _mock_clone: MagicMock) -> None:
+        """source mode where clone raises CalledProcessError sets status='clone_error'."""
+        pkg = self._make_pkg(repo_url="https://github.com/foo/mypkg")
+        result = CompatResult(package="mypkg", status="skip")
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            out = _prepare_source(
+                pkg, "source", None, tmp, no_binary_all=False, result=result
+            )
+        self.assertIsNone(out)
+        self.assertEqual(result.status, "clone_error")
+
+
+# ---------------------------------------------------------------------------
+# _classify_install_result
+# ---------------------------------------------------------------------------
+
+
+class TestClassifyInstallResult(unittest.TestCase):
+    """Tests for _classify_install_result()."""
+
+    def test_returncode_zero_returns_false(self) -> None:
+        """Successful install (rc=0) returns False."""
+        proc = subprocess.CompletedProcess(args=[], returncode=0, stdout="", stderr="")
+        result = CompatResult(package="pkg", status="skip")
+        failed = _classify_install_result(proc, "sdist", [], result)
+        self.assertFalse(failed)
+        self.assertEqual(result.exit_code, 0)
+
+    def test_no_sdist_pattern_sets_no_sdist(self) -> None:
+        """Non-zero rc with no-sdist pattern in sdist mode sets status='no_sdist'."""
+        proc = subprocess.CompletedProcess(
+            args=[],
+            returncode=1,
+            stdout="",
+            stderr="ERROR: No matching distribution found for mypkg --no-binary",
+        )
+        result = CompatResult(package="mypkg", status="skip")
+        failed = _classify_install_result(proc, "sdist", [], result)
+        self.assertTrue(failed)
+        self.assertEqual(result.status, "no_sdist")
+
+    def test_nonzero_returncode_sets_build_fail(self) -> None:
+        """Non-zero rc without no-sdist match sets status='build_fail'."""
+        proc = subprocess.CompletedProcess(
+            args=[],
+            returncode=1,
+            stdout="",
+            stderr="error: compilation failed\n",
+        )
+        result = CompatResult(package="pkg", status="skip")
+        failed = _classify_install_result(proc, "sdist", _BUILTIN_PATTERNS, result)
+        self.assertTrue(failed)
+        self.assertEqual(result.status, "build_fail")
+        self.assertEqual(result.exit_code, 1)
+
+
+# ---------------------------------------------------------------------------
+# _check_import_result
+# ---------------------------------------------------------------------------
+
+
+class TestCheckImportResult(unittest.TestCase):
+    """Tests for _check_import_result()."""
+
+    def _make_pkg(self, **kwargs: object) -> CompatPackageInput:
+        defaults: dict[str, object] = {"name": "mypkg"}
+        defaults.update(kwargs)
+        return CompatPackageInput(**defaults)  # type: ignore[arg-type]
+
+    @patch("labeille.compat.clean_env", return_value={})
+    @patch("labeille.compat.check_import")
+    def test_import_succeeds(self, mock_import: MagicMock, _mock_env: MagicMock) -> None:
+        """Successful import sets status='build_ok'."""
+        mock_import.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="", stderr=""
+        )
+        pkg = self._make_pkg()
+        result = CompatResult(package="mypkg", status="skip")
+        venv_dir = Path("/tmp/fake/venv")
+        _check_import_result(pkg, venv_dir, [], result)
+        self.assertEqual(result.status, "build_ok")
+
+    @patch("labeille.compat.clean_env", return_value={})
+    @patch("labeille.compat.check_import")
+    @patch("labeille.compat.detect_crash")
+    def test_import_crash(
+        self, mock_crash: MagicMock, mock_import: MagicMock, _mock_env: MagicMock
+    ) -> None:
+        """Import that crashes sets status='import_crash'."""
+        mock_import.return_value = subprocess.CompletedProcess(
+            args=[], returncode=-11, stdout="", stderr="segfault"
+        )
+        crash_info = MagicMock()
+        crash_info.signature = "SIGSEGV"
+        mock_crash.return_value = crash_info
+        pkg = self._make_pkg()
+        result = CompatResult(package="mypkg", status="skip")
+        _check_import_result(pkg, Path("/tmp/fake/venv"), [], result)
+        self.assertEqual(result.status, "import_crash")
+        self.assertEqual(result.crash_signature, "SIGSEGV")
+
+    @patch("labeille.compat.clean_env", return_value={})
+    @patch("labeille.compat.check_import")
+    @patch("labeille.compat.detect_crash", return_value=None)
+    def test_import_fail(
+        self, _mock_crash: MagicMock, mock_import: MagicMock, _mock_env: MagicMock
+    ) -> None:
+        """Import failure (non-crash) sets status='import_fail'."""
+        mock_import.return_value = subprocess.CompletedProcess(
+            args=[], returncode=1, stdout="", stderr="ImportError: No module named mypkg"
+        )
+        pkg = self._make_pkg()
+        result = CompatResult(package="mypkg", status="skip")
+        _check_import_result(pkg, Path("/tmp/fake/venv"), [], result)
+        self.assertEqual(result.status, "import_fail")
+        self.assertIn("ImportError", result.import_error)
+
+    @patch("labeille.compat.clean_env", return_value={})
+    @patch("labeille.compat.check_import", side_effect=subprocess.TimeoutExpired("cmd", 60))
+    def test_import_timeout(self, _mock_import: MagicMock, _mock_env: MagicMock) -> None:
+        """Import timeout sets status='import_fail' with timeout message."""
+        pkg = self._make_pkg()
+        result = CompatResult(package="mypkg", status="skip")
+        _check_import_result(pkg, Path("/tmp/fake/venv"), [], result)
+        self.assertEqual(result.status, "import_fail")
+        self.assertIn("timed out", result.import_error)
 
 
 if __name__ == "__main__":

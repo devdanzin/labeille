@@ -492,7 +492,7 @@ def _check_ft_wheel_trust(
     try:
         pypi_version = cached_metadata["info"]["version"]
     except (KeyError, TypeError):
-        pass
+        log.warning("Could not extract version from PyPI metadata for %s", pkg.package)
 
     if has_ft_wheel(urls, target_version=ft_check_version):
         version_desc = (
@@ -566,6 +566,7 @@ def _clone_and_align_ft(
             try:
                 sdist_version: str | None = cached_metadata["info"]["version"]
             except (KeyError, TypeError):
+                log.warning("Could not extract version from PyPI metadata for %s", pkg.package)
                 sdist_version = None
         else:
             sdist_version = fetch_latest_pypi_version(pkg.package)
@@ -1005,8 +1006,8 @@ def run_ft(config: FTRunConfig) -> list[FTPackageResult]:
     meta = FTRunMeta(
         run_id=run_id,
         timestamp=utc_now_iso(),
-        system_profile=sys_profile.to_dict(),
-        python_profile=py_profile.to_dict(),
+        system_profile=sys_profile,
+        python_profile=py_profile,
         config={
             "target_python": str(config.target_python),
             "iterations": config.iterations,
