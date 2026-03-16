@@ -152,8 +152,10 @@ def _report_header_md(meta: FTRunMeta, summary: FTRunSummary) -> list[str]:
         "",
     ]
 
-    py = meta.python_profile or {}
-    sys_p = meta.system_profile or {}
+    py_raw = meta.python_profile
+    py = py_raw.to_dict() if hasattr(py_raw, "to_dict") else (py_raw or {})
+    sys_raw = meta.system_profile
+    sys_p = sys_raw.to_dict() if hasattr(sys_raw, "to_dict") else (sys_raw or {})
 
     lines.append(f"**Date:** {meta.timestamp}")
     lines.append(f"**Python:** {py.get('version', '?')} ({py.get('implementation', '?')})")

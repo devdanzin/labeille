@@ -11,6 +11,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Extract `_md_table` helper from `export_registry_report_md` in `analyze_cli.py` to deduplicate 8 markdown table constructions.
 - Extract `_prepare_source`, `_classify_install_result`, `_check_import_result` from `_survey_package` in `compat.py`, reducing complexity from 23 branches to ~8 per function.
 - Split `bench_cli.py:compare` into `_compare_intra_run`, `_compare_cross_run`, and `_report_anomalies`, eliminating CC=62.
+- Extract `_collect_package_data`, `_compute_trends`, `_classify_trends`, `_build_median_dicts` from `analyze_series_trends` in `bench/trends.py` (CC=48 → ~10 per helper).
+- Extract `_infer_field_type` from `batch_set_field` in `registry_ops.py` to deduplicate type inference.
+- Type `FTRunMeta.system_profile` and `python_profile` as `SystemProfile | dict` and `PythonProfile | dict` instead of `dict[str, Any]`.
 - Extract `_make_anomaly` helper in `bench/anomaly.py` to deduplicate 9 identical `PackageAnomaly` constructions in `detect_condition_anomalies`.
 - `bench run` and `ft run` now use shared `setup_logging()` for consistent log formatting.
 - Simplify `_run_package_inner` in `runner.py` by extracting 4 helper functions: `_align_sdist_version`, `_setup_venv`, `_install_in_venv`, `_check_import`.
@@ -29,6 +32,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Use `append_jsonl()` in `migrations.py` instead of raw `open()`/`json.dumps` for pattern consistency.
 
 ### Fixed
+- Fix `bench compare` Click decorator chain pointing at wrong function after complexity split, restoring multi-directory comparison and `--metric` option.
+- Log PyPI metadata extraction failures in `ft/runner.py` instead of silently swallowing `(KeyError, TypeError)`.
+- Wrap `checkout_matching_tag` git fetch --tags in try/except to prevent unhandled `TimeoutExpired`/`OSError` crashes.
+- Make `load_ft_run` lenient for missing `ft_results.jsonl` (returns empty list like `load_bench_run`).
+- Add missing `installer_backend` field to `analyze.PackageResult` to match `runner_models.PackageResult`.
+- Narrow `IndexEntry.extension_type` from `str` to `Literal["pure", "extensions", "unknown"]`.
+- Narrow `PackageResult.install_from` and `installer_backend` from `str` to `Literal` types.
 - Fix `--no-shallow` / `--clone-depth=0` to produce actual full clones (no `--depth` flag) instead of silently defaulting to depth=1.
 - Add warning logs to 4 silent return-None paths in `repo_ops.py` (`clone_repo`, `pull_repo`, `checkout_revision`, `fetch_latest_pypi_version`).
 - Promote `pull_repo` git reset/clean failure logs from DEBUG to WARNING for visibility.
@@ -108,6 +118,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - Add missing `help=` text to 21 CLI options across `cli.py`, `analyze_cli.py`, `ft_cli.py`, `compat_cli.py`, and `bench_cli.py`.
 
 ### Tests
+- Add 11 tests for compat survey execution pipeline: `_prepare_source`, `_classify_install_result`, `_check_import_result`.
 - Add 26 tests for `bench track` subcommands: init, add, show, pin, unpin, list, trend, alert.
 - Add CLI tests for `registry` subcommands: rename-field, set-field (--all, --where, --packages), validate (--packages filter), migrate (list, unknown, missing name), sync (clone, pull, failure, non-git), add-index-field, remove-index-field, and group help.
 - Add `test_cli_utils.py` with 14 tests for `parse_env_pairs` and `parse_csv_list`.

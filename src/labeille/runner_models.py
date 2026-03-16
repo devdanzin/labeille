@@ -87,10 +87,10 @@ class PackageResult:
     installed_dependencies: dict[str, str] = field(default_factory=dict)
     error_message: str | None = None
     requested_revision: str | None = None
-    install_from: str = ""  # "source" or "sdist"
+    install_from: Literal["source", "sdist", ""] = ""
     sdist_version: str | None = None
     sdist_tag_matched: bool | None = None
-    installer_backend: str = ""
+    installer_backend: Literal["pip", "uv", ""] = ""
     timestamp: str = ""
 
     def to_dict(self) -> dict[str, Any]:

@@ -256,21 +256,23 @@ def show(result_dir: Path, sort_by: str, limit: int | None) -> None:
     py_info = ""
     if meta.python_profile:
         py = meta.python_profile
+        py_d = py.to_dict() if hasattr(py, "to_dict") else py
         flags: list[str] = []
-        if py.get("jit_enabled"):
+        if py_d.get("jit_enabled"):
             flags.append("JIT")
-        if py.get("gil_disabled"):
+        if py_d.get("gil_disabled"):
             flags.append("free-threaded")
         flag_str = f" ({', '.join(flags)})" if flags else ""
-        py_info = f"Python: {py.get('version', '?')}{flag_str}"
+        py_info = f"Python: {py_d.get('version', '?')}{flag_str}"
 
     sys_info = ""
     if meta.system_profile:
         sp = meta.system_profile
+        sp_d = sp.to_dict() if hasattr(sp, "to_dict") else sp
         sys_info = (
-            f"System: {sp.get('cpu_model', '?')}, "
-            f"{sp.get('ram_total_gb', 0):.0f}GB RAM, "
-            f"{sp.get('os_distro', '?')}"
+            f"System: {sp_d.get('cpu_model', '?')}, "
+            f"{sp_d.get('ram_total_gb', 0):.0f}GB RAM, "
+            f"{sp_d.get('os_distro', '?')}"
         )
 
     config_dict = meta.config or {}

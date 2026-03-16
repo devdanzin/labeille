@@ -509,6 +509,32 @@ def show(result_dir: Path, anomalies: bool, per_test_package: str | None) -> Non
     default=None,
     help="Show per-test overhead for a specific package.",
 )
+def compare(
+    result_dirs: tuple[Path, ...],
+    baseline: str | None,
+    metric: str,
+    per_test_package: str | None,
+) -> None:
+    """Compare results from two or more benchmark runs.
+
+    Accepts either:
+    - Two result directories from different benchmark runs
+    - One result directory with multiple conditions
+
+    \b
+    Examples:
+        # Compare conditions within a single run
+        labeille bench compare results/bench_20260227_143000
+
+        # Compare two separate runs
+        labeille bench compare results/bench_baseline results/bench_jit
+    """
+    if len(result_dirs) == 1:
+        _compare_intra_run(result_dirs[0], baseline, per_test_package)
+    else:
+        _compare_cross_run(result_dirs, baseline)
+
+
 def _compare_intra_run(
     result_dir: Path,
     baseline: str | None,
@@ -625,32 +651,6 @@ def _report_anomalies(results: list[BenchPackageResult]) -> None:
             f"\n\u26a0 {n_pkgs} package(s) have measurement anomalies "
             f"(use 'bench show --anomalies' for details)."
         )
-
-
-def compare(
-    result_dirs: tuple[Path, ...],
-    baseline: str | None,
-    metric: str,
-    per_test_package: str | None,
-) -> None:
-    """Compare results from two or more benchmark runs.
-
-    Accepts either:
-    - Two result directories from different benchmark runs
-    - One result directory with multiple conditions
-
-    \b
-    Examples:
-        # Compare conditions within a single run
-        labeille bench compare results/bench_20260227_143000
-
-        # Compare two separate runs
-        labeille bench compare results/bench_baseline results/bench_jit
-    """
-    if len(result_dirs) == 1:
-        _compare_intra_run(result_dirs[0], baseline, per_test_package)
-    else:
-        _compare_cross_run(result_dirs, baseline)
 
 
 # ---------------------------------------------------------------------------

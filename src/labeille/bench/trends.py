@@ -499,7 +499,120 @@ def _generate_alerts(
 
 
 # ---------------------------------------------------------------------------
-# Series-level analysis
+# Series-level analysis — helpers
+# ---------------------------------------------------------------------------
+
+
+def _collect_package_data(
+    run_data: list[tuple[TrackingRunEntry, BenchMeta, list[BenchPackageResult]]],
+    condition: str,
+) -> tuple[dict[str, list[tuple[float, float, str]]], set[str]]:
+    """Collect per-package median/CV/timestamp tuples from loaded runs.
+
+    Returns:
+        A tuple of (pkg_data mapping, all_packages set).
+    """
+    pkg_data: dict[str, list[tuple[float, float, str]]] = {}
+    all_packages: set[str] = set()
+
+    for entry, _meta, results in run_data:
+        for r in results:
+            if r.skipped:
+                continue
+            cond = r.conditions.get(condition)
+            if not cond or not cond.wall_time_stats:
+                continue
+            all_packages.add(r.package)
+            if r.package not in pkg_data:
+                pkg_data[r.package] = []
+            pkg_data[r.package].append(
+                (cond.wall_time_stats.median, cond.wall_time_stats.cv, entry.timestamp)
+            )
+
+    return pkg_data, all_packages
+
+
+def _compute_trends(
+    pkg_data: dict[str, list[tuple[float, float, str]]],
+    all_packages: set[str],
+    condition: str,
+    *,
+    regression_threshold: float,
+    trend_threshold: float,
+    sustained_count: int,
+) -> list[PackageTrend]:
+    """Compute :class:`PackageTrend` for every package with data points."""
+    package_trends: list[PackageTrend] = []
+    for pkg in sorted(all_packages):
+        data_points = pkg_data.get(pkg, [])
+        if not data_points:
+            continue
+        medians = [d[0] for d in data_points]
+        cvs = [d[1] for d in data_points]
+        timestamps = [d[2] for d in data_points]
+
+        pt = compute_package_trend(
+            pkg,
+            condition,
+            medians,
+            cvs,
+            timestamps,
+            regression_threshold=regression_threshold,
+            trend_threshold=trend_threshold,
+            sustained_count=sustained_count,
+        )
+        package_trends.append(pt)
+    return package_trends
+
+
+def _classify_trends(
+    package_trends: list[PackageTrend],
+) -> tuple[list[str], list[str], list[str], list[str]]:
+    """Classify packages into regressing, improving, volatile, and stable lists."""
+    regressing: list[str] = []
+    improving: list[str] = []
+    volatile: list[str] = []
+    stable: list[str] = []
+
+    for pt in package_trends:
+        if pt.trend_direction == "regressing":
+            regressing.append(pt.package)
+        elif pt.trend_direction == "improving":
+            improving.append(pt.package)
+        elif pt.trend_direction == "volatile":
+            volatile.append(pt.package)
+        else:
+            stable.append(pt.package)
+
+    return regressing, improving, volatile, stable
+
+
+def _build_median_dicts(
+    package_trends: list[PackageTrend],
+) -> tuple[dict[str, float], dict[str, float], dict[str, float]]:
+    """Build baseline, previous, and current median dicts from package trends.
+
+    Returns:
+        (baseline_medians, previous_medians, current_medians)
+    """
+    baseline_medians: dict[str, float] = {}
+    previous_medians: dict[str, float] = {}
+    current_medians: dict[str, float] = {}
+
+    for pt in package_trends:
+        if pt.medians:
+            baseline_medians[pt.package] = pt.medians[0]
+            current_medians[pt.package] = pt.medians[-1]
+            if len(pt.medians) >= 2:
+                previous_medians[pt.package] = pt.medians[-2]
+            else:
+                previous_medians[pt.package] = pt.medians[0]
+
+    return baseline_medians, previous_medians, current_medians
+
+
+# ---------------------------------------------------------------------------
+# Series-level analysis — orchestrator
 # ---------------------------------------------------------------------------
 
 
@@ -575,77 +688,23 @@ def analyze_series_trends(
         condition = cond_names[0] if cond_names else ""
 
     # Collect per-package medians and CVs across runs.
-    # package -> {run_index: (median, cv, timestamp)}
-    pkg_data: dict[str, list[tuple[float, float, str]]] = {}
-    all_packages: set[str] = set()
-
-    for entry, meta, results in run_data:
-        for r in results:
-            if r.skipped:
-                continue
-            cond = r.conditions.get(condition)
-            if not cond or not cond.wall_time_stats:
-                continue
-            all_packages.add(r.package)
-            if r.package not in pkg_data:
-                pkg_data[r.package] = []
-            pkg_data[r.package].append(
-                (cond.wall_time_stats.median, cond.wall_time_stats.cv, entry.timestamp)
-            )
+    pkg_data, all_packages = _collect_package_data(run_data, condition)
 
     # Compute trends.
-    package_trends: list[PackageTrend] = []
-    for pkg in sorted(all_packages):
-        data_points = pkg_data.get(pkg, [])
-        if not data_points:
-            continue
-        medians = [d[0] for d in data_points]
-        cvs = [d[1] for d in data_points]
-        timestamps = [d[2] for d in data_points]
-
-        pt = compute_package_trend(
-            pkg,
-            condition,
-            medians,
-            cvs,
-            timestamps,
-            regression_threshold=regression_threshold,
-            trend_threshold=trend_threshold,
-            sustained_count=sustained_count,
-        )
-        package_trends.append(pt)
+    package_trends = _compute_trends(
+        pkg_data,
+        all_packages,
+        condition,
+        regression_threshold=regression_threshold,
+        trend_threshold=trend_threshold,
+        sustained_count=sustained_count,
+    )
 
     # Classify packages.
-    regressing_packages: list[str] = []
-    improving_packages: list[str] = []
-    volatile_packages: list[str] = []
-    stable_packages: list[str] = []
+    regressing, improving, volatile, stable = _classify_trends(package_trends)
 
-    for pt in package_trends:
-        if pt.trend_direction == "regressing":
-            regressing_packages.append(pt.package)
-        elif pt.trend_direction == "improving":
-            improving_packages.append(pt.package)
-        elif pt.trend_direction == "volatile":
-            volatile_packages.append(pt.package)
-        else:
-            stable_packages.append(pt.package)
-
-    # Build median dicts for alert generation.
-    baseline_medians: dict[str, float] = {}
-    previous_medians: dict[str, float] = {}
-    current_medians: dict[str, float] = {}
-
-    for pt in package_trends:
-        if pt.medians:
-            baseline_medians[pt.package] = pt.medians[0]
-            current_medians[pt.package] = pt.medians[-1]
-            if len(pt.medians) >= 2:
-                previous_medians[pt.package] = pt.medians[-2]
-            else:
-                previous_medians[pt.package] = pt.medians[0]
-
-    # Generate alerts.
+    # Build median dicts and generate alerts.
+    baseline_medians, previous_medians, current_medians = _build_median_dicts(package_trends)
     alerts = _generate_alerts(
         package_trends,
         baseline_medians,
@@ -666,9 +725,9 @@ def analyze_series_trends(
         baseline_bench_id=baseline_bench_id,
         package_trends=package_trends,
         alerts=alerts,
-        regressing_packages=regressing_packages,
-        improving_packages=improving_packages,
-        volatile_packages=volatile_packages,
-        stable_packages=stable_packages,
+        regressing_packages=regressing,
+        improving_packages=improving,
+        volatile_packages=volatile,
+        stable_packages=stable,
         aggregate_median_change_pct=aggregate_change,
     )

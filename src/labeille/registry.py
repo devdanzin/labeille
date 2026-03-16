@@ -137,7 +137,7 @@ class IndexEntry:
 
     name: str
     download_count: int | None = None
-    extension_type: str = "unknown"
+    extension_type: Literal["pure", "extensions", "unknown"] = "unknown"
     enriched: bool = False
     skip: bool = False
     skip_versions_keys: list[str] = field(default_factory=list)

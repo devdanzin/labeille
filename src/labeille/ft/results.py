@@ -22,6 +22,7 @@ from typing import TYPE_CHECKING, Any, Literal
 if TYPE_CHECKING:
     from labeille.ft.compat import ExtensionCompat
 
+from labeille.bench.system import PythonProfile, SystemProfile
 from labeille.io_utils import (
     append_jsonl,
     atomic_write_text,
@@ -410,8 +411,8 @@ class FTRunMeta:
 
     run_id: str
     timestamp: str
-    system_profile: dict[str, Any] = field(default_factory=dict)
-    python_profile: dict[str, Any] = field(default_factory=dict)
+    system_profile: SystemProfile | dict[str, Any] = field(default_factory=dict)
+    python_profile: PythonProfile | dict[str, Any] = field(default_factory=dict)
     config: dict[str, Any] = field(default_factory=dict)
     cli_args: list[str] = field(default_factory=list)
     packages_total: int = 0
@@ -420,11 +421,24 @@ class FTRunMeta:
     total_duration_s: float = 0.0
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        d = asdict(self)
+        # Ensure typed profiles are serialized properly.
+        if isinstance(self.system_profile, SystemProfile):
+            d["system_profile"] = self.system_profile.to_dict()
+        if isinstance(self.python_profile, PythonProfile):
+            d["python_profile"] = self.python_profile.to_dict()
+        return d
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> FTRunMeta:
-        return dataclass_from_dict(cls, data)
+        sys_raw = data.get("system_profile", {})
+        py_raw = data.get("python_profile", {})
+        meta = dataclass_from_dict(cls, data)
+        if isinstance(sys_raw, dict) and sys_raw:
+            meta.system_profile = SystemProfile.from_dict(sys_raw)
+        if isinstance(py_raw, dict) and py_raw:
+            meta.python_profile = PythonProfile.from_dict(py_raw)
+        return meta
 
 
 @dataclass
@@ -590,9 +604,9 @@ def load_ft_run(
 
     if not meta_path.exists():
         raise FileNotFoundError(f"No ft_meta.json in {results_dir}")
-    if not results_path.exists():
-        raise FileNotFoundError(f"No ft_results.jsonl in {results_dir}")
 
     meta = FTRunMeta.from_dict(load_json_file(meta_path))
-    results = load_jsonl(results_path, FTPackageResult.from_dict)
+    results: list[FTPackageResult] = []
+    if results_path.exists():
+        results = load_jsonl(results_path, FTPackageResult.from_dict)
     return meta, results
