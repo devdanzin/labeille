@@ -9,6 +9,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ### Enhanced
 - Extract `_build_run_config` from `run_cmd` in `cli.py` to separate config validation/construction from CLI execution.
 - Extract `_md_table` helper from `export_registry_report_md` in `analyze_cli.py` to deduplicate 8 markdown table constructions.
+- Extract `_prepare_source`, `_classify_install_result`, `_check_import_result` from `_survey_package` in `compat.py`, reducing complexity from 23 branches to ~8 per function.
+- Split `bench_cli.py:compare` into `_compare_intra_run`, `_compare_cross_run`, and `_report_anomalies`, eliminating CC=62.
 - Extract `_make_anomaly` helper in `bench/anomaly.py` to deduplicate 9 identical `PackageAnomaly` constructions in `detect_condition_anomalies`.
 - `bench run` and `ft run` now use shared `setup_logging()` for consistent log formatting.
 - Simplify `_run_package_inner` in `runner.py` by extracting 4 helper functions: `_align_sdist_version`, `_setup_venv`, `_install_in_venv`, `_check_import`.

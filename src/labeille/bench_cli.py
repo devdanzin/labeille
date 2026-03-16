@@ -509,6 +509,124 @@ def show(result_dir: Path, anomalies: bool, per_test_package: str | None) -> Non
     default=None,
     help="Show per-test overhead for a specific package.",
 )
+def _compare_intra_run(
+    result_dir: Path,
+    baseline: str | None,
+    per_test_package: str | None,
+) -> None:
+    """Compare conditions within a single benchmark run."""
+    from labeille.bench.display import (
+        format_bench_show,
+        format_comparison_summary,
+    )
+    from labeille.bench.results import load_bench_run
+
+    meta, results = load_bench_run(result_dir)
+    conditions = list(meta.conditions.keys())
+    if len(conditions) < 2:
+        raise click.ClickException(
+            "Single benchmark run has only one condition. "
+            "Provide two result directories for cross-run comparison."
+        )
+
+    baseline_name = baseline or conditions[0]
+    if baseline_name not in conditions:
+        raise click.ClickException(
+            f"Baseline '{baseline_name}' not found. Available: {', '.join(conditions)}"
+        )
+
+    click.echo(format_bench_show(meta, results))
+    click.echo()
+
+    for cond_name in conditions:
+        if cond_name == baseline_name:
+            continue
+        click.echo(f"\n{baseline_name} vs {cond_name}")
+        click.echo("=" * (len(baseline_name) + len(cond_name) + 4))
+        click.echo(format_comparison_summary(results, baseline_name, cond_name))
+
+    if per_test_package:
+        from labeille.bench.compare import compare_per_test
+        from labeille.bench.display import format_per_test_comparison
+
+        for cond_name in conditions:
+            if cond_name == baseline_name:
+                continue
+            overheads = compare_per_test(results, baseline_name, cond_name, per_test_package)
+            if overheads:
+                click.echo()
+                click.echo(format_per_test_comparison(overheads))
+
+    _report_anomalies(results)
+
+
+def _compare_cross_run(
+    result_dirs: tuple[Path, ...],
+    baseline: str | None,
+) -> None:
+    """Compare results across multiple benchmark runs."""
+    from labeille.bench.display import format_comparison_summary
+    from labeille.bench.results import load_bench_run
+
+    all_runs: list[tuple[BenchMeta, list[BenchPackageResult]]] = []
+    for rd in result_dirs:
+        meta, results = load_bench_run(rd)
+        all_runs.append((meta, results))
+
+    click.echo("Cross-run comparison:")
+    click.echo()
+    for i, (meta, results) in enumerate(all_runs):
+        run_name = meta.name or meta.bench_id
+        click.echo(f"  Run {i + 1}: {run_name}")
+        click.echo(f"    Conditions: {', '.join(meta.conditions.keys())}")
+        click.echo(f"    Packages: {meta.packages_completed}")
+    click.echo()
+
+    merged_results: dict[str, BenchPackageResult] = {}
+    run_names: list[str] = []
+
+    for meta, results in all_runs:
+        run_name = meta.name or meta.bench_id
+        run_names.append(run_name)
+        first_cond = list(meta.conditions.keys())[0]
+
+        for r in results:
+            if r.skipped:
+                continue
+            cond = r.conditions.get(first_cond)
+            if not cond:
+                continue
+            if r.package not in merged_results:
+                merged_results[r.package] = BenchPackageResult(
+                    package=r.package,
+                )
+            merged_results[r.package].conditions[run_name] = cond
+
+    merged_list = list(merged_results.values())
+
+    if len(run_names) >= 2:
+        baseline_name = baseline or run_names[0]
+        for treatment in run_names[1:]:
+            click.echo(f"\n{baseline_name} vs {treatment}")
+            click.echo("=" * (len(baseline_name) + len(treatment) + 4))
+            click.echo(format_comparison_summary(merged_list, baseline_name, treatment))
+
+        _report_anomalies(merged_list)
+
+
+def _report_anomalies(results: list[BenchPackageResult]) -> None:
+    """Print an anomaly summary if any anomalies are detected."""
+    from labeille.bench.anomaly import detect_anomalies
+
+    anomaly_report = detect_anomalies(results)
+    if anomaly_report.anomalies:
+        n_pkgs = len(anomaly_report.affected_packages)
+        click.echo(
+            f"\n\u26a0 {n_pkgs} package(s) have measurement anomalies "
+            f"(use 'bench show --anomalies' for details)."
+        )
+
+
 def compare(
     result_dirs: tuple[Path, ...],
     baseline: str | None,
@@ -529,118 +647,10 @@ def compare(
         # Compare two separate runs
         labeille bench compare results/bench_baseline results/bench_jit
     """
-    from labeille.bench.display import (
-        format_bench_show,
-        format_comparison_summary,
-    )
-    from labeille.bench.results import load_bench_run
-
     if len(result_dirs) == 1:
-        # Single directory: compare conditions within the run.
-        meta, results = load_bench_run(result_dirs[0])
-        conditions = list(meta.conditions.keys())
-        if len(conditions) < 2:
-            raise click.ClickException(
-                "Single benchmark run has only one condition. "
-                "Provide two result directories for cross-run comparison."
-            )
-
-        baseline_name = baseline or conditions[0]
-        if baseline_name not in conditions:
-            raise click.ClickException(
-                f"Baseline '{baseline_name}' not found. Available: {', '.join(conditions)}"
-            )
-
-        click.echo(format_bench_show(meta, results))
-        click.echo()
-
-        for cond_name in conditions:
-            if cond_name == baseline_name:
-                continue
-            click.echo(f"\n{baseline_name} vs {cond_name}")
-            click.echo("=" * (len(baseline_name) + len(cond_name) + 4))
-            click.echo(format_comparison_summary(results, baseline_name, cond_name))
-
-        # Per-test comparison.
-        if per_test_package:
-            from labeille.bench.compare import compare_per_test
-            from labeille.bench.display import format_per_test_comparison
-
-            for cond_name in conditions:
-                if cond_name == baseline_name:
-                    continue
-                overheads = compare_per_test(results, baseline_name, cond_name, per_test_package)
-                if overheads:
-                    click.echo()
-                    click.echo(format_per_test_comparison(overheads))
-
-        # Anomaly summary.
-        from labeille.bench.anomaly import detect_anomalies
-
-        anomaly_report = detect_anomalies(results)
-        if anomaly_report.anomalies:
-            n_pkgs = len(anomaly_report.affected_packages)
-            click.echo(
-                f"\n\u26a0 {n_pkgs} package(s) have measurement anomalies "
-                f"(use 'bench show --anomalies' for details)."
-            )
+        _compare_intra_run(result_dirs[0], baseline, per_test_package)
     else:
-        # Multiple directories: cross-run comparison.
-        all_runs: list[tuple[BenchMeta, list[BenchPackageResult]]] = []
-        for rd in result_dirs:
-            meta, results = load_bench_run(rd)
-            all_runs.append((meta, results))
-
-        click.echo("Cross-run comparison:")
-        click.echo()
-        for i, (meta, results) in enumerate(all_runs):
-            run_name = meta.name or meta.bench_id
-            click.echo(f"  Run {i + 1}: {run_name}")
-            click.echo(f"    Conditions: {', '.join(meta.conditions.keys())}")
-            click.echo(f"    Packages: {meta.packages_completed}")
-        click.echo()
-
-        # Merge: create synthetic BenchPackageResults with conditions
-        # named after each run.
-        merged_results: dict[str, BenchPackageResult] = {}
-        run_names: list[str] = []
-
-        for meta, results in all_runs:
-            run_name = meta.name or meta.bench_id
-            run_names.append(run_name)
-            first_cond = list(meta.conditions.keys())[0]
-
-            for r in results:
-                if r.skipped:
-                    continue
-                cond = r.conditions.get(first_cond)
-                if not cond:
-                    continue
-                if r.package not in merged_results:
-                    merged_results[r.package] = BenchPackageResult(
-                        package=r.package,
-                    )
-                merged_results[r.package].conditions[run_name] = cond
-
-        merged_list = list(merged_results.values())
-
-        if len(run_names) >= 2:
-            baseline_name = baseline or run_names[0]
-            for treatment in run_names[1:]:
-                click.echo(f"\n{baseline_name} vs {treatment}")
-                click.echo("=" * (len(baseline_name) + len(treatment) + 4))
-                click.echo(format_comparison_summary(merged_list, baseline_name, treatment))
-
-            # Anomaly summary.
-            from labeille.bench.anomaly import detect_anomalies
-
-            anomaly_report = detect_anomalies(merged_list)
-            if anomaly_report.anomalies:
-                n_pkgs = len(anomaly_report.affected_packages)
-                click.echo(
-                    f"\n\u26a0 {n_pkgs} package(s) have measurement anomalies "
-                    f"(use 'bench show --anomalies' for details)."
-                )
+        _compare_cross_run(result_dirs, baseline)
 
 
 # ---------------------------------------------------------------------------
