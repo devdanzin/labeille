@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field, fields as dataclass_fields
 from pathlib import Path
-from typing import Any, get_type_hints
+from typing import Any, Literal, get_type_hints
 
 import yaml
 
@@ -83,7 +83,7 @@ class FieldFilter:
     """A single filter predicate for package selection."""
 
     field: str
-    op: str  # "=", "~=", ":true", ":false", ":null", ":notnull"
+    op: Literal["=", "~=", ":true", ":false", ":null", ":notnull"]
     value: str | None
 
 
@@ -607,6 +607,107 @@ def _build_field_types() -> dict[str, type | tuple[type, ...]]:
 _FIELD_TYPES: dict[str, type | tuple[type, ...]] = _build_field_types()
 
 
+def _validate_package_file(
+    f: Path, strict: bool, schema_fields: set[str] | None
+) -> list[ValidationIssue]:
+    """Validate a single package YAML file against the PackageEntry schema.
+
+    Args:
+        f: Path to the YAML file.
+        strict: If True, warnings are promoted to errors.
+        schema_fields: Known field names (uses module-level ``_KNOWN_FIELDS`` when *None*).
+
+    Returns:
+        A list of :class:`ValidationIssue` instances for this file.
+    """
+    known = schema_fields if schema_fields is not None else _KNOWN_FIELDS
+    issues: list[ValidationIssue] = []
+
+    try:
+        raw = yaml.safe_load(f.read_text(encoding="utf-8"))
+    except yaml.YAMLError as exc:
+        return [ValidationIssue(f.name, "error", f"malformed YAML: {exc}")]
+    if not isinstance(raw, dict):
+        return [ValidationIssue(f.name, "error", "file does not contain a YAML mapping")]
+
+    # Check required fields
+    for req in _REQUIRED_FIELDS:
+        if req not in raw:
+            issues.append(ValidationIssue(f.name, "error", f"missing required field '{req}'"))
+
+    # Check unknown fields
+    for key in raw:
+        if key not in known:
+            level = "error" if strict else "warning"
+            issues.append(ValidationIssue(f.name, level, f"unknown field '{key}'"))
+
+    # Check type mismatches
+    for key, expected in _FIELD_TYPES.items():
+        if key in raw and raw[key] is not None:
+            if not isinstance(raw[key], expected):
+                issues.append(
+                    ValidationIssue(
+                        f.name,
+                        "error",
+                        f"field '{key}' has type {type(raw[key]).__name__},"
+                        f" expected {_type_name(expected)}",
+                    )
+                )
+
+    # Check skip_versions float keys
+    sv = raw.get("skip_versions")
+    if isinstance(sv, dict):
+        for k in sv:
+            if isinstance(k, float):
+                issues.append(
+                    ValidationIssue(
+                        f.name,
+                        "warning",
+                        f"skip_versions key '{k}' loaded as float",
+                    )
+                )
+
+    # Check non-skipped packages have commands
+    if not raw.get("skip", False):
+        if raw.get("enriched", False):
+            if not raw.get("install_command"):
+                issues.append(
+                    ValidationIssue(
+                        f.name, "warning", "enriched package has empty install_command"
+                    )
+                )
+            if not raw.get("test_command"):
+                issues.append(
+                    ValidationIssue(
+                        f.name, "warning", "enriched package has empty test_command"
+                    )
+                )
+
+    # Check uses_xdist consistency.
+    if not raw.get("skip", False):
+        test_cmd = raw.get("test_command", "")
+        if raw.get("uses_xdist", False):
+            if test_cmd and "-p no:xdist" not in test_cmd:
+                issues.append(
+                    ValidationIssue(
+                        f.name,
+                        "warning",
+                        "uses_xdist is true but test_command does not include '-p no:xdist'",
+                    )
+                )
+        else:
+            if test_cmd and "-p no:xdist" in test_cmd:
+                issues.append(
+                    ValidationIssue(
+                        f.name,
+                        "warning",
+                        "test_command includes '-p no:xdist' but uses_xdist is false",
+                    )
+                )
+
+    return issues
+
+
 def validate_registry(
     registry_dir: Path,
     strict: bool = False,
@@ -628,91 +729,8 @@ def validate_registry(
     files = _filter_files(files, filters or [], packages_list)
 
     issues: list[ValidationIssue] = []
-
     for f in files:
-        try:
-            raw = yaml.safe_load(f.read_text(encoding="utf-8"))
-        except yaml.YAMLError as exc:
-            issues.append(ValidationIssue(f.name, "error", f"malformed YAML: {exc}"))
-            continue
-        if not isinstance(raw, dict):
-            issues.append(ValidationIssue(f.name, "error", "file does not contain a YAML mapping"))
-            continue
-
-        # Check required fields
-        for req in _REQUIRED_FIELDS:
-            if req not in raw:
-                issues.append(ValidationIssue(f.name, "error", f"missing required field '{req}'"))
-
-        # Check unknown fields
-        for key in raw:
-            if key not in _KNOWN_FIELDS:
-                level = "error" if strict else "warning"
-                issues.append(ValidationIssue(f.name, level, f"unknown field '{key}'"))
-
-        # Check type mismatches
-        for key, expected in _FIELD_TYPES.items():
-            if key in raw and raw[key] is not None:
-                if not isinstance(raw[key], expected):
-                    issues.append(
-                        ValidationIssue(
-                            f.name,
-                            "error",
-                            f"field '{key}' has type {type(raw[key]).__name__},"
-                            f" expected {_type_name(expected)}",
-                        )
-                    )
-
-        # Check skip_versions float keys
-        sv = raw.get("skip_versions")
-        if isinstance(sv, dict):
-            for k in sv:
-                if isinstance(k, float):
-                    issues.append(
-                        ValidationIssue(
-                            f.name,
-                            "warning",
-                            f"skip_versions key '{k}' loaded as float",
-                        )
-                    )
-
-        # Check non-skipped packages have commands
-        if not raw.get("skip", False):
-            if raw.get("enriched", False):
-                if not raw.get("install_command"):
-                    issues.append(
-                        ValidationIssue(
-                            f.name, "warning", "enriched package has empty install_command"
-                        )
-                    )
-                if not raw.get("test_command"):
-                    issues.append(
-                        ValidationIssue(
-                            f.name, "warning", "enriched package has empty test_command"
-                        )
-                    )
-
-        # Check uses_xdist consistency.
-        if not raw.get("skip", False):
-            test_cmd = raw.get("test_command", "")
-            if raw.get("uses_xdist", False):
-                if test_cmd and "-p no:xdist" not in test_cmd:
-                    issues.append(
-                        ValidationIssue(
-                            f.name,
-                            "warning",
-                            "uses_xdist is true but test_command does not include '-p no:xdist'",
-                        )
-                    )
-            else:
-                if test_cmd and "-p no:xdist" in test_cmd:
-                    issues.append(
-                        ValidationIssue(
-                            f.name,
-                            "warning",
-                            "test_command includes '-p no:xdist' but uses_xdist is false",
-                        )
-                    )
+        issues.extend(_validate_package_file(f, strict, schema_fields=None))
 
     return issues
 

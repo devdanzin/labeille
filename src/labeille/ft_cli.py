@@ -254,9 +254,8 @@ def show(result_dir: Path, sort_by: str, limit: int | None) -> None:
 
     # System and Python info.
     py_info = ""
-    if meta.python_profile:
-        py = meta.python_profile
-        py_d = py.to_dict() if hasattr(py, "to_dict") else py
+    py_d = meta.python_profile.to_dict()
+    if py_d:
         flags: list[str] = []
         if py_d.get("jit_enabled"):
             flags.append("JIT")
@@ -266,9 +265,8 @@ def show(result_dir: Path, sort_by: str, limit: int | None) -> None:
         py_info = f"Python: {py_d.get('version', '?')}{flag_str}"
 
     sys_info = ""
-    if meta.system_profile:
-        sp = meta.system_profile
-        sp_d = sp.to_dict() if hasattr(sp, "to_dict") else sp
+    sp_d = meta.system_profile.to_dict()
+    if sp_d:
         sys_info = (
             f"System: {sp_d.get('cpu_model', '?')}, "
             f"{sp_d.get('ram_total_gb', 0):.0f}GB RAM, "

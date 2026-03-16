@@ -531,7 +531,7 @@ def format_anomaly_report(report: AnomalyReport) -> str:
     lines.append("Anomaly Report")
     lines.append("\u2500" * 14)
 
-    severity_labels = {"error": "ERROR", "warning": "WARNING", "info": "INFO"}
+    from labeille.bench.anomaly import SEVERITY_LABELS as severity_labels
     severity_order = ["error", "warning", "info"]
 
     by_severity = report.by_severity
@@ -657,7 +657,7 @@ def format_regression_alerts(alerts: list[RegressionAlert]) -> str:
     lines.append("Regression Alerts")
     lines.append("\u2500" * 17)
 
-    severity_labels = {"error": "ERROR", "warning": "WARNING", "info": "INFO"}
+    from labeille.bench.anomaly import SEVERITY_LABELS as severity_labels
 
     for a in alerts:
         label = severity_labels.get(a.severity, a.severity.upper())

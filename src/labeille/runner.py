@@ -37,13 +37,20 @@ from labeille.io_utils import (
     write_meta_json,
 )
 from labeille.logging import get_logger
-from labeille.registry import Index, PackageEntry, load_index, load_package, package_exists
+from labeille.registry import (
+    Index,
+    PackageEntry,
+    RegistrySchemaError,
+    load_index,
+    load_package,
+    package_exists,
+)
 
 # Re-export data models from runner_models (preserves all existing imports).
 from labeille.runner_models import InstallerBackend as InstallerBackend
 from labeille.runner_models import PackageResult as PackageResult
 from labeille.runner_models import RunnerConfig as RunnerConfig
-from labeille.runner_models import RunOutput as RunOutput
+from labeille.runner_models import RunOutput
 from labeille.runner_models import RunSummary as RunSummary
 
 # Re-export repo operations from repo_ops (preserves all existing imports).
@@ -1212,7 +1219,11 @@ def filter_packages(
         if not package_exists(entry.name, registry_dir):
             log.debug("Skipping %s (no package YAML)", entry.name)
             continue
-        pkg = load_package(entry.name, registry_dir)
+        try:
+            pkg = load_package(entry.name, registry_dir)
+        except (RegistrySchemaError, OSError, ValueError) as exc:
+            log.warning("Skipping %s (bad YAML): %s", entry.name, exc)
+            continue
 
         # Double-check against the full package data (in case index is stale).
         if not config.force_run and pkg.skip:

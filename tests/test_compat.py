@@ -24,6 +24,7 @@ from labeille.compat import (
     _classify_install_result,
     _prepare_source,
     _read_packages_file,
+    _survey_package,
     classify_build_output,
     diff_surveys,
     export_compat_markdown,
@@ -1184,6 +1185,140 @@ class TestCheckImportResult(unittest.TestCase):
         _check_import_result(pkg, Path("/tmp/fake/venv"), [], result)
         self.assertEqual(result.status, "import_fail")
         self.assertIn("timed out", result.import_error)
+
+
+# ---------------------------------------------------------------------------
+# _survey_package integration tests
+# ---------------------------------------------------------------------------
+
+
+class TestSurveyPackage(unittest.TestCase):
+    """Integration tests for _survey_package() with mocked I/O."""
+
+    def setUp(self) -> None:
+        self.tmpdir = tempfile.mkdtemp()
+        self.output_dir = Path(self.tmpdir) / "output"
+        self.output_dir.mkdir()
+        (self.output_dir / "build_logs").mkdir()
+
+    def _make_pkg(self, **overrides: object) -> CompatPackageInput:
+        defaults: dict[str, object] = {
+            "name": "mypkg",
+            "repo_url": None,
+            "install_command": None,
+            "import_name": "mypkg",
+            "extension_type": "unknown",
+            "source": "pypi",
+        }
+        defaults.update(overrides)
+        return CompatPackageInput(**defaults)  # type: ignore[arg-type]
+
+    @patch("labeille.compat._check_import_result")
+    @patch("labeille.compat.install_with_fallback")
+    @patch("labeille.compat._prepare_source")
+    def test_build_ok(
+        self,
+        mock_prepare: MagicMock,
+        mock_install: MagicMock,
+        mock_check_import: MagicMock,
+    ) -> None:
+        """Successful build + import sets status='build_ok'."""
+        from labeille.runner import InstallerBackend
+
+        mock_prepare.return_value = ("pip install mypkg", Path(self.tmpdir))
+
+        install_proc = MagicMock()
+        install_proc.returncode = 0
+        install_proc.stderr = ""
+        install_proc.stdout = "Successfully installed mypkg"
+        mock_install.return_value = (install_proc, InstallerBackend.PIP)
+
+        def set_build_ok(
+            pkg: object, venv_dir: object, patterns: object, result: CompatResult
+        ) -> None:
+            result.status = "build_ok"
+
+        mock_check_import.side_effect = set_build_ok
+
+        pkg = self._make_pkg()
+        result = _survey_package(
+            pkg=pkg,
+            target_python=Path("/fake/python"),
+            from_mode="sdist",
+            output_dir=self.output_dir,
+            timeout=60,
+            repos_dir=None,
+            installer=InstallerBackend.PIP,
+            patterns=[],
+            no_binary_all=False,
+        )
+
+        self.assertEqual(result.status, "build_ok")
+        self.assertEqual(result.installer_used, "pip")
+        self.assertGreaterEqual(result.duration_seconds, 0)
+
+    @patch("labeille.compat.install_with_fallback")
+    @patch("labeille.compat._prepare_source")
+    def test_build_fail(
+        self,
+        mock_prepare: MagicMock,
+        mock_install: MagicMock,
+    ) -> None:
+        """Non-zero exit code from install sets status='build_fail'."""
+        from labeille.runner import InstallerBackend
+
+        mock_prepare.return_value = ("pip install mypkg", Path(self.tmpdir))
+
+        install_proc = MagicMock()
+        install_proc.returncode = 1
+        install_proc.stderr = "error: compilation failed"
+        install_proc.stdout = ""
+        mock_install.return_value = (install_proc, InstallerBackend.PIP)
+
+        pkg = self._make_pkg()
+        result = _survey_package(
+            pkg=pkg,
+            target_python=Path("/fake/python"),
+            from_mode="sdist",
+            output_dir=self.output_dir,
+            timeout=60,
+            repos_dir=None,
+            installer=InstallerBackend.PIP,
+            patterns=[],
+            no_binary_all=False,
+        )
+
+        self.assertEqual(result.status, "build_fail")
+        self.assertEqual(result.exit_code, 1)
+
+    @patch("labeille.compat.install_with_fallback")
+    @patch("labeille.compat._prepare_source")
+    def test_timeout(
+        self,
+        mock_prepare: MagicMock,
+        mock_install: MagicMock,
+    ) -> None:
+        """TimeoutExpired from install sets status='timeout'."""
+        from labeille.runner import InstallerBackend
+
+        mock_prepare.return_value = ("pip install mypkg", Path(self.tmpdir))
+        mock_install.side_effect = subprocess.TimeoutExpired(cmd="pip", timeout=60)
+
+        pkg = self._make_pkg()
+        result = _survey_package(
+            pkg=pkg,
+            target_python=Path("/fake/python"),
+            from_mode="sdist",
+            output_dir=self.output_dir,
+            timeout=60,
+            repos_dir=None,
+            installer=InstallerBackend.PIP,
+            patterns=[],
+            no_binary_all=False,
+        )
+
+        self.assertEqual(result.status, "timeout")
+        self.assertGreaterEqual(result.duration_seconds, 0)
 
 
 if __name__ == "__main__":

@@ -21,6 +21,7 @@ from typing import Any, Callable
 from labeille.crash import detect_crash
 from labeille.io_utils import (
     append_jsonl,
+    dataclass_from_dict,
     generate_run_id,
     load_json_file,
     load_jsonl,
@@ -147,7 +148,7 @@ class CompatResult:
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> CompatResult:
         """Deserialize from JSONL dict."""
-        matches = [ErrorMatch(**m) for m in data.get("error_matches", [])]
+        matches = [dataclass_from_dict(ErrorMatch, m) for m in data.get("error_matches", [])]
         return cls(
             package=data["package"],
             status=data["status"],
@@ -812,6 +813,10 @@ def _check_import_result(
     except subprocess.TimeoutExpired:
         result.status = "import_fail"
         result.import_error = "import timed out"
+        return
+    except OSError as exc:
+        result.status = "import_fail"
+        result.import_error = f"Could not run import check: {exc}"
         return
 
     if import_proc.returncode != 0:
