@@ -6,6 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added
+- `labeille cext-build` command for generating `compile_commands.json` compilation databases from C extension packages. Uses [Bear](https://github.com/rizsotto/Bear) to intercept compiler invocations during the build, with automatic fallback to build-system-specific mechanisms for Meson and CMake projects.
+- `CextBuildConfig`, `CextBuildResult`, `CextBuildMeta` dataclasses in `cext_build.py`.
+- `detect_bear()` for auto-detecting bear installation and version.
+- `detect_build_system()` for identifying the build system from project files (meson, cmake, setuptools, flit, hatch, pdm).
+- `extract_build_requires()` for reading `[build-system].requires` from `pyproject.toml` to support `--no-build-isolation` builds.
+- `find_compile_db()` for searching repo and build directories for generated compilation databases.
+- `postprocess_compile_db()` for fixing source file paths in generated compilation databases.
+- Output includes per-package `compile_commands.json`, repo symlinks, build logs, and JSONL result summaries.
+- Designed for integration with [cext-review-toolkit](https://github.com/devdanzin/cext-review-toolkit) Tier 2 analysis (clang-tidy).
+
 ### Enhanced
 - Extract `_build_run_config` from `run_cmd` in `cli.py` to separate config validation/construction from CLI execution.
 - Extract `_md_table` helper from `export_registry_report_md` in `analyze_cli.py` to deduplicate 8 markdown table constructions.
