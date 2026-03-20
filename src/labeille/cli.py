@@ -39,6 +39,7 @@ def _register_subcommands() -> None:
     """Register subcommand groups on the main CLI group."""
     from labeille.analyze_cli import analyze as analyze_group
     from labeille.bench_cli import bench as bench_group
+    from labeille.cext_build_cli import cext_build as cext_build_cmd
     from labeille.compat_cli import compat as compat_group
     from labeille.ft_cli import ft as ft_group
     from labeille.registry_cli import registry as registry_group
@@ -48,6 +49,7 @@ def _register_subcommands() -> None:
     main.add_command(bench_group)
     main.add_command(ft_group)
     main.add_command(compat_group)
+    main.add_command(cext_build_cmd)
 
 
 _register_subcommands()

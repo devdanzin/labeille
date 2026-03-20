@@ -35,7 +35,7 @@ ASAN_OPTIONS=detect_leaks=0 PYTHON_JIT=0 .venv/bin/python -m unittest discover t
 - Click CLI framework — Click 8.3+ (no `mix_stderr` in CliRunner)
 
 ## Architecture
-- `cli.py` — Click CLI entry point with `resolve`, `run`, `scan-deps`, `bisect`, `registry`, `analyze`, `bench`, `ft`, and `compat` subcommands
+- `cli.py` — Click CLI entry point with `resolve`, `run`, `scan-deps`, `bisect`, `registry`, `analyze`, `bench`, `ft`, `compat`, and `cext-build` subcommands
 - `cli_utils.py` — Shared Click helpers (parse_csv_list, parse_env_pairs)
 - `resolve.py` — PyPI metadata fetching, repo URL extraction, registry building
 - `runner.py` — Clone repos, create venvs, run test suites, detect crashes
@@ -67,7 +67,7 @@ ASAN_OPTIONS=detect_leaks=0 PYTHON_JIT=0 .venv/bin/python -m unittest discover t
 ## Testing notes
 - Integration tests mock `fetch_pypi_metadata` to avoid network calls
 - Runner tests mock `subprocess.run` and `clone_repo` extensively
-- 2182 tests total across 50 test files
+- 2224 tests total across 52 test files
 
 ## Enriching packages
 
