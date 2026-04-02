@@ -43,6 +43,7 @@ def _register_subcommands() -> None:
     from labeille.compat_cli import compat as compat_group
     from labeille.ft_cli import ft as ft_group
     from labeille.registry_cli import registry as registry_group
+    from labeille.tsan_run_cli import tsan_run as tsan_run_cmd
 
     main.add_command(registry_group)
     main.add_command(analyze_group)
@@ -50,6 +51,7 @@ def _register_subcommands() -> None:
     main.add_command(ft_group)
     main.add_command(compat_group)
     main.add_command(cext_build_cmd)
+    main.add_command(tsan_run_cmd)
 
 
 _register_subcommands()

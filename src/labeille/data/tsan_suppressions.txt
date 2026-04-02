@@ -1,0 +1,67 @@
+# Default TSan suppressions for CPython free-threaded builds.
+#
+# These suppress known races in CPython internals that C extensions
+# cannot fix. Extension-specific suppressions should be in a separate
+# file passed via --suppressions.
+#
+# Based on CPython's Tools/tsan/suppressions_free_threading.txt.
+# Update this file when CPython fixes its own races.
+
+# --- Eval loop and frame management ---
+race:_PyEval_EvalFrameDefault
+race:_PyFrame_SetStackPointer
+race:_PyThreadState_PushFrame
+
+# --- Object lifecycle and GC ---
+race:_Py_Dealloc
+race:_PyObject_GC_TRACK
+race:_PyObject_GC_UNTRACK
+race:gc_collect_main
+race:_Py_MergeZeroLocalRefcount
+race:_Py_ExplicitMergeRefcount
+
+# --- Import system ---
+race:PyImport_ImportModuleLevelObject
+race:import_find_and_load
+race:_PyImport_AcquireLock
+race:_PyImport_ReleaseLock
+
+# --- Signal handling ---
+race:trip_signal
+race:signal_handler
+race:PyErr_CheckSignals
+
+# --- Type and dict internal races ---
+race:_PyType_Lookup
+race:type_modified_unlocked
+race:_PyDict_LoadGlobal
+race:insertdict
+race:_PyDict_SetItem_Take2
+
+# --- Unicode interning ---
+race:_PyUnicode_InternInPlace
+race:intern_common
+
+# --- Memory allocator ---
+race:_PyObject_Malloc
+race:_PyObject_Free
+race:_PyMem_RawMalloc
+race:_PyMem_RawFree
+race:pymalloc_alloc
+race:pymalloc_free
+
+# --- Thread state management ---
+race:_PyThreadState_Swap
+race:PyThreadState_Get
+race:_PyRuntimeState_GetFinalizing
+race:_PyInterpreterState_SetFinalizing
+
+# --- Free-threaded refcounting ---
+race:_Py_INCREF_TYPE
+race:_Py_DECREF_SPECIALIZED
+race:_Py_MergeZeroLocalRefcount
+
+# --- Warnings and error handling ---
+race:_PyErr_SetObject
+race:PyErr_Clear
+race:warnings_warn_impl
