@@ -67,6 +67,9 @@ exclude = [
 [tool.hatch.build.targets.wheel]
 packages = ["src/labeille"]
 
+[tool.hatch.build.targets.wheel.force-include]
+"src/labeille/data" = "labeille/data"
+
 [tool.ruff]
 line-length = 99
 target-version = "py313"

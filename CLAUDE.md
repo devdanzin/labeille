@@ -35,7 +35,7 @@ ASAN_OPTIONS=detect_leaks=0 PYTHON_JIT=0 .venv/bin/python -m unittest discover t
 - Click CLI framework — Click 8.3+ (no `mix_stderr` in CliRunner)
 
 ## Architecture
-- `cli.py` — Click CLI entry point with `resolve`, `run`, `scan-deps`, `bisect`, `registry`, `analyze`, `bench`, `ft`, `compat`, and `cext-build` subcommands
+- `cli.py` — Click CLI entry point with `resolve`, `run`, `scan-deps`, `bisect`, `registry`, `analyze`, `bench`, `ft`, `compat`, `cext-build`, and `tsan-run` subcommands
 - `cli_utils.py` — Shared Click helpers (parse_csv_list, parse_env_pairs)
 - `resolve.py` — PyPI metadata fetching, repo URL extraction, registry building
 - `runner.py` — Clone repos, create venvs, run test suites, detect crashes
@@ -63,6 +63,8 @@ ASAN_OPTIONS=detect_leaks=0 PYTHON_JIT=0 .venv/bin/python -m unittest discover t
 - `bench_cli.py` — Benchmark CLI subcommands (run, compare, export, track)
 - `ft/` — Free-threading subsystem (runner, results, analysis, compare, display, export, compat)
 - `ft_cli.py` — Free-threading CLI subcommands (run, compare, export, compat)
+- `tsan_run.py` — TSan-enabled test runner (build venv, install extension, run tests, capture races)
+- `tsan_run_cli.py` — TSan-run CLI subcommands (run with --test-script, --quick, --stress)
 
 ## Testing notes
 - Integration tests mock `fetch_pypi_metadata` to avoid network calls

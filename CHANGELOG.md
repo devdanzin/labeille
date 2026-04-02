@@ -7,6 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 ## [Unreleased]
 
 ### Added
+- `labeille tsan-run` command for running extension test suites under ThreadSanitizer-enabled free-threaded Python. Captures data race reports for use with ft-review-toolkit's `tsan-report-analyzer` agent. Includes `--test-script` for running custom concurrent stress tests instead of the package's test suite, `--quick` mode for CI, `--stress N` for repeated runs, and bundled CPython TSan suppressions.
 - `labeille cext-build` command for generating `compile_commands.json` compilation databases from C extension packages. Uses [Bear](https://github.com/rizsotto/Bear) to intercept compiler invocations during the build, with automatic fallback to build-system-specific mechanisms for Meson and CMake projects.
 - `CextBuildConfig`, `CextBuildResult`, `CextBuildMeta` dataclasses in `cext_build.py`.
 - `detect_bear()` for auto-detecting bear installation and version.
